@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 15% 6%;
+    --foreground: 240 10% 95%;
+
+    --card: 240 12% 10%;
+    --card-foreground: 240 10% 95%;
+
+    --popover: 240 12% 10%;
+    --popover-foreground: 240 10% 95%;
+
+    --primary: 263 70% 70%;
+    --primary-foreground: 240 15% 6%;
+
+    --secondary: 240 12% 15%;
+    --secondary-foreground: 240 10% 95%;
+
+    --muted: 240 10% 18%;
+    --muted-foreground: 240 10% 60%;
+
+    --accent: 263 70% 70%;
+    --accent-foreground: 240 15% 6%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 240 10% 20%;
+    --input: 240 10% 20%;
+    --ring: 263 70% 70%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 240 12% 8%;
+    --sidebar-foreground: 240 10% 95%;
+    --sidebar-primary: 263 70% 70%;
+    --sidebar-primary-foreground: 240 15% 6%;
+    --sidebar-accent: 240 12% 15%;
+    --sidebar-accent-foreground: 240 10% 95%;
+    --sidebar-border: 240 10% 20%;
+    --sidebar-ring: 263 70% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Open Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .hover-glow {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-glow:hover {
+    @apply bg-primary/10 border-primary/50;
+    box-shadow: 0 0 20px hsl(263 70% 70% / 0.15);
+  }
+
+  .nav-link {
+    @apply relative transition-colors duration-300;
+  }
+
+  .nav-link::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+
+  .nav-link:hover {
+    @apply text-primary;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 ease-out border border-transparent;
+  }
+
+  .card-hover:hover {
+    @apply border-primary/40 bg-card/80;
+    box-shadow: 0 4px 30px hsl(263 70% 70% / 0.1);
+    transform: translateY(-4px);
+  }
+
+  .category-hover {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .category-hover:hover {
+    @apply scale-105;
+    box-shadow: 0 0 30px hsl(263 70% 70% / 0.3);
+  }
+}

@@ -1,0 +1,4 @@
+Contact: mailto:magnifiquedigitalworld@gmail.com
+Preferred-Languages: en
+Canonical: https://magnifiquedigitalworld.github.io/.well-known/security.txt
+Expires: 2027-07-02T12:00:00.000Z

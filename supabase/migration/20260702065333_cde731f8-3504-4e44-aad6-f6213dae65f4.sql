@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM anon, authenticated, public;
+COMMENT ON FUNCTION public.has_role(uuid, public.app_role) IS 'SECURITY DEFINER helper used by RLS policies. Do NOT GRANT EXECUTE to anon/authenticated/public — that would let any visitor probe which user IDs are admins, bypassing user_roles RLS.';

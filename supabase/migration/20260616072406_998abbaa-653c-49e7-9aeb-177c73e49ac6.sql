@@ -1,0 +1,1 @@
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS sub_topics text[] NOT NULL DEFAULT '{}'::text[];
