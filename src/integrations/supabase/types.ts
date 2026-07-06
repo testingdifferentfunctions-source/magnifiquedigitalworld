@@ -88,8 +88,12 @@ export type Database = {
         Row: {
           category_id: string | null
           content: string
+          content_en: string | null
+          content_uk: string | null
           created_at: string
           description: string
+          description_en: string | null
+          description_uk: string | null
           id: string
           image_url: string
           impressions: number
@@ -99,13 +103,19 @@ export type Database = {
           share_count: number
           tags: string[]
           title: string
+          title_en: string | null
+          title_uk: string | null
           updated_at: string
         }
         Insert: {
           category_id?: string | null
           content?: string
+          content_en?: string | null
+          content_uk?: string | null
           created_at?: string
           description: string
+          description_en?: string | null
+          description_uk?: string | null
           id?: string
           image_url?: string
           impressions?: number
@@ -115,13 +125,19 @@ export type Database = {
           share_count?: number
           tags?: string[]
           title: string
+          title_en?: string | null
+          title_uk?: string | null
           updated_at?: string
         }
         Update: {
           category_id?: string | null
           content?: string
+          content_en?: string | null
+          content_uk?: string | null
           created_at?: string
           description?: string
+          description_en?: string | null
+          description_uk?: string | null
           id?: string
           image_url?: string
           impressions?: number
@@ -131,6 +147,8 @@ export type Database = {
           share_count?: number
           tags?: string[]
           title?: string
+          title_en?: string | null
+          title_uk?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -451,3 +469,4 @@ export const Constants = {
     },
   },
 } as const
+
