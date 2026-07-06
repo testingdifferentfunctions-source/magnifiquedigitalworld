@@ -6,6 +6,12 @@ export interface Article {
   title: string;
   description: string;
   content: string;
+  title_uk: string | null;
+  title_en: string | null;
+  description_uk: string | null;
+  description_en: string | null;
+  content_uk: string | null;
+  content_en: string | null;
   image_url: string;
   category_id: string | null;
   reads: number;
@@ -203,3 +209,4 @@ export const useArticleUniqueViews = (articleId: string) => {
     enabled: !!articleId
   });
 };
+
