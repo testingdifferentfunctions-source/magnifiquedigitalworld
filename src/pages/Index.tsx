@@ -7,8 +7,8 @@ import ArticleFilters, { SortOption } from "@/components/ArticleFilters";
 import { useArticles, Article, useIncrementImpressions } from "@/hooks/useArticles";
 import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
-import { useArticlesTranslations } from "@/hooks/useArticleTranslation";
 import { useCategoriesTranslations } from "@/hooks/useCategoryTranslation";
+import { localizeArticle } from "@/lib/localize";
 
 const FILTERS_STORAGE_KEY = "article-filters";
 
@@ -33,8 +33,6 @@ const Index = () => {
   const [sortBy, setSortBy] = useState<SortOption>(storedFilters.sortBy);
   const [categoryId, setCategoryId] = useState(storedFilters.categoryId);
 
-  const articleIds = useMemo(() => articles.map(a => a.id), [articles]);
-  const { data: translationsMap = {} } = useArticlesTranslations(articleIds);
   const categoryIds = useMemo(() => categories.map(c => c.id), [categories]);
   const { data: categoryTranslations = {} } = useCategoriesTranslations(categoryIds);
 
@@ -50,38 +48,33 @@ const Index = () => {
     }
   }, [articles]);
 
-  const articleTitles = useMemo(() => 
-    articles.map(a => {
-      const tr = translationsMap[a.id];
-      return (language === 'en' && tr?.title) ? tr.title : a.title;
-    }), 
-    [articles, translationsMap, language]
+  const localized = useMemo(
+    () => articles.map(a => ({ article: a, loc: localizeArticle(a, language) })),
+    [articles, language]
   );
 
+  const articleTitles = useMemo(() => localized.map(({ loc }) => loc.title), [localized]);
+
   const filteredArticles = useMemo(() => {
-    let result = [...articles];
+    let result = [...localized];
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      result = result.filter((article) => {
-        const tr = translationsMap[article.id];
-        const title = (language === 'en' && tr?.title) ? tr.title : article.title;
-        return title.toLowerCase().includes(query);
-      });
+      result = result.filter(({ loc }) => loc.title.toLowerCase().includes(query));
     }
 
     if (categoryId !== "all") {
-      result = result.filter((article) => article.category_id === categoryId);
+      result = result.filter(({ article }) => article.category_id === categoryId);
     }
 
     result.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+      const dateA = new Date(a.article.created_at).getTime();
+      const dateB = new Date(b.article.created_at).getTime();
       return sortBy === "newest" ? dateB - dateA : dateA - dateB;
     });
 
     return result;
-  }, [articles, searchQuery, sortBy, categoryId, translationsMap, language]);
+  }, [localized, searchQuery, sortBy, categoryId]);
 
   return (
     <PageLayout>
@@ -133,24 +126,21 @@ const Index = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredArticles.map((article: Article, index: number) => {
-            const tr = translationsMap[article.id];
-            return (
-              <ArticleCard 
-                key={article.id} 
-                article={{
-                  id: article.id,
-                  title: (language === 'en' && tr?.title) ? tr.title : article.title,
-                  description: (language === 'en' && tr?.description) ? tr.description : article.description,
-                  image: article.image_url,
-                  likes: article.likes,
-                  reads: article.reads,
-                  category: article.category_id || ''
-                }} 
-                index={index} 
-              />
-            );
-          })}
+          {filteredArticles.map(({ article, loc }, index: number) => (
+            <ArticleCard
+              key={article.id}
+              article={{
+                id: article.id,
+                title: loc.title,
+                description: loc.description,
+                image: article.image_url,
+                likes: article.likes,
+                reads: article.reads,
+                category: article.category_id || ''
+              }}
+              index={index}
+            />
+          ))}
         </div>
       )}
     </PageLayout>
@@ -158,3 +148,4 @@ const Index = () => {
 };
 
 export default Index;
+
