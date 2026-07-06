@@ -3,12 +3,12 @@ import { useMemo } from "react";
 import { useArticle, useTrackArticleView } from "@/hooks/useArticles";
 import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
-import { useArticleTranslation } from "@/hooks/useArticleTranslation";
 import { useCategoriesTranslations } from "@/hooks/useCategoryTranslation";
+import { localizeArticle } from "@/lib/localize";
 import PageLayout from "@/components/PageLayout";
 import SEO from "@/components/SEO";
 import LikeButton from "@/components/LikeButton";
-import { ArrowLeft, Eye, Calendar, Loader2, Share2 } from "lucide-react";
+import { ArrowLeft, Eye, Calendar, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { shareArticle } from "@/lib/share";
@@ -20,7 +20,6 @@ const Article = () => {
   const { data: article, isLoading, error } = useArticle(id || "");
   const { data: categories } = useCategories();
   const { t, language } = useLanguage();
-  const { data: translation, isLoading: isTranslating } = useArticleTranslation(id || "");
   const trackView = useTrackArticleView();
   const [hasTrackedView, setHasTrackedView] = useState(false);
 
@@ -34,13 +33,16 @@ const Article = () => {
   const category = categories?.find((c) => c.id === article?.category_id);
   const categoryIds = useMemo(() => category ? [category.id] : [], [category]);
   const { data: categoryTranslations = {} } = useCategoriesTranslations(categoryIds);
-  const displayCategoryName = category 
+  const displayCategoryName = category
     ? ((language === 'en' && categoryTranslations[category.id]) ? categoryTranslations[category.id] : category.name)
     : '';
 
-  const displayTitle = (language === 'en' && translation?.title) ? translation.title : article?.title;
-  const displayDescription = (language === 'en' && translation?.description) ? translation.description : article?.description;
-  const displayContent = (language === 'en' && translation?.content) ? translation.content : article?.content;
+  const loc = article
+    ? localizeArticle(article, language)
+    : { title: '', description: '', content: '' };
+  const displayTitle = loc.title;
+  const displayDescription = loc.description;
+  const displayContent = loc.content;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(language === 'uk' ? "uk-UA" : "en-US", {
@@ -128,9 +130,6 @@ const Article = () => {
 
         <h1 className="text-3xl md:text-4xl font-bold mb-4">
           {displayTitle}
-          {language === 'en' && isTranslating && (
-            <Loader2 className="inline-block w-5 h-5 ml-2 animate-spin text-muted-foreground" />
-          )}
         </h1>
 
         <p className="text-xl text-muted-foreground mb-6">{displayDescription}</p>
@@ -142,7 +141,7 @@ const Article = () => {
           </div>
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4" />
-            <span>{article.reads} {t('article.views')}</span>
+            <span>{article.reads}</span>
           </div>
           <div className="flex items-center gap-2">
             <Share2 className="w-4 h-4" />
@@ -183,3 +182,4 @@ const Article = () => {
 };
 
 export default Article;
+
