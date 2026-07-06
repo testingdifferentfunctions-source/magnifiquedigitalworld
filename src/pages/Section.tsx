@@ -8,8 +8,8 @@ import { ArrowLeft } from "lucide-react";
 import { useArticles, Article, useIncrementImpressions } from "@/hooks/useArticles";
 import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
-import { useArticlesTranslations } from "@/hooks/useArticleTranslation";
 import { useCategoriesTranslations } from "@/hooks/useCategoryTranslation";
+import { localizeArticle } from "@/lib/localize";
 import { cn } from "@/lib/utils";
 
 
@@ -40,8 +40,6 @@ const Section = () => {
     [articles, categoryId]
   );
 
-  const articleIds = useMemo(() => sectionArticles.map((a) => a.id), [sectionArticles]);
-  const { data: translationsMap = {} } = useArticlesTranslations(articleIds);
   const { data: categoryTranslations = {} } = useCategoriesTranslations(
     category ? [category.id] : []
   );
@@ -166,18 +164,14 @@ const Section = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((article: Article, index: number) => {
-            const tr = translationsMap[article.id];
+            const loc = localizeArticle(article, language);
             return (
               <ArticleCard
                 key={article.id}
                 article={{
                   id: article.id,
-                  title:
-                    language === "en" && tr?.title ? tr.title : article.title,
-                  description:
-                    language === "en" && tr?.description
-                      ? tr.description
-                      : article.description,
+                  title: loc.title,
+                  description: loc.description,
                   image: article.image_url,
                   likes: article.likes,
                   reads: article.reads,
@@ -194,3 +188,4 @@ const Section = () => {
 };
 
 export default Section;
+
