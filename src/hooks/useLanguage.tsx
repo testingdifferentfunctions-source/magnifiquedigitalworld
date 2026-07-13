@@ -21,8 +21,8 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.privacy': 'Політика конфіденційності',
 
     // Index page
-    'index.title': 'Останні статті про Python',
-    'index.subtitle': 'Вивчайте Python разом з нами',
+    'index.title': 'Останні статті',
+    'index.subtitle': 'Вивчайте програмування разом з нами',
     'index.loading': 'Завантаження...',
     'index.no_results': 'Статей не знайдено',
     'index.no_articles': 'Немає статей',
@@ -45,7 +45,7 @@ const translations: Record<Language, Record<string, string>> = {
     'favorites.subtitle': 'Топ-10 статей за кількістю вподобань',
 
     // Sections page
-    'sections.title': 'Розділи програмування Python',
+    'sections.title': 'Розділи',
     'sections.subtitle': 'Оберіть тему, яка вас цікавить',
 
     // About page
@@ -98,8 +98,8 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.privacy': 'Privacy Policy',
 
     // Index page
-    'index.title': 'Latest Python Articles',
-    'index.subtitle': 'Learn Python with us',
+    'index.title': 'Latest Articles',
+    'index.subtitle': 'Learn programming with us',
     'index.loading': 'Loading...',
     'index.no_results': 'No articles found',
     'index.no_articles': 'No articles yet',
@@ -122,7 +122,7 @@ const translations: Record<Language, Record<string, string>> = {
     'favorites.subtitle': 'Top 10 articles by number of likes',
 
     // Sections page
-    'sections.title': 'Python Programming Sections',
+    'sections.title': 'Programming Sections',
     'sections.subtitle': 'Choose a topic that interests you',
 
     // About page
