@@ -137,10 +137,11 @@ const RichTextEditor = ({ value, onChange, maxLength = 50000 }: RichTextEditorPr
     insertHTML(`<code>${selection.toString()}</code>`);
   };
 
-  const applyPurpleAccent = () => {
+const applyPurpleAccent = () => {
     const selection = window.getSelection();
     if (!selection || !selection.toString()) return;
-    insertHTML(`<span style="color: #a855f7;">${selection.toString()}</span>`);
+    // Замість style використовуємо class, який вже прописаний в index.css
+    insertHTML(`<span class="text-purple-accent">${selection.toString()}</span>`);
   };
 
   const insertHorizontalRule = () => {
