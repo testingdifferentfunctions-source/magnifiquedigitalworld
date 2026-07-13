@@ -16,7 +16,7 @@ const Sections = () => {
   return (
     <PageLayout>
       <SEO
-        title="Розділи програмування Python — Magnifique numérique"
+        title="Розділи — Magnifique numérique"
         description="Оберіть тему програмування Python: основи, ООП, бібліотеки, веброзробка та інші розділи."
         path="/sections"
       />
