@@ -102,3 +102,75 @@
     box-shadow: 0 0 30px hsl(263 70% 70% / 0.3);
   }
 }
+
+/* ==========================================================================
+   Стилі для правильного рендерингу контенту статей (Rich Text Fixes)
+   ========================================================================== */
+
+.article-content h1 {
+  font-size: 1.875rem !important; /* text-3xl */
+  font-weight: 700 !important;
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.85rem !important;
+  color: #ffffff !important;
+}
+
+.article-content h2 {
+  font-size: 1.5rem !important; /* text-2xl */
+  font-weight: 600 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+  color: #ffffff !important;
+}
+
+.article-content h3 {
+  font-size: 1.25rem !important; /* text-xl */
+  font-weight: 600 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+  color: #ffffff !important;
+}
+
+.article-content p {
+  margin-bottom: 1.15rem !important;
+  line-height: 1.65 !important;
+  color: #e2e8f0 !important; /* text-slate-200 */
+}
+
+/* Інлайновий код (виділення окремих методів чи змінних в тексті) */
+.article-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  background-color: #1e293b !important; /* bg-slate-800 */
+  color: #f1f5f9 !important; /* text-slate-100 */
+  padding: 0.2rem 0.4rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.875em !important;
+  font-weight: 500 !important;
+}
+
+/* Великі блоки коду (окремі вікна з кодом) */
+.article-content pre {
+  background-color: #0f172a !important; /* bg-slate-900 */
+  padding: 1.25rem !important;
+  border-radius: 0.5rem !important;
+  overflow-x: auto !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1.25rem !important;
+  border: 1px solid #334155 !important; /* border-slate-700 */
+}
+
+/* Скидання інлайнових стилів всередині великих блоків коду */
+.article-content pre code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: 0.9em !important;
+  color: #f8fafc !important;
+}
+
+/* Фіолетовий акцентний колір для виділеного тексту */
+.article-content .text-purple-accent,
+.article-content span[style*="color: rgb(168, 85, 247)"],
+.article-content span[style*="color:#a855f7"] {
+  color: #a855f7 !important; /* Tailwind purple-500 */
+}
