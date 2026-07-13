@@ -169,8 +169,6 @@
 }
 
 /* Фіолетовий акцентний колір для виділеного тексту */
-.article-content .text-purple-accent,
-.article-content span[style*="color: rgb(168, 85, 247)"],
-.article-content span[style*="color:#a855f7"] {
+.text-purple-accent {
   color: #a855f7 !important; /* Tailwind purple-500 */
 }
