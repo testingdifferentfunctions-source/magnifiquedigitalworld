@@ -18,6 +18,8 @@ import {
   Quote,
   Table,
   Minus,
+  Terminal,
+  Palette,
 
 } from 'lucide-react';
 
@@ -29,7 +31,7 @@ interface RichTextEditorProps {
 
 const DOMPURIFY_CONFIG = {
   ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'img', 'a', 'span', 'div'],
-  ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'title', 'target', 'rel'],
+  ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'title', 'target', 'rel', 'style'],
   ADD_ATTR: ['target', 'rel'],
 
 };
@@ -129,6 +131,18 @@ const RichTextEditor = ({ value, onChange, maxLength = 50000 }: RichTextEditorPr
     insertHTML(tableHTML);
   };
 
+  const insertInlineCode = () => {
+    const selection = window.getSelection();
+    if (!selection || !selection.toString()) return;
+    insertHTML(`<code>${selection.toString()}</code>`);
+  };
+
+  const applyPurpleAccent = () => {
+    const selection = window.getSelection();
+    if (!selection || !selection.toString()) return;
+    insertHTML(`<span style="color: #a855f7;">${selection.toString()}</span>`);
+  };
+
   const insertHorizontalRule = () => {
     insertHTML('<hr /><p></p>');
   };
@@ -151,6 +165,8 @@ const RichTextEditor = ({ value, onChange, maxLength = 50000 }: RichTextEditorPr
 
     { icon: Quote, action: () => execCommand('formatBlock', 'blockquote'), title: 'Цитата' },
     { icon: Code, action: insertCodeBlock, title: 'Блок коду' },
+    { icon: Terminal, action: insertInlineCode, title: 'Інлайновий код' },
+    { icon: Palette, action: applyPurpleAccent, title: 'Фіолетовий текст' },
     { icon: Table, action: insertTable, title: 'Таблиця' },
     { icon: Minus, action: insertHorizontalRule, title: 'Горизонтальна лінія' },
   ];
