@@ -131,27 +131,24 @@
   color: #ffffff !important;
 }
 
-/* 1. Збільшуємо відступи між абзацами для кращої читабельності */
-.article-content p {
-  margin-bottom: 1.5rem !important; /* Відступ знизу (приблизно 24px) */
-  line-height: 1.75 !important;     /* Висота рядка */
+/* Робимо відступи як для звичайних абзаців (p), так і для блоків (div), 
+   які створює редактор при натисканні Enter */
+.article-content p,
+.article-content > div {
+  margin-bottom: 1.5rem !important; 
+  line-height: 1.75 !important;
 }
 
-/* 2. Рятуємо порожні рядки (Enter), щоб браузер їх не приховував */
-.article-content p:empty::before {
-  content: "\00a0"; /* Вставляємо невидимий пробіл */
+/* Рятуємо порожні рядки (Enter), щоб браузер їх не приховував */
+.article-content p:empty::before,
+.article-content > div:empty::before {
+  content: "\00a0";
 }
 
-.article-content p:empty {
-  min-height: 1.5rem; /* Задаємо мінімальну висоту порожньому рядку */
+.article-content p:empty,
+.article-content > div:empty {
+  min-height: 1.5rem;
   display: block;
-}
-
-/* Для тегів <br>, якщо редактор використовує їх для перенесення */
-.article-content br {
-  display: block !important;
-  content: "";
-  margin-top: 1.5rem;
 }
 
 /* Інлайновий код (виділення окремих методів чи змінних в тексті) */
