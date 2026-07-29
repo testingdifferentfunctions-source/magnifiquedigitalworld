@@ -253,10 +253,4 @@ const Article = () => {
 };
 
 export default Article;
-      </article>
-    </PageLayout>
-  );
-};
-
-export default Article;
 
