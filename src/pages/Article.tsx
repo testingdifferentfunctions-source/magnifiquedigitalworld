@@ -212,22 +212,47 @@ const Article = () => {
           />
         </div>
 
+        {/* --- БЛОК ЗМІСТУ (Table of Contents) --- */}
+        {toc.length > 0 && (
+          <div className="mb-8 p-6 bg-muted/30 rounded-lg border border-border">
+            <h3 className="text-xl font-bold mb-4">Зміст статті</h3>
+            <ul className="space-y-3">
+              {toc.map((item) => (
+                <li
+                  key={item.id}
+                  style={{ marginLeft: item.level === 3 ? '1.5rem' : '0' }} 
+                >
+                  <a
+                    href={`#${item.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="text-primary hover:underline hover:opacity-80 transition-opacity"
+                  >
+                    {item.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* --- ОСНОВНИЙ БЛОК СТАТТІ --- */}
         <div
           className="prose prose-lg dark:prose-invert max-w-none article-content
             [&_h4]:text-lg [&_h4]:font-semibold [&_h4]:mt-4 [&_h4]:mb-2
             [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:opacity-80"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayContent || '', {
-            ALLOWED_TAGS: [
-              'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 
-              'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'table', 
-              'span' /* Додано span для збереження кольорів тексту */
-            ],
-            ALLOWED_ATTR: [
-              'class', 'href', 'src', 'alt', 'title', 'target', 'rel', 
-              'style' /* Додано style, щоб DOMPurify не вирізав кольори */
-            ],
-          }) }}
+          // Зверни увагу: ми прибрали звідси DOMPurify, бо він вже відпрацював у useEffect
+          // і тепер ми просто виводимо готовий parsedContent з ID для скролу
+          dangerouslySetInnerHTML={{ __html: parsedContent }}
         />
+      </article>
+    </PageLayout>
+  );
+};
+
+export default Article;
       </article>
     </PageLayout>
   );
