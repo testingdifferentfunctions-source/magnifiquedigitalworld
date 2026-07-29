@@ -131,10 +131,27 @@
   color: #ffffff !important;
 }
 
+/* 1. Збільшуємо відступи між абзацами для кращої читабельності */
 .article-content p {
-  margin-bottom: 1.15rem !important;
-  line-height: 1.65 !important;
-  color: #e2e8f0 !important; /* text-slate-200 */
+  margin-bottom: 1.5rem !important; /* Відступ знизу (приблизно 24px) */
+  line-height: 1.75 !important;     /* Висота рядка */
+}
+
+/* 2. Рятуємо порожні рядки (Enter), щоб браузер їх не приховував */
+.article-content p:empty::before {
+  content: "\00a0"; /* Вставляємо невидимий пробіл */
+}
+
+.article-content p:empty {
+  min-height: 1.5rem; /* Задаємо мінімальну висоту порожньому рядку */
+  display: block;
+}
+
+/* Для тегів <br>, якщо редактор використовує їх для перенесення */
+.article-content br {
+  display: block !important;
+  content: "";
+  margin-top: 1.5rem;
 }
 
 /* Інлайновий код (виділення окремих методів чи змінних в тексті) */
