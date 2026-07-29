@@ -44,6 +44,51 @@ const Article = () => {
   const displayDescription = loc.description;
   const displayContent = loc.content;
 
+  // --- ПОЧАТОК КОДУ ДЛЯ ЗМІСТУ ---
+  // Інтерфейс для елемента змісту
+  interface TocItem {
+    id: string;
+    text: string;
+    level: number;
+  }
+
+  const [toc, setToc] = useState<TocItem[]>([]);
+  const [parsedContent, setParsedContent] = useState<string>('');
+
+  useEffect(() => {
+    // displayContent - це твоя змінна з текстом статті (перевір, як вона точно називається у твоєму файлі)
+    if (!displayContent) return; 
+
+    // Очищуємо HTML (щоб збереглися стилі та кольори, які ми налаштовували раніше)
+    const cleanHtml = DOMPurify.sanitize(displayContent, {
+      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'table', 'span'],
+      ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'title', 'target', 'rel', 'style'],
+    });
+
+    // Створюємо віртуальний документ, щоб знайти заголовки
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(cleanHtml, 'text/html');
+
+    const headings = doc.querySelectorAll('h2, h3');
+    const tocItems: TocItem[] = [];
+
+    headings.forEach((heading, index) => {
+      // Додаємо кожному заголовку унікальний id (наприклад, heading-0, heading-1)
+      const id = `heading-${index}`;
+      heading.setAttribute('id', id);
+
+      tocItems.push({
+        id,
+        text: heading.textContent || '',
+        level: heading.tagName === 'H2' ? 2 : 3, // Визначаємо рівень вкладеності
+      });
+    });
+
+    setToc(tocItems);
+    setParsedContent(doc.body.innerHTML); // Зберігаємо оновлений HTML з ID
+  }, [displayContent]);
+  // --- КІНЕЦЬ КОДУ ДЛЯ ЗМІСТУ ---
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(language === 'uk' ? "uk-UA" : "en-US", {
       year: "numeric",
