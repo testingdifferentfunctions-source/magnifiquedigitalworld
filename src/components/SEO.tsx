@@ -8,20 +8,23 @@ interface SEOProps {
   path: string;
   image?: string;
   type?: "website" | "article";
+  canonicalUrl?: string | null;
   jsonLd?: Record<string, any>;
 }
 
-const SEO = ({ title, description, path, image, type = "website", jsonLd }: SEOProps) => {
+const SEO = ({ title, description, path, image, type = "website", canonicalUrl, jsonLd }: SEOProps) => {
   const url = `${SITE_URL}${path}`;
+  const canonicalHref = canonicalUrl?.trim() || url;
+  
   return (
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
-      <link rel="canonical" href={url} />
+      <link rel="canonical" href={canonicalHref} />
 
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:url" content={url} />
+      <meta property="og:url" content={canonicalHref} />
       <meta property="og:type" content={type} />
       {image && <meta property="og:image" content={image} />}
 
