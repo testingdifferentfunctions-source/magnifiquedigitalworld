@@ -42,6 +42,7 @@ const ArticleEditor = () => {
   const [categoryId, setCategoryId] = useState<string>('');
   const [published, setPublished] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
+  const [originalSourceUrl, setOriginalSourceUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -65,6 +66,7 @@ const ArticleEditor = () => {
       setCategoryId(existingArticle.category_id || '');
       setPublished(existingArticle.published);
       setTags(existingArticle.tags || []);
+      setOriginalSourceUrl(existingArticle.original_source_url || '');
     }
   }, [existingArticle]);
 
@@ -133,6 +135,7 @@ const ArticleEditor = () => {
         category_id: categoryId || null,
         published,
         tags,
+        original_source_url: originalSourceUrl.trim() || null,
         reads: existingArticle?.reads || 0,
         likes: existingArticle?.likes || 0,
         impressions: existingArticle?.impressions || 0,
@@ -323,6 +326,25 @@ const ArticleEditor = () => {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="original-source-url">Original Source URL (Canonical)</Label>
+              <Input
+                id="original-source-url"
+                type="url"
+                value={originalSourceUrl}
+                onChange={(e) => {
+                  setOriginalSourceUrl(e.target.value);
+                  if (errors.original_source_url) setErrors({ ...errors, original_source_url: '' });
+                }}
+                placeholder="https://example.com/original-article"
+                className={`bg-background border-border ${errors.original_source_url ? 'border-destructive' : ''}`}
+              />
+              {errors.original_source_url && <p className="text-sm text-destructive">{errors.original_source_url}</p>}
+              <p className="text-xs text-muted-foreground">
+                Leave empty unless this article was first published on another platform (to avoid Google SEO penalties).
+              </p>
+            </div>
+
             <div className="flex items-center gap-3">
               <Switch
                 id="published"
@@ -339,4 +361,3 @@ const ArticleEditor = () => {
 };
 
 export default ArticleEditor;
-
