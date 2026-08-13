@@ -63,6 +63,11 @@ export const articleSchema = z.object({
     .array(z.string().trim().min(1).max(40))
     .max(5, { message: 'Максимум 5 тегів' })
     .optional(),
+  original_source_url: z
+    .string()
+    .url({ message: 'Невірний URL канонічного джерела' })
+    .optional()
+    .or(z.literal('')),
 });
 
 // Category validation schemas
