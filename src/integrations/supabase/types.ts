@@ -98,6 +98,7 @@ export type Database = {
           image_url: string
           impressions: number
           likes: number
+          original_source_url: string | null
           published: boolean
           reads: number
           share_count: number
@@ -120,6 +121,7 @@ export type Database = {
           image_url?: string
           impressions?: number
           likes?: number
+          original_source_url?: string | null
           published?: boolean
           reads?: number
           share_count?: number
@@ -142,6 +144,7 @@ export type Database = {
           image_url?: string
           impressions?: number
           likes?: number
+          original_source_url?: string | null
           published?: boolean
           reads?: number
           share_count?: number
@@ -469,4 +472,3 @@ export const Constants = {
     },
   },
 } as const
-
