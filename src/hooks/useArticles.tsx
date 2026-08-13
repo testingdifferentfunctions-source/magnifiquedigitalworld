@@ -20,6 +20,7 @@ export interface Article {
   share_count: number;
   published: boolean;
   tags: string[];
+  original_source_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -209,4 +210,3 @@ export const useArticleUniqueViews = (articleId: string) => {
     enabled: !!articleId
   });
 };
-
