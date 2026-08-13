@@ -144,6 +144,7 @@ const Article = () => {
         path={`/article/${article.id}`}
         image={article.image_url}
         type="article"
+        canonicalUrl={article.original_source_url}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Article",
@@ -253,4 +254,3 @@ const Article = () => {
 };
 
 export default Article;
-
