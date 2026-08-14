@@ -16,6 +16,8 @@ import Admin from "./pages/Admin";
 import ArticleEditor from "./pages/ArticleEditor";
 import Article from "./pages/Article";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ResetRequest from "./pages/ResetRequest";
+import UpdatePassword from "./pages/UpdatePassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/oRXbyat6a9YPTWyyeR5zp5CUAi68Hwvs" element={<Auth />} />
               <Route path="/auth" element={<NotFound />} />
+              <Route path="/reset-request/:token" element={<ResetRequest />} />
+              <Route path="/reset-password" element={<UpdatePassword />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/editor" element={<ArticleEditor />} />
               <Route path="/admin/editor/:id" element={<ArticleEditor />} />
@@ -54,4 +58,3 @@ const App = () => (
 export default App;
 
 // Triggering GitHub sync for Vercel
-
