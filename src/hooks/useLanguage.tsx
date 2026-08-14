@@ -84,6 +84,30 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.enter_password': 'Введіть пароль',
     'auth.too_many_attempts': 'Забагато невдалих спроб входу. Спробуйте знову через 24 години.',
     'auth.attempts_left': 'Залишилось спроб: {n}',
+    'auth.google': 'Увійти через Google',
+    'auth.or': 'або',
+    'auth.forgot': 'Забули пароль?',
+    'auth.back_to_login': 'Повернутися до входу',
+
+    // Reset password
+    'reset.title': 'Відновлення паролю',
+    'reset.subtitle': 'Введіть email, і ми надішлемо посилання для скидання паролю',
+    'reset.submit': 'Надіслати посилання',
+    'reset.sent': 'Посилання надіслано! Перевірте свою пошту.',
+    'reset.error': 'Не вдалося надіслати посилання. Спробуйте пізніше.',
+
+    // Update password
+    'update.title': 'Новий пароль',
+    'update.subtitle': 'Введіть новий пароль для свого акаунта',
+    'update.new_password': 'Новий пароль',
+    'update.confirm_password': 'Підтвердіть пароль',
+    'update.mismatch': 'Паролі не співпадають',
+    'update.submit': 'Зберегти пароль',
+    'update.success': 'Пароль успішно змінено!',
+    'update.error': 'Не вдалося змінити пароль',
+    'update.invalid_link': 'Посилання недійсне або застаріле. Запросіть новий лист.',
+
+    // Footer
     'about.contact': 'Будь-які запитання? Пишіть на',
   },
   en: {
@@ -161,6 +185,30 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.enter_password': 'Enter password',
     'auth.too_many_attempts': 'Too many failed login attempts. Try again in 24 hours.',
     'auth.attempts_left': 'Attempts left: {n}',
+    'auth.google': 'Sign in with Google',
+    'auth.or': 'or',
+    'auth.forgot': 'Forgot password?',
+    'auth.back_to_login': 'Back to sign in',
+
+    // Reset password
+    'reset.title': 'Password recovery',
+    'reset.subtitle': 'Enter your email and we will send you a reset link',
+    'reset.submit': 'Send reset link',
+    'reset.sent': 'Link sent! Check your inbox.',
+    'reset.error': 'Could not send the link. Please try again later.',
+
+    // Update password
+    'update.title': 'New password',
+    'update.subtitle': 'Enter a new password for your account',
+    'update.new_password': 'New password',
+    'update.confirm_password': 'Confirm password',
+    'update.mismatch': 'Passwords do not match',
+    'update.submit': 'Save password',
+    'update.success': 'Password updated successfully!',
+    'update.error': 'Could not update password',
+    'update.invalid_link': 'This link is invalid or expired. Request a new email.',
+
+    // Footer
     'about.contact': 'Any questions? Email us at',
   },
 };
@@ -196,4 +244,3 @@ export const useLanguage = () => {
   }
   return context;
 };
-
