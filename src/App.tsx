@@ -37,7 +37,7 @@ const App = () => (
               <Route path="/sections" element={<Sections />} />
               <Route path="/section/:categoryId" element={<Section />} />
               <Route path="/about" element={<About />} />
-              <Route path="/oRXbyat6a9YPTWyyeR5zp5CUAi68Hwvs" element={<Auth />} />
+              <Route path={import.meta.env.VITE_ADMIN_LOGIN_PATH} element={<Auth />} />
               <Route path="/auth" element={<NotFound />} />
               <Route path="/reset-request/:token" element={<ResetRequest />} />
               <Route path="/reset-password" element={<UpdatePassword />} />
