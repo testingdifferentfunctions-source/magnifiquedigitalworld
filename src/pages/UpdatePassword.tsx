@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 import { passwordSchema } from '@/lib/validation';
 import logo from '@/assets/logo.jpg';
 
-const LOGIN_PATH = '/oRXbyat6a9YPTWyyeR5zp5CUAi68Hwvs';
+// The secret admin path is backend-only, so fall back to the home page.
+const LOGIN_PATH = '/';
 
 const UpdatePassword = () => {
   const navigate = useNavigate();
