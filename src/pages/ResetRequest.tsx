@@ -11,7 +11,8 @@ import { emailSchema } from '@/lib/validation';
 import { ArrowLeft, MailCheck } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
 
-const LOGIN_PATH = '/oRXbyat6a9YPTWyyeR5zp5CUAi68Hwvs';
+// The secret admin path is backend-only, so fall back to the home page.
+const LOGIN_PATH = '/';
 
 const ResetRequest = () => {
   const navigate = useNavigate();
