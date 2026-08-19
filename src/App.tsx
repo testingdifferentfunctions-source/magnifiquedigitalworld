@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,20 +6,30 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
+import RequireAdmin from "@/components/RequireAdmin";
 import Index from "./pages/Index";
 import Popular from "./pages/Popular";
 import Favorites from "./pages/Favorites";
 import Sections from "./pages/Sections";
 import Section from "./pages/Section";
 import About from "./pages/About";
-import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import ArticleEditor from "./pages/ArticleEditor";
 import Article from "./pages/Article";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ResetRequest from "./pages/ResetRequest";
 import UpdatePassword from "./pages/UpdatePassword";
 import NotFound from "./pages/NotFound";
+import SecretGate from "./pages/SecretGate";
+
+// Admin code is split into separate chunks and only downloaded once
+// RequireAdmin has confirmed an authenticated user with the admin role.
+const Admin = lazy(() => import("./pages/Admin"));
+const ArticleEditor = lazy(() => import("./pages/ArticleEditor"));
+
+const AdminFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -37,16 +48,43 @@ const App = () => (
               <Route path="/sections" element={<Sections />} />
               <Route path="/section/:categoryId" element={<Section />} />
               <Route path="/about" element={<About />} />
-              <Route path={import.meta.env.VITE_ADMIN_LOGIN_PATH} element={<Auth />} />
               <Route path="/auth" element={<NotFound />} />
               <Route path="/reset-request/:token" element={<ResetRequest />} />
               <Route path="/reset-password" element={<UpdatePassword />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/admin/editor" element={<ArticleEditor />} />
-              <Route path="/admin/editor/:id" element={<ArticleEditor />} />
+              <Route
+                path="/admin"
+                element={
+                  <RequireAdmin>
+                    <Suspense fallback={<AdminFallback />}>
+                      <Admin />
+                    </Suspense>
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path="/admin/editor"
+                element={
+                  <RequireAdmin>
+                    <Suspense fallback={<AdminFallback />}>
+                      <ArticleEditor />
+                    </Suspense>
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path="/admin/editor/:id"
+                element={
+                  <RequireAdmin>
+                    <Suspense fallback={<AdminFallback />}>
+                      <ArticleEditor />
+                    </Suspense>
+                  </RequireAdmin>
+                }
+              />
               <Route path="/article/:id" element={<Article />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="*" element={<NotFound />} />
+              {/* Wildcard: the backend decides whether this unmatched path is the secret admin login path */}
+              <Route path="*" element={<SecretGate />} />
             </Routes>
           </BrowserRouter>
         </LanguageProvider>
