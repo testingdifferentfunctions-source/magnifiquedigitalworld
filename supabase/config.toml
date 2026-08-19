@@ -2,3 +2,7 @@ project_id = "xpncqrkmzsufwahmozis"
 
 [functions.translate-article]
 verify_jwt = false
+
+[functions.verify-admin-path]
+verify_jwt = false
+
