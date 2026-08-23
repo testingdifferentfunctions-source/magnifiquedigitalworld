@@ -9,6 +9,10 @@ import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useCategoriesTranslations } from "@/hooks/useCategoryTranslation";
 import { localizeArticle } from "@/lib/localize";
+import { useMode, MODE_LABELS } from "@/hooks/useMode";
+import ResourceCard from "@/components/ResourceCard";
+import ComponentCard from "@/components/ComponentCard";
+import { resources, components, codeTemplates } from "@/data/modeItems";
 
 const FILTERS_STORAGE_KEY = "article-filters";
 
@@ -28,6 +32,7 @@ const Index = () => {
   const incrementImpressions = useIncrementImpressions();
   const impressionsTracked = useRef(false);
   const { t, language } = useLanguage();
+  const { mode } = useMode();
   const storedFilters = getStoredFilters();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>(storedFilters.sortBy);
@@ -91,6 +96,41 @@ const Index = () => {
           inLanguage: "uk",
         }}
       />
+      {mode !== "articles" ? (
+        <>
+          <section className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">{MODE_LABELS[mode]}</h1>
+            <p className="text-muted-foreground">
+              {mode === "resources"
+                ? "Корисні сервіси та інструменти для навчання й роботи."
+                : mode === "components"
+                ? "Бібліотеки та фреймворки для ваших Python-проєктів."
+                : "Готові шаблони коду, які можна одразу використовувати."}
+            </p>
+          </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {mode === "resources"
+              ? resources.map((item, i) => (
+                  <ResourceCard
+                    key={item.id}
+                    item={item}
+                    index={i}
+                    onTry={(r) => r.url && window.open(r.url, "_blank", "noopener,noreferrer")}
+                  />
+                ))
+              : (mode === "components" ? components : codeTemplates).map((item, i) => (
+                  <ComponentCard
+                    key={item.id}
+                    item={item}
+                    index={i}
+                    onLink={(c) => c.url && window.open(c.url, "_blank", "noopener,noreferrer")}
+                  />
+                ))}
+          </div>
+        </>
+      ) : (
+        <>
       <section className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('index.title')}</h1>
         <p className="text-muted-foreground mb-6">
@@ -143,9 +183,10 @@ const Index = () => {
           ))}
         </div>
       )}
+        </>
+      )}
     </PageLayout>
   );
 };
 
 export default Index;
-
