@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   loading: boolean;
+  roleLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
@@ -20,19 +21,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
+          setRoleLoading(true);
           setTimeout(() => {
             checkAdminRole(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setRoleLoading(false);
         }
       }
     );
@@ -42,6 +46,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminRole(session.user.id);
+      } else {
+        setRoleLoading(false);
       }
       setLoading(false);
     });
@@ -56,8 +62,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq('user_id', userId)
       .eq('role', 'admin')
       .maybeSingle();
-    
+
     setIsAdmin(!!data);
+    setRoleLoading(false);
   };
 
   const signIn = async (email: string, password: string) => {
@@ -88,7 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signIn, signUp, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, loading, roleLoading, signIn, signUp, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
