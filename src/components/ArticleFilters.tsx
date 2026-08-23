@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/select";
 import { Category } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
+import ModeSwitcher from "./ModeSwitcher";
 
 export type SortOption = "newest" | "oldest";
 
@@ -30,7 +31,10 @@ const ArticleFilters = ({
   const { t, language } = useLanguage();
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Ось наш новий перемикач режимів сайту */}
+      <ModeSwitcher />
+
       <Select value={sortBy} onValueChange={(v) => onSortChange(v as SortOption)}>
         <SelectTrigger className="w-[160px]">
           <SelectValue placeholder={t('filters.sort')} />
