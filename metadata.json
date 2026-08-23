@@ -1,0 +1,6 @@
+{
+  "name": "Magnifique numérique",
+  "description": "A web portal for IT and programming articles in Ukrainian with interactive content, categorization, and favorites.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

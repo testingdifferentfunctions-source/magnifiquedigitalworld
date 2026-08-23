@@ -22,7 +22,9 @@ const getStoredFilters = () => {
     if (stored) {
       return JSON.parse(stored) as { sortBy: SortOption; categoryId: string };
     }
-  } catch {}
+  } catch {
+    // Return default filters on parse error
+  }
   return { sortBy: "newest" as SortOption, categoryId: "all" };
 };
 
