@@ -39,57 +39,57 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <LanguageProvider>
-        <ModeProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/popular" element={<Popular />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/sections" element={<Sections />} />
-              <Route path="/section/:categoryId" element={<Section />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/auth" element={<NotFound />} />
-              <Route path="/reset-request/:token" element={<ResetRequest />} />
-              <Route path="/reset-password" element={<UpdatePassword />} />
-              <Route
-                path="/admin"
-                element={
-                  <RequireAdmin>
-                    <Suspense fallback={<AdminFallback />}>
-                      <Admin />
-                    </Suspense>
-                  </RequireAdmin>
-                }
-              />
-              <Route
-                path="/admin/editor"
-                element={
-                  <RequireAdmin>
-                    <Suspense fallback={<AdminFallback />}>
-                      <ArticleEditor />
-                    </Suspense>
-                  </RequireAdmin>
-                }
-              />
-              <Route
-                path="/admin/editor/:id"
-                element={
-                  <RequireAdmin>
-                    <Suspense fallback={<AdminFallback />}>
-                      <ArticleEditor />
-                    </Suspense>
-                  </RequireAdmin>
-                }
-              />
-              <Route path="/article/:id" element={<Article />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              {/* Wildcard: the backend decides whether this unmatched path is the secret admin login path */}
-              <Route path="*" element={<SecretGate />} />
-            </Routes>
-          </BrowserRouter>
-        </ModeProvider>
+          <ModeProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/popular" element={<Popular />} />
+                <Route path="/favorites" element={<Favorites />} />
+                <Route path="/sections" element={<Sections />} />
+                <Route path="/section/:categoryId" element={<Section />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/auth" element={<NotFound />} />
+                <Route path="/reset-request/:token" element={<ResetRequest />} />
+                <Route path="/reset-password" element={<UpdatePassword />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <RequireAdmin>
+                      <Suspense fallback={<AdminFallback />}>
+                        <Admin />
+                      </Suspense>
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/editor"
+                  element={
+                    <RequireAdmin>
+                      <Suspense fallback={<AdminFallback />}>
+                        <ArticleEditor />
+                      </Suspense>
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/editor/:id"
+                  element={
+                    <RequireAdmin>
+                      <Suspense fallback={<AdminFallback />}>
+                        <ArticleEditor />
+                      </Suspense>
+                    </RequireAdmin>
+                  }
+                />
+                <Route path="/article/:id" element={<Article />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                {/* Wildcard: the backend decides whether this unmatched path is the secret admin login path */}
+                <Route path="*" element={<SecretGate />} />
+              </Routes>
+            </BrowserRouter>
+          </ModeProvider>
         </LanguageProvider>
       </AuthProvider>
     </TooltipProvider>
