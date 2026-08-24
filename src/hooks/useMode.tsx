@@ -1,12 +1,23 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 
-export type AppMode = "articles" | "resources" | "components" | "templates";
+export type AppMode = "news" | "articles" | "resources" | "components" | "templates" | "palettes";
 
 export const MODE_LABELS: Record<AppMode, string> = {
+  news: "Новини",
   articles: "Статті",
   resources: "Ресурси",
   components: "Компоненти",
   templates: "Шаблони коду",
+  palettes: "Палітри",
+};
+
+export const MODE_ACCENTS: Record<AppMode, string> = {
+  news: "#A4B885",
+  palettes: "#8ABEB9",
+  articles: "#A07DFA",
+  resources: "#5DA7DB",
+  components: "#F1F5F9",
+  templates: "#34D399",
 };
 
 /**
@@ -16,6 +27,20 @@ export const MODE_LABELS: Record<AppMode, string> = {
 type ModeTheme = Record<string, string>;
 
 const MODE_THEMES: Record<AppMode, ModeTheme> = {
+  news: {
+    "--background": "175 38% 4%", // #050B0A
+    "--card": "175 38% 6%", // #091413
+    "--popover": "175 38% 6%", // #091413
+    "--muted": "175 25% 12%",
+    "--muted-foreground": "175 12% 65%",
+    "--border": "175 25% 15%", // #132624
+    "--input": "175 25% 15%",
+    "--primary": "84 27% 62%", // #A4B885
+    "--primary-foreground": "175 38% 6%",
+    "--accent": "84 27% 62%", // #A4B885
+    "--accent-foreground": "175 38% 6%",
+    "--ring": "84 27% 62%",
+  },
   // Default project theme (light purple accent) — restored by clearing overrides.
   articles: {},
   resources: {
@@ -60,6 +85,20 @@ const MODE_THEMES: Record<AppMode, ModeTheme> = {
     "--accent-foreground": "220 18% 8%",
     "--ring": "160 55% 55%",
   },
+  palettes: {
+    "--background": "0 4% 6%", // #0F0E0E base layout
+    "--card": "0 3% 9%", // #181717 card
+    "--popover": "0 3% 9%", // #181717 popover
+    "--muted": "0 3% 14%",
+    "--muted-foreground": "0 0% 72%",
+    "--border": "0 3% 16%", // #292626
+    "--input": "0 3% 16%",
+    "--primary": "174 29% 65%", // #8ABEB9 accent
+    "--primary-foreground": "0 0% 12%",
+    "--accent": "174 29% 65%", // #8ABEB9 accent
+    "--accent-foreground": "0 0% 12%",
+    "--ring": "174 29% 65%",
+  },
 };
 
 const STORAGE_KEY = "app-mode";
@@ -83,7 +122,7 @@ const readStoredMode = (): AppMode => {
   } catch {
     /* ignore */
   }
-  return "articles";
+  return "news";
 };
 
 export const ModeProvider = ({ children }: { children: ReactNode }) => {

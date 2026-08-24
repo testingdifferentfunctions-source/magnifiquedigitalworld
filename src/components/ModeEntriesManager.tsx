@@ -20,6 +20,8 @@ import {
 } from "@/hooks/useModeEntries";
 
 const TYPES: { type: ModeEntryType; label: string }[] = [
+  { type: "news", label: "Новини" },
+  { type: "palette", label: "Палітри" },
   { type: "resource", label: "Ресурси" },
   { type: "component", label: "Компоненти" },
   { type: "template", label: "Шаблони коду" },
@@ -42,10 +44,10 @@ const ModeEntriesManager = () => {
   return (
     <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle>Ресурси, компоненти та шаблони</CardTitle>
+        <CardTitle>Управління матеріалами режимів (Новини, Палітри, Ресурси, Компоненти, Шаблони)</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="resource">
+        <Tabs defaultValue="news">
           <TabsList className="mb-4">
             {TYPES.map(({ type, label }) => (
               <TabsTrigger key={type} value={type}>

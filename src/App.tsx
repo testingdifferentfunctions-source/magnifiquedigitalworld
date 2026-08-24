@@ -15,6 +15,10 @@ import Sections from "./pages/Sections";
 import Section from "./pages/Section";
 import About from "./pages/About";
 import Article from "./pages/Article";
+import NewsDetail from "./pages/NewsDetail";
+import PaletteDetail from "./pages/PaletteDetail";
+import ResourceDetail from "./pages/ResourceDetail";
+import ComponentDetail from "./pages/ComponentDetail";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ResetRequest from "./pages/ResetRequest";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -25,6 +29,7 @@ import SecretGate from "./pages/SecretGate";
 // RequireAdmin has confirmed an authenticated user with the admin role.
 const Admin = lazy(() => import("./pages/Admin"));
 const ArticleEditor = lazy(() => import("./pages/ArticleEditor"));
+const ModeEntryEditor = lazy(() => import("./pages/ModeEntryEditor"));
 
 const AdminFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -50,6 +55,13 @@ const App = () => (
                 <Route path="/sections" element={<Sections />} />
                 <Route path="/section/:categoryId" element={<Section />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/news/:id" element={<NewsDetail />} />
+                <Route path="/palette/:id" element={<PaletteDetail />} />
+                <Route path="/palettes/:id" element={<PaletteDetail />} />
+                <Route path="/resource/:id" element={<ResourceDetail />} />
+                <Route path="/component/:id" element={<ComponentDetail />} />
+                <Route path="/library/:id" element={<ComponentDetail />} />
+                <Route path="/template/:id" element={<ComponentDetail />} />
                 <Route path="/auth" element={<NotFound />} />
                 <Route path="/reset-request/:token" element={<ResetRequest />} />
                 <Route path="/reset-password" element={<UpdatePassword />} />
@@ -79,6 +91,26 @@ const App = () => (
                     <RequireAdmin>
                       <Suspense fallback={<AdminFallback />}>
                         <ArticleEditor />
+                      </Suspense>
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/entry/:type"
+                  element={
+                    <RequireAdmin>
+                      <Suspense fallback={<AdminFallback />}>
+                        <ModeEntryEditor />
+                      </Suspense>
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/entry/:type/:id"
+                  element={
+                    <RequireAdmin>
+                      <Suspense fallback={<AdminFallback />}>
+                        <ModeEntryEditor />
                       </Suspense>
                     </RequireAdmin>
                   }

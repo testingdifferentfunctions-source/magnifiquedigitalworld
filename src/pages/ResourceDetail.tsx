@@ -28,7 +28,9 @@ const ResourceDetail = () => {
   if (isLoading) {
     return (
       <PageLayout>
-        <p className="text-muted-foreground py-12 text-center">Завантаження...</p>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <p className="text-muted-foreground">Завантаження...</p>
+        </div>
       </PageLayout>
     );
   }
@@ -61,25 +63,33 @@ const ResourceDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Magnifique numérique`}
+        title={`${loc.title} — Ресурси — Magnifique numérique`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/resource/${entry.id}`}
         image={entry.image_url ?? undefined}
         type="article"
       />
 
-      <article className="max-w-4xl mx-auto">
-        <Button variant="ghost" className="mb-8 -ml-2" onClick={() => navigate("/")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Назад до директорії
-        </Button>
+      <article className="max-w-4xl mx-auto pb-12">
+        {/* Top Bar: Back button */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            className="-ml-2 text-muted-foreground hover:text-foreground inline-flex items-center"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Назад до директорії
+          </Button>
+        </div>
 
+        {/* Header: Solid dark tag pills */}
         {entry.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             {entry.tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-foreground"
+                className="rounded-full bg-zinc-800 text-zinc-200 border border-zinc-700/60 px-3.5 py-1 text-xs font-medium"
               >
                 {tag}
               </span>
@@ -87,45 +97,61 @@ const ResourceDetail = () => {
           </div>
         )}
 
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold mb-3">{loc.title}</h1>
+        {/* Hero Section: Large title and description */}
+        <header className="mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3 text-foreground">
+            {loc.title}
+          </h1>
           {loc.description && (
-            <p className="text-lg text-muted-foreground leading-relaxed">{loc.description}</p>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl">
+              {loc.description}
+            </p>
           )}
         </header>
 
-        <div className="flex flex-wrap items-center gap-3 mb-10">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-3 mb-8">
           {entry.external_url && (
-            <Button asChild>
+            <Button
+              asChild
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm transition-colors"
+            >
               <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
                 Спробувати
                 <ExternalLink className="w-4 h-4 ml-2" aria-hidden="true" />
               </a>
             </Button>
           )}
+
           <Button
             variant="secondary"
             onClick={handleLike}
             aria-pressed={liked}
             aria-label="Вподобати"
+            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60 font-medium"
           >
             <Heart
-              className={`w-4 h-4 mr-2 ${liked ? "fill-primary text-primary" : ""}`}
+              className={`w-4 h-4 mr-2 transition-colors ${
+                liked ? "fill-red-500 text-red-500" : ""
+              }`}
               aria-hidden="true"
             />
             {likes}
           </Button>
+
           <Button
             variant="secondary"
             onClick={() => shareEntry(entry.id, loc.title, `/resource/${entry.id}`)}
+            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60 font-medium"
           >
             <Share2 className="w-4 h-4 mr-2" aria-hidden="true" />
             Поділитися
           </Button>
         </div>
 
+        {/* Media: Large full-width rounded cover image + source link */}
         <figure className="mb-10">
-          <div className="aspect-video w-full overflow-hidden rounded-xl bg-muted flex items-center justify-center">
+          <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-zinc-900 border border-border flex items-center justify-center">
             {entry.image_url ? (
               <img
                 src={entry.image_url}
@@ -134,16 +160,16 @@ const ResourceDetail = () => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <ImageIcon className="w-10 h-10 text-muted-foreground" aria-hidden="true" />
+              <ImageIcon className="w-12 h-12 text-muted-foreground" aria-hidden="true" />
             )}
           </div>
           {entry.image_source_url && (
-            <figcaption className="mt-2">
+            <figcaption className="mt-2.5 pl-1">
               <a
                 href={entry.image_source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-muted-foreground underline hover:text-primary"
+                className="text-xs text-muted-foreground underline hover:text-foreground transition-colors"
               >
                 Джерело зображення
               </a>
@@ -151,7 +177,10 @@ const ResourceDetail = () => {
           )}
         </figure>
 
-        <BlockRenderer blocks={loc.blocks} />
+        {/* Content: Block-rendered content (headers, paragraphs, lists) */}
+        <div className="prose prose-invert max-w-none">
+          <BlockRenderer blocks={loc.blocks} />
+        </div>
       </article>
     </PageLayout>
   );

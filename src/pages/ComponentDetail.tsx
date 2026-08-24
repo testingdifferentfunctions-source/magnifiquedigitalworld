@@ -35,14 +35,18 @@ const ComponentDetail = () => {
       const el = document.getElementById(h.id);
       if (el) observer.observe(el);
     });
-    setActiveId(headings[0].id);
+    if (!activeId && headings.length > 0) {
+      setActiveId(headings[0].id);
+    }
     return () => observer.disconnect();
-  }, [headings]);
+  }, [headings, activeId]);
 
   if (isLoading) {
     return (
       <PageLayout>
-        <p className="text-muted-foreground py-12 text-center">Завантаження...</p>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <p className="text-muted-foreground">Завантаження...</p>
+        </div>
       </PageLayout>
     );
   }
@@ -64,21 +68,27 @@ const ComponentDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Magnifique numérique`}
+        title={`${loc.title} — Компоненти — Magnifique numérique`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
-        path={`/library/${entry.id}`}
+        path={`/component/${entry.id}`}
+        image={entry.image_url ?? undefined}
         type="article"
       />
 
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between gap-4 mb-8">
-          <Button variant="ghost" className="-ml-2" onClick={() => navigate("/")}>
+      <div className="max-w-6xl mx-auto pb-12">
+        {/* Top Bar: Back button on the left, Language Switcher (UK / EN) on the right */}
+        <div className="flex items-center justify-between gap-4 mb-8 pb-4 border-b border-border">
+          <Button
+            variant="ghost"
+            className="-ml-2 text-muted-foreground hover:text-foreground inline-flex items-center"
+            onClick={() => navigate("/")}
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Усі бібліотеки
           </Button>
 
           <div
-            className="flex items-center rounded-lg border border-border p-1"
+            className="flex items-center rounded-lg border border-border bg-card p-1"
             role="group"
             aria-label="Мова матеріалу"
           >
@@ -88,9 +98,9 @@ const ComponentDetail = () => {
                 type="button"
                 onClick={() => setLanguage(lang)}
                 aria-pressed={language === lang}
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   language === lang
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -100,67 +110,88 @@ const ComponentDetail = () => {
           </div>
         </div>
 
-        <header className="mb-6">
-          <h1 className="text-4xl font-bold mb-3">{loc.title}</h1>
+        {/* Header: Title, Description, Outline-style tag pills with small icons */}
+        <header className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3 text-foreground">
+            {loc.title}
+          </h1>
           {loc.description && (
-            <p className="text-lg text-muted-foreground leading-relaxed">{loc.description}</p>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl mb-4">
+              {loc.description}
+            </p>
+          )}
+
+          {entry.tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              {entry.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Tag className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {entry.external_url && (
+            <div className="pt-5">
+              <Button asChild variant="outline" size="sm" className="gap-2">
+                <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4" />
+                  Офіційний сайт / документація
+                </a>
+              </Button>
+            </div>
           )}
         </header>
 
-        {entry.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {entry.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-sm text-muted-foreground"
-              >
-                <Tag className="w-3.5 h-3.5" aria-hidden="true" />
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {entry.external_url && (
-          <Button asChild variant="outline" className="mb-10">
-            <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-4 h-4 mr-2" aria-hidden="true" />
-              Посилання
-            </a>
-          </Button>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
+        {/* Body Layout (Two-Column): Sticky TOC on the left, Main Block Content on the right */}
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
+          {/* Left Sidebar: Sticky Table of Contents */}
           <aside className="hidden lg:block">
-            <nav className="sticky top-28" aria-label="Зміст">
-              <p className="text-xs font-semibold tracking-widest text-muted-foreground mb-3">
+            <nav className="sticky top-28 space-y-3" aria-label="Зміст">
+              <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase pl-1">
                 ЗМІСТ
               </p>
-              <ul className="space-y-1 border-l border-border">
-                {headings.map((h) => (
-                  <li key={h.id}>
-                    <a
-                      href={`#${h.id}`}
-                      className={`block -ml-px border-l-2 py-1.5 pl-3 text-sm transition-colors ${
-                        activeId === h.id
-                          ? "border-primary text-primary font-medium"
-                          : "border-transparent text-muted-foreground hover:text-foreground"
-                      } ${h.level > 2 ? "pl-6" : ""}`}
-                    >
-                      {h.text}
-                    </a>
-                  </li>
-                ))}
+              <ul className="space-y-1 border-l border-border relative">
+                {headings.map((h) => {
+                  const isActive = activeId === h.id;
+                  return (
+                    <li key={h.id}>
+                      <a
+                        href={`#${h.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const target = document.getElementById(h.id);
+                          if (target) {
+                            target.scrollIntoView({ behavior: "smooth" });
+                            setActiveId(h.id);
+                          }
+                        }}
+                        className={`block -ml-px border-l-2 py-1.5 pl-4 text-sm transition-colors ${
+                          isActive
+                            ? "border-primary text-primary font-semibold"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        } ${h.level > 2 ? "pl-7 text-xs" : ""}`}
+                      >
+                        {h.text}
+                      </a>
+                    </li>
+                  );
+                })}
                 {headings.length === 0 && (
-                  <li className="pl-3 py-1.5 text-sm text-muted-foreground">Немає розділів</li>
+                  <li className="pl-4 py-1.5 text-sm text-muted-foreground">Немає розділів</li>
                 )}
               </ul>
             </nav>
           </aside>
 
-          <article className="min-w-0">
+          {/* Right Main Content */}
+          <main className="min-w-0">
             <BlockRenderer blocks={loc.blocks} />
-          </article>
+          </main>
         </div>
       </div>
     </PageLayout>

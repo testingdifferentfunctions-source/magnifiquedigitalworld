@@ -8,13 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Eye, Heart, Plus, Pencil, Trash2, FileText, Upload, BarChart3, Users, Share2 } from 'lucide-react';
+import { Eye, Heart, Plus, Pencil, Trash2, FileText, Upload, BarChart3, Users, Share2, ChevronDown, Newspaper, Palette, BookOpen, Layers, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { categorySchema } from '@/lib/validation';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import TagInput from '@/components/TagInput';
 import SocialLinksManager from '@/components/SocialLinksManager';
+import ModeEntriesManager from '@/components/ModeEntriesManager';
 
 const Admin = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -155,14 +162,64 @@ const Admin = () => {
 
   return (
     <PageLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <h1 className="text-3xl font-bold">Адмін-панель</h1>
-        <Link to="/admin/editor">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Нова стаття
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Створити матеріал
+                <ChevronDown className="w-4 h-4 ml-2 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-card border-border">
+              <DropdownMenuItem asChild>
+                <Link to="/admin/editor" className="flex items-center gap-2 cursor-pointer">
+                  <FileText className="w-4 h-4 text-[#A07DFA]" />
+                  <span>Стаття (Статті)</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/admin/entry/news" className="flex items-center gap-2 cursor-pointer">
+                  <Newspaper className="w-4 h-4 text-[#A4B885]" />
+                  <span>Новина (Новини)</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/admin/entry/palette" className="flex items-center gap-2 cursor-pointer">
+                  <Palette className="w-4 h-4 text-[#8ABEB9]" />
+                  <span>Палітра (Палітри)</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/admin/entry/resource" className="flex items-center gap-2 cursor-pointer">
+                  <BookOpen className="w-4 h-4 text-[#5DA7DB]" />
+                  <span>Ресурс (Ресурси)</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/admin/entry/component" className="flex items-center gap-2 cursor-pointer">
+                  <Layers className="w-4 h-4 text-[#F1F5F9]" />
+                  <span>Компонент (Компоненти)</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/admin/entry/template" className="flex items-center gap-2 cursor-pointer">
+                  <Code className="w-4 h-4 text-[#34D399]" />
+                  <span>Шаблон коду (Шаблони)</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Link to="/admin/editor">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Нова стаття
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -355,6 +412,9 @@ const Admin = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Resources, Components & Templates Manager */}
+      <ModeEntriesManager />
 
       {/* Site Settings — Social Links */}
       <SocialLinksManager />

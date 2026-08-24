@@ -2,8 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { parseBlocks, type ContentBlock } from "@/lib/blocks";
 import type { Lang } from "@/lib/localize";
+import { getFallbackEntries, getFallbackEntryById } from "@/data/modeItems";
 
-export type ModeEntryType = "resource" | "component" | "template";
+export type ModeEntryType = "news" | "resource" | "component" | "template" | "palette";
 
 export interface ModeEntry {
   id: string;
@@ -44,12 +45,12 @@ export const localizeEntry = (entry: ModeEntry, language: Lang) => {
   const pick = (en: string | null | undefined, uk: string) =>
     language === "en" ? en?.trim() || uk : uk;
   const blocks =
-    language === "en" && entry.blocks_en.length > 0 ? entry.blocks_en : entry.blocks_uk;
+    language === "en" && entry.blocks_en && entry.blocks_en.length > 0 ? entry.blocks_en : entry.blocks_uk;
 
   return {
     title: pick(entry.title_en, entry.title_uk),
     description: pick(entry.description_en, entry.description_uk),
-    blocks,
+    blocks: blocks || [],
   };
 };
 
@@ -57,13 +58,19 @@ export const useModeEntries = (type: ModeEntryType, publishedOnly = true) =>
   useQuery({
     queryKey: ["mode-entries", type, publishedOnly],
     queryFn: async () => {
-      let query = supabase.from("mode_entries").select("*").eq("type", type);
-      if (publishedOnly) query = query.eq("published", true);
-      const { data, error } = await query
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map(mapRow);
+      try {
+        let query = supabase.from("mode_entries").select("*").eq("type", type);
+        if (publishedOnly) query = query.eq("published", true);
+        const { data, error } = await query
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: false });
+        if (!error && data && data.length > 0) {
+          return (data ?? []).map(mapRow);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch mode entries from Supabase, using fallback:", err);
+      }
+      return getFallbackEntries(type);
     },
   });
 
@@ -71,11 +78,23 @@ export const useAllModeEntries = (publishedOnly = false) =>
   useQuery({
     queryKey: ["mode-entries", "all", publishedOnly],
     queryFn: async () => {
-      let query = supabase.from("mode_entries").select("*");
-      if (publishedOnly) query = query.eq("published", true);
-      const { data, error } = await query.order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map(mapRow);
+      try {
+        let query = supabase.from("mode_entries").select("*");
+        if (publishedOnly) query = query.eq("published", true);
+        const { data, error } = await query.order("created_at", { ascending: false });
+        if (!error && data && data.length > 0) {
+          return (data ?? []).map(mapRow);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch all mode entries from Supabase:", err);
+      }
+      return [
+        ...getFallbackEntries("news"),
+        ...getFallbackEntries("resource"),
+        ...getFallbackEntries("component"),
+        ...getFallbackEntries("template"),
+        ...getFallbackEntries("palette"),
+      ];
     },
   });
 
@@ -83,13 +102,17 @@ export const useModeEntry = (id: string) =>
   useQuery({
     queryKey: ["mode-entry", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("mode_entries")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-      if (error) throw error;
-      return data ? mapRow(data) : null;
+      try {
+        const { data, error } = await supabase
+          .from("mode_entries")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+        if (!error && data) return mapRow(data);
+      } catch (err) {
+        console.warn("Failed to fetch mode entry from Supabase, using fallback:", err);
+      }
+      return getFallbackEntryById(id);
     },
     enabled: !!id,
   });
