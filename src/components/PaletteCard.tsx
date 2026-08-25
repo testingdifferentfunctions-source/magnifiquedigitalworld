@@ -108,67 +108,67 @@ const PaletteCard = ({
           <p className="mt-2 text-sm sm:text-base text-neutral-300 leading-relaxed line-clamp-3">
             {item.description}
           </p>
+
+          {/* Action Buttons: Horizontal flex row directly below the short description */}
+          <div
+            id={`palette-actions-${item.id}`}
+            className="mt-5 flex flex-row items-center gap-2"
+          >
+            {/* Button 1: "Кольори" (Colors) */}
+            <Button
+              id={`palette-colors-btn-${item.id}`}
+              type="button"
+              onClick={handleColors}
+              className="bg-[#8ABEB9] hover:bg-[#78aca7] text-[#0F0E0E] font-semibold px-3.5 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm gap-1.5 text-xs sm:text-sm"
+            >
+              <Palette className="w-4 h-4" aria-hidden="true" />
+              Кольори
+            </Button>
+
+            {/* Button 2: "Переглянути" (View) */}
+            <Button
+              id={`palette-view-btn-${item.id}`}
+              type="button"
+              variant="outline"
+              onClick={handleView}
+              className="bg-transparent hover:bg-[#8ABEB9]/10 text-[#8ABEB9] border-[#8ABEB9] hover:text-[#8ABEB9] font-medium px-3.5 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm text-xs sm:text-sm"
+            >
+              Переглянути
+            </Button>
+
+            {/* Button 3: "Like" */}
+            <Button
+              id={`palette-like-btn-${item.id}`}
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={handleLike}
+              aria-label="Вподобати"
+              aria-pressed={liked}
+              className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 w-10 shrink-0 rounded-lg transition-colors ml-auto sm:ml-0"
+            >
+              <Heart
+                className={`w-4 h-4 transition-colors ${
+                  liked ? "fill-[#8ABEB9] text-[#8ABEB9]" : ""
+                }`}
+                aria-hidden="true"
+              />
+            </Button>
+
+            {/* Button 4: "Share" */}
+            <Button
+              id={`palette-share-btn-${item.id}`}
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={onShare}
+              aria-label="Поділитися"
+              className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 w-10 shrink-0 rounded-lg transition-colors"
+            >
+              <Share2 className="w-4 h-4" aria-hidden="true" />
+            </Button>
+          </div>
         </div>
-
-        {/* Footer: Exactly 4 buttons in a single row */}
-        <footer
-          id={`palette-footer-${item.id}`}
-          className="mt-6 pt-4 border-t border-[#292626] flex items-center gap-2.5"
-        >
-          {/* Button 1: "Кольори" (Colors) - Primary button using #8ABEB9 accent */}
-          <Button
-            id={`palette-colors-btn-${item.id}`}
-            type="button"
-            onClick={handleColors}
-            className="bg-[#8ABEB9] hover:bg-[#78aca7] text-[#0F0E0E] font-semibold px-4 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm gap-1.5"
-          >
-            <Palette className="w-4 h-4" aria-hidden="true" />
-            Кольори
-          </Button>
-
-          {/* Button 2: "Переглянути" (View) - Outline button (transparent bg, accent border & text, no icon) */}
-          <Button
-            id={`palette-view-btn-${item.id}`}
-            type="button"
-            variant="outline"
-            onClick={handleView}
-            className="bg-transparent hover:bg-[#8ABEB9]/10 text-[#8ABEB9] border-[#8ABEB9] hover:text-[#8ABEB9] font-medium px-4 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm"
-          >
-            Переглянути
-          </Button>
-
-          {/* Button 3: "Like" - Icon-only button */}
-          <Button
-            id={`palette-like-btn-${item.id}`}
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={handleLike}
-            aria-label="Вподобати"
-            aria-pressed={liked}
-            className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 w-10 shrink-0 rounded-lg transition-colors"
-          >
-            <Heart
-              className={`w-4 h-4 transition-colors ${
-                liked ? "fill-[#8ABEB9] text-[#8ABEB9]" : ""
-              }`}
-              aria-hidden="true"
-            />
-          </Button>
-
-          {/* Button 4: "Share" - Icon-only button */}
-          <Button
-            id={`palette-share-btn-${item.id}`}
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={onShare}
-            aria-label="Поділитися"
-            className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 w-10 shrink-0 rounded-lg transition-colors"
-          >
-            <Share2 className="w-4 h-4" aria-hidden="true" />
-          </Button>
-        </footer>
       </div>
     </motion.article>
   );

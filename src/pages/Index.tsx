@@ -7,13 +7,13 @@ import ResourceCard, { ResourceItem } from "@/components/ResourceCard";
 import ComponentCard, { ComponentItem } from "@/components/ComponentCard";
 import NewsCard from "@/components/NewsCard";
 import PaletteCard from "@/components/PaletteCard";
+import SnippetCard from "@/components/SnippetCard";
 import SearchBar from "@/components/SearchBar";
 import ArticleFilters, { SortOption, FilterCategoryOption } from "@/components/ArticleFilters";
 import CategoryPills, { PillItem } from "@/components/CategoryPills";
 import { useArticles, useIncrementImpressions } from "@/hooks/useArticles";
 import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
-import { useCategoriesTranslations } from "@/hooks/useCategoryTranslation";
 import { localizeArticle } from "@/lib/localize";
 import { useMode, MODE_LABELS, MODE_ACCENTS } from "@/hooks/useMode";
 import {
@@ -23,6 +23,7 @@ import {
   type ModeEntry,
 } from "@/hooks/useModeEntries";
 import { shareEntry, getLikedEntries, setEntryLiked } from "@/lib/shareEntry";
+import { computeSemanticScore, searchSemanticRpc } from "@/lib/semanticSearch";
 
 const FILTERS_STORAGE_KEY = "article-filters";
 
@@ -38,113 +39,59 @@ const getStoredFilters = () => {
   return { sortBy: "newest" as SortOption, categoryId: "all" };
 };
 
-// Category Options for Non-Article Modes
-const NEWS_CATEGORIES: FilterCategoryOption[] = [
-  { id: "languages", name: "Мови програмування" },
-  { id: "web", name: "Веб & Фронтенд" },
-  { id: "ai", name: "Штучний інтелект (AI)" },
-  { id: "devops", name: "DevOps & Хмара" },
-  { id: "releases", name: "Релізи та Оновлення" },
-];
-
-const PALETTE_CATEGORIES: FilterCategoryOption[] = [
-  { id: "dark", name: "Темні теми (Dark)" },
-  { id: "light", name: "Світлі теми (Light)" },
-  { id: "saas", name: "SaaS & Продукти" },
-  { id: "devtools", name: "DevTools & Термінал" },
-  { id: "fintech", name: "Fintech & Градієнти" },
-];
-
-const RESOURCE_CATEGORIES: FilterCategoryOption[] = [
-  { id: "design", name: "Дизайн & UI" },
-  { id: "devtools", name: "Інструменти розробника" },
-  { id: "backend", name: "Бекенд & Бази даних" },
-  { id: "cloud", name: "Хостинг & Хмара" },
-  { id: "ai", name: "ШІ-інструменти" },
-];
-
-const COMPONENT_CATEGORIES: FilterCategoryOption[] = [
-  { id: "ui", name: "UI компоненти" },
-  { id: "charts", name: "Графіки & Charts" },
-  { id: "forms", name: "Форми & Валідація" },
-  { id: "animation", name: "Анімації" },
-];
-
-const TEMPLATE_CATEGORIES: FilterCategoryOption[] = [
-  { id: "fullstack", name: "Fullstack застосунки" },
-  { id: "frontend", name: "Фронтенд шаблони" },
-  { id: "backend", name: "Бекенд & API" },
-  { id: "auth", name: "Автентифікація & DB" },
-];
-
-// Mapping helper for category keywords
-const CATEGORY_TAG_MAP: Record<string, string[]> = {
-  // News
-  languages: ["python", "rust", "go", "typescript", "javascript", "c++", "jit", "мову", "програмування"],
-  web: ["react", "next.js", "vue", "javascript", "typescript", "фронтенд", "веб-розробка", "css", "html", "tailwind"],
-  ai: ["ai", "ші", "llm", "агенти", "нейромережі", "gpt", "gemini", "claude", "machine learning"],
-  devops: ["devops", "docker", "kubernetes", "хмара", "інфраструктура", "cloud", "ci/cd"],
-  releases: ["реліз", "оновлення", "версія", "release", "анонс"],
-
-  // Palettes
-  dark: ["dark", "dark mode", "темна", "minimalist", "neon", "emerald", "cli"],
-  light: ["light", "light mode", "світла", "vibrant", "gradient", "fintech"],
-  saas: ["saas", "modern", "minimalist", "fintech", "продукт", "web app"],
-  devtools: ["developer tools", "cli", "terminal", "neon", "database", "інструменти"],
-  fintech: ["fintech", "vibrant", "gradient", "фінанси", "банкінг"],
-
-  // Resources
-  design: ["design", "ui", "ux", "icons", "дизайн", "іконки", "шрифти", "css"],
-  devtools: ["tools", "devtools", "інструменти", "cli", "git", "термінал"],
-  backend: ["backend", "database", "бази даних", "api", "rest", "sql"],
-  cloud: ["cloud", "hosting", "хостинг", "хмара", "serverless", "aws", "vercel"],
-  ai: ["ai", "ші", "генерація", "llm", "нейромережі"],
-
-  // Components
-  ui: ["ui", "button", "modal", "card", "dropdown", "компоненти"],
-  charts: ["chart", "charts", "графіки", "d3", "recharts", "visualization", "дані"],
-  forms: ["form", "forms", "input", "валідація", "форми"],
-  animation: ["animation", "motion", "framer", "анімація", "ефекти"],
-
-  // Templates
-  fullstack: ["fullstack", "next.js", "remix", "mern", "застосунок"],
-  frontend: ["frontend", "react", "vue", "vite", "фронтенд", "landing"],
-  backend: ["backend", "fastapi", "express", "node", "бек-енд", "api"],
-  auth: ["auth", "oauth", "supabase", "firebase", "security", "автентифікація"],
-};
-
+// Filter entries helper for non-article modes with dynamic categories & semantic vector scoring
 const getFilteredModeEntries = (
   entries: ModeEntry[],
   query: string,
   categoryId: string,
   activePill: string,
   sort: SortOption,
-  lang: string
+  lang: string,
+  categoriesList: any[]
 ) => {
-  let list = entries.map((entry) => ({
-    entry,
-    loc: localizeEntry(entry, lang as any),
-  }));
+  let list = entries.map((entry) => {
+    const loc = localizeEntry(entry, lang as any);
+    const semanticScore = query.trim()
+      ? computeSemanticScore(query, {
+          title: loc.title,
+          description: loc.description,
+          tags: entry.tags,
+        })
+      : 1;
+    return {
+      entry,
+      loc,
+      semanticScore,
+    };
+  });
 
-  // 1. Search Query
+  // 1. Semantic Search Query
   if (query.trim()) {
-    const q = query.toLowerCase();
-    list = list.filter(
-      ({ entry, loc }) =>
-        loc.title.toLowerCase().includes(q) ||
-        loc.description.toLowerCase().includes(q) ||
-        entry.tags.some((tag) => tag.toLowerCase().includes(q))
-    );
+    list = list.filter(({ semanticScore }) => semanticScore > 0);
   }
 
   // 2. Primary Filter (Dropdown category)
   if (categoryId !== "all") {
-    const validKeywords = CATEGORY_TAG_MAP[categoryId] || [categoryId.toLowerCase()];
+    const selectedCat = categoriesList.find((c) => c.id === categoryId);
+    const keywords: string[] = [];
+    if (selectedCat) {
+      keywords.push(selectedCat.name.toLowerCase());
+      if (selectedCat.name_en) keywords.push(selectedCat.name_en.toLowerCase());
+      (selectedCat.sub_topics || []).forEach((st: string) => keywords.push(st.toLowerCase()));
+      (selectedCat.subcategories || []).forEach((sc: any) => {
+        keywords.push(sc.name.toLowerCase());
+        if (sc.name_en) keywords.push(sc.name_en.toLowerCase());
+      });
+    } else {
+      keywords.push(categoryId.toLowerCase());
+    }
+
     list = list.filter(({ entry, loc }) => {
+      if ((entry as any).category_id === categoryId) return true;
       const matchTags = entry.tags.some((tag) =>
-        validKeywords.some((kw) => tag.toLowerCase().includes(kw) || kw.includes(tag.toLowerCase()))
+        keywords.some((kw) => tag.toLowerCase().includes(kw) || kw.includes(tag.toLowerCase()))
       );
-      const matchText = validKeywords.some(
+      const matchText = keywords.some(
         (kw) =>
           loc.title.toLowerCase().includes(kw) || loc.description.toLowerCase().includes(kw)
       );
@@ -164,8 +111,11 @@ const getFilteredModeEntries = (
     });
   }
 
-  // 4. Sort
+  // 4. Sort (ranked by semantic relevance when searching)
   list.sort((a, b) => {
+    if (query.trim() && Math.abs(b.semanticScore - a.semanticScore) > 0.1) {
+      return b.semanticScore - a.semanticScore;
+    }
     const dateA = new Date(a.entry.created_at).getTime();
     const dateB = new Date(b.entry.created_at).getTime();
     return sort === "newest" ? dateB - dateA : dateA - dateB;
@@ -181,7 +131,7 @@ const Index = () => {
 
   // Articles data
   const { data: articles = [], isLoading: articlesLoading } = useArticles();
-  const { data: categories = [] } = useCategories();
+  const { data: modeCategories = [] } = useCategories(mode);
   const incrementImpressions = useIncrementImpressions();
   const impressionsTracked = useRef(false);
 
@@ -193,23 +143,44 @@ const Index = () => {
   const { data: palettes = [], isLoading: palettesLoading } = useModeEntries("palette");
   const toggleLike = useToggleModeEntryLike();
 
-  const storedFilters = getStoredFilters();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>(storedFilters.sortBy);
-  const [categoryId, setCategoryId] = useState(storedFilters.categoryId);
+  const [sortBy, setSortBy] = useState<SortOption>(() => {
+    try {
+      const saved = localStorage.getItem("feed-sort-by");
+      if (saved === "newest" || saved === "oldest") return saved as SortOption;
+    } catch {
+      /* ignore localStorage access errors */
+    }
+    return "newest";
+  });
+  const [categoryId, setCategoryId] = useState<string>("all");
   const [activePill, setActivePill] = useState<string>("all");
 
-  const categoryIds = useMemo(() => categories.map((c) => c.id), [categories]);
-  const { data: categoryTranslations = {} } = useCategoriesTranslations(categoryIds);
+  // Task 3: State Reset on Mode Switch
+  // When switching mode, immediately reset category, pill, and search query to provide a clean, unfiltered index
+  const isFirstMount = useRef(true);
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    setCategoryId("all");
+    setActivePill("all");
+    setSearchQuery("");
+  }, [mode]);
 
-  // Reset secondary pill when mode or primary category changes
+  // Reset secondary pill when primary category dropdown changes
   useEffect(() => {
     setActivePill("all");
-  }, [mode, categoryId]);
+  }, [categoryId]);
 
   useEffect(() => {
-    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({ sortBy, categoryId }));
-  }, [sortBy, categoryId]);
+    try {
+      localStorage.setItem("feed-sort-by", sortBy);
+    } catch {
+      /* ignore localStorage access errors */
+    }
+  }, [sortBy]);
 
   // Track impressions when articles are loaded
   useEffect(() => {
@@ -219,108 +190,92 @@ const Index = () => {
     }
   }, [articles, incrementImpressions]);
 
-  // Mode-specific category options for Primary Dropdown
+  // Mode-specific category options for Primary Dropdown (completely dynamic!)
   const activeCategoryOptions: FilterCategoryOption[] = useMemo(() => {
-    if (mode === "articles") {
-      return categories.map((c) => ({
-        id: c.id,
-        name: language === "en" && categoryTranslations[c.id] ? categoryTranslations[c.id] : c.name,
-      }));
-    }
-    if (mode === "news") return NEWS_CATEGORIES;
-    if (mode === "palettes") return PALETTE_CATEGORIES;
-    if (mode === "resources") return RESOURCE_CATEGORIES;
-    if (mode === "components") return COMPONENT_CATEGORIES;
-    return TEMPLATE_CATEGORIES;
-  }, [mode, categories, categoryTranslations, language]);
+    return modeCategories.map((c) => ({
+      id: c.id,
+      name: language === "en" && c.name_en ? c.name_en : c.name,
+    }));
+  }, [modeCategories, language]);
 
-  // Mode-specific placeholder for Primary Dropdown
+  // Placeholder for Primary Dropdown (Всі розділи for all modes)
   const activeDropdownPlaceholder = useMemo(() => {
-    if (mode === "articles") return t("filters.all_sections");
-    if (mode === "palettes") return "Всі стилі";
-    return "Всі категорії";
-  }, [mode, t]);
+    return language === "en" ? "All Sections" : "Всі розділи";
+  }, [language]);
 
   // Derive secondary pills dynamically based on active mode & selected category
   const availablePills: PillItem[] = useMemo(() => {
     const allPill: PillItem = { id: "all", label: "Всі" };
 
-    if (mode === "articles") {
-      if (categoryId === "all") {
-        // Collect all sub-topics from all categories + article tags
-        const subTopicsSet = new Set<string>();
-        categories.forEach((cat) => {
-          (cat.sub_topics || []).forEach((st) => subTopicsSet.add(st));
+    if (categoryId === "all") {
+      const pillsSet = new Set<string>();
+      modeCategories.forEach((cat) => {
+        (cat.subcategories || []).forEach((sc) => {
+          pillsSet.add(language === "en" && sc.name_en ? sc.name_en : sc.name);
         });
-        articles.forEach((art) => {
-          (art.tags || []).forEach((tag) => subTopicsSet.add(tag));
-        });
-        const pills = Array.from(subTopicsSet)
-          .filter(Boolean)
-          .slice(0, 10)
-          .map((topic) => ({ id: topic, label: topic }));
-        return [allPill, ...pills];
+        (cat.sub_topics || []).forEach((st) => pillsSet.add(st));
+      });
+
+      if (mode === "articles") {
+        articles.forEach((art) => (art.tags || []).forEach((t) => pillsSet.add(t)));
       } else {
-        const currentCategory = categories.find((c) => c.id === categoryId);
-        const subTopics = currentCategory?.sub_topics || [];
-        if (subTopics.length > 0) {
-          return [allPill, ...subTopics.map((st) => ({ id: st, label: st }))];
-        }
-        // Fallback to tags of articles in this category
-        const categoryTags = Array.from(
-          new Set(
-            articles
-              .filter((a) => a.category_id === categoryId)
-              .flatMap((a) => a.tags || [])
-          )
-        );
-        return [allPill, ...categoryTags.map((tag) => ({ id: tag, label: tag }))];
+        const currentEntries =
+          mode === "news"
+            ? news
+            : mode === "palettes"
+            ? palettes
+            : mode === "resources"
+            ? resources
+            : mode === "components"
+            ? components
+            : templates;
+        currentEntries.forEach((entry) => (entry.tags || []).forEach((t) => pillsSet.add(t)));
       }
+
+      const pills = Array.from(pillsSet)
+        .filter(Boolean)
+        .slice(0, 15)
+        .map((p) => ({ id: p, label: p }));
+      return [allPill, ...pills];
+    } else {
+      const currentCategory = modeCategories.find((c) => c.id === categoryId);
+      if (currentCategory) {
+        const categoryPills: string[] = [];
+        (currentCategory.subcategories || []).forEach((sc) => {
+          categoryPills.push(language === "en" && sc.name_en ? sc.name_en : sc.name);
+        });
+        (currentCategory.sub_topics || []).forEach((st) => {
+          if (!categoryPills.includes(st)) categoryPills.push(st);
+        });
+
+        if (categoryPills.length > 0) {
+          return [allPill, ...categoryPills.map((st) => ({ id: st, label: st }))];
+        }
+      }
+
+      // Fallback: collect tags from items matching category
+      const tagsSet = new Set<string>();
+      if (mode === "articles") {
+        articles
+          .filter((a) => a.category_id === categoryId)
+          .flatMap((a) => a.tags || [])
+          .forEach((t) => tagsSet.add(t));
+      } else {
+        const currentEntries =
+          mode === "news"
+            ? news
+            : mode === "palettes"
+            ? palettes
+            : mode === "resources"
+            ? resources
+            : mode === "components"
+            ? components
+            : templates;
+        currentEntries.forEach((e) => (e.tags || []).forEach((t) => tagsSet.add(t)));
+      }
+      return [allPill, ...Array.from(tagsSet).slice(0, 15).map((t) => ({ id: t, label: t }))];
     }
-
-    // For other modes: News, Palettes, Resources, Components, Templates
-    const currentEntries =
-      mode === "news"
-        ? news
-        : mode === "palettes"
-        ? palettes
-        : mode === "resources"
-        ? resources
-        : mode === "components"
-        ? components
-        : templates;
-
-    let candidateEntries = currentEntries;
-    if (categoryId !== "all") {
-      const validKeywords = CATEGORY_TAG_MAP[categoryId] || [categoryId.toLowerCase()];
-      candidateEntries = currentEntries.filter((entry) => {
-        const loc = localizeEntry(entry, language as any);
-        const matchTags = entry.tags.some((tag) =>
-          validKeywords.some((kw) => tag.toLowerCase().includes(kw) || kw.includes(tag.toLowerCase()))
-        );
-        const matchText = validKeywords.some(
-          (kw) =>
-            loc.title.toLowerCase().includes(kw) || loc.description.toLowerCase().includes(kw)
-        );
-        return matchTags || matchText;
-      });
-    }
-
-    // Collect all tags from the candidate entries
-    const tagsCount: Record<string, number> = {};
-    candidateEntries.forEach((entry) => {
-      entry.tags.forEach((tag) => {
-        if (!tag) return;
-        tagsCount[tag] = (tagsCount[tag] || 0) + 1;
-      });
-    });
-
-    const sortedTags = Object.entries(tagsCount)
-      .sort((a, b) => b[1] - a[1])
-      .map(([tag]) => ({ id: tag, label: tag }));
-
-    return [allPill, ...sortedTags.slice(0, 12)];
-  }, [mode, categoryId, categories, articles, news, palettes, resources, components, templates, language]);
+  }, [mode, categoryId, modeCategories, articles, news, palettes, resources, components, templates, language]);
 
   // Localized articles
   const localizedArticles = useMemo(
@@ -328,19 +283,35 @@ const Index = () => {
     [articles, language]
   );
 
-  // Filtered articles (Two-Tier filtering)
-  const filteredArticles = useMemo(() => {
-    let result = [...localizedArticles];
+  // Trigger Supabase semantic vector RPC search when search query changes
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timer = setTimeout(() => {
+      searchSemanticRpc(searchQuery, mode).catch(() => {
+        /* handled gracefully */
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, mode]);
 
-    // 1. Search Query
+  // Filtered articles (Two-Tier filtering with semantic vector scoring, only computed when mode is articles)
+  const filteredArticles = useMemo(() => {
+    if (mode !== "articles") return [];
+    let result = localizedArticles.map(({ article, loc }) => {
+      const semanticScore = searchQuery.trim()
+        ? computeSemanticScore(searchQuery, {
+            title: loc.title,
+            description: loc.description,
+            tags: article.tags,
+            content: article.content || "",
+          })
+        : 1;
+      return { article, loc, semanticScore };
+    });
+
+    // 1. Semantic Search Query
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        ({ loc, article }) =>
-          loc.title.toLowerCase().includes(query) ||
-          loc.description.toLowerCase().includes(query) ||
-          (article.tags || []).some((tag) => tag.toLowerCase().includes(query))
-      );
+      result = result.filter(({ semanticScore }) => semanticScore > 0);
     }
 
     // 2. Primary Filter (Dropdown Category)
@@ -359,39 +330,57 @@ const Index = () => {
       );
     }
 
-    // 4. Sort
+    // 4. Sort (ranked by semantic relevance when searching)
     result.sort((a, b) => {
+      if (searchQuery.trim() && Math.abs(b.semanticScore - a.semanticScore) > 0.1) {
+        return b.semanticScore - a.semanticScore;
+      }
       const dateA = new Date(a.article.created_at).getTime();
       const dateB = new Date(b.article.created_at).getTime();
       return sortBy === "newest" ? dateB - dateA : dateA - dateB;
     });
 
     return result;
-  }, [localizedArticles, searchQuery, sortBy, categoryId, activePill]);
+  }, [mode, localizedArticles, searchQuery, sortBy, categoryId, activePill]);
 
   const filteredNews = useMemo(
-    () => getFilteredModeEntries(news, searchQuery, categoryId, activePill, sortBy, language),
-    [news, searchQuery, categoryId, activePill, sortBy, language]
+    () =>
+      mode === "news"
+        ? getFilteredModeEntries(news, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        : [],
+    [mode, news, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
   );
 
   const filteredResources = useMemo(
-    () => getFilteredModeEntries(resources, searchQuery, categoryId, activePill, sortBy, language),
-    [resources, searchQuery, categoryId, activePill, sortBy, language]
+    () =>
+      mode === "resources"
+        ? getFilteredModeEntries(resources, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        : [],
+    [mode, resources, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
   );
 
   const filteredComponents = useMemo(
-    () => getFilteredModeEntries(components, searchQuery, categoryId, activePill, sortBy, language),
-    [components, searchQuery, categoryId, activePill, sortBy, language]
+    () =>
+      mode === "components"
+        ? getFilteredModeEntries(components, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        : [],
+    [mode, components, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
   );
 
   const filteredTemplates = useMemo(
-    () => getFilteredModeEntries(templates, searchQuery, categoryId, activePill, sortBy, language),
-    [templates, searchQuery, categoryId, activePill, sortBy, language]
+    () =>
+      mode === "templates"
+        ? getFilteredModeEntries(templates, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        : [],
+    [mode, templates, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
   );
 
   const filteredPalettes = useMemo(
-    () => getFilteredModeEntries(palettes, searchQuery, categoryId, activePill, sortBy, language),
-    [palettes, searchQuery, categoryId, activePill, sortBy, language]
+    () =>
+      mode === "palettes"
+        ? getFilteredModeEntries(palettes, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        : [],
+    [mode, palettes, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
   );
 
   // Active suggestions for SearchBar based on current mode
@@ -458,7 +447,7 @@ const Index = () => {
             : mode === "components"
             ? "Бібліотеки, пакети та фреймворки для ваших Python-проєктів."
             : mode === "templates"
-            ? "Готові до використання шаблони коду з коментарями та поясненнями."
+            ? "Готові до копіювання сніпети, функції та шаблони коду для швидкої розробки."
             : "Добірка колірних палітр реальних вебсайтів для вашого натхнення та швидкої інтеграції."}
         </p>
 
@@ -478,7 +467,7 @@ const Index = () => {
                 : mode === "components"
                 ? "Пошук бібліотек та компонентів..."
                 : mode === "templates"
-                ? "Пошук шаблонів коду..."
+                ? "Пошук сніпетів коду..."
                 : "Пошук колірних палітр..."
             }
           />
@@ -491,13 +480,12 @@ const Index = () => {
               setActivePill("all");
             }}
             categoryOptions={activeCategoryOptions}
-            categoryTranslations={categoryTranslations}
             dropdownPlaceholder={activeDropdownPlaceholder}
           />
         </div>
 
         {/* Tier 2 Secondary Controls: CategoryPills with dynamic mode accent color */}
-        {availablePills.length > 1 && (
+        {(availablePills.length > 1 || (categoryId !== "all" && modeCategories.some((c) => c.id === categoryId))) && (
           <div className="mt-4 pt-1 border-t border-border/40">
             <CategoryPills
               pills={availablePills}
@@ -505,6 +493,7 @@ const Index = () => {
               onSelectPill={setActivePill}
               mode={mode}
               accentColor={MODE_ACCENTS[mode]}
+              selectedCategory={modeCategories.find((c) => c.id === categoryId) || null}
             />
           </div>
         )}
@@ -645,18 +634,22 @@ const Index = () => {
                 title: loc.title,
                 description: loc.description,
                 url: entry.external_url ?? undefined,
+                likes: entry.likes,
+                tags: entry.tags,
               };
               return (
                 <ComponentCard
                   key={entry.id}
                   item={compItem}
                   index={index}
+                  isLiked={getLikedEntries().includes(entry.id)}
                   onView={() => navigate(`/component/${entry.id}`)}
-                  onLink={() => {
-                    if (entry.external_url) {
-                      window.open(entry.external_url, "_blank", "noopener,noreferrer");
-                    }
+                  onLike={() => {
+                    const currentlyLiked = getLikedEntries().includes(entry.id);
+                    setEntryLiked(entry.id, !currentlyLiked);
+                    toggleLike.mutate({ entryId: entry.id, isLiking: !currentlyLiked });
                   }}
+                  onShare={() => shareEntry(entry.id, loc.title, `/component/${entry.id}`)}
                 />
               );
             })}
@@ -668,29 +661,38 @@ const Index = () => {
             <p className="text-muted-foreground">
               {searchQuery || categoryId !== "all" || activePill !== "all"
                 ? "Нічого не знайдено за вашим запитом"
-                : "Ще немає шаблонів коду"}
+                : "Ще немає сніпетів коду"}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
             {filteredTemplates.map(({ entry, loc }, index) => {
-              const compItem: ComponentItem = {
-                id: entry.id,
-                title: loc.title,
-                description: loc.description,
-                url: entry.external_url ?? undefined,
-              };
+              const codeBlock = loc.blocks.find((b) => b.type === "code") as
+                | { code: string; language?: string }
+                | undefined;
+
               return (
-                <ComponentCard
+                <SnippetCard
                   key={entry.id}
-                  item={compItem}
-                  index={index}
-                  onView={() => navigate(`/component/${entry.id}`)}
-                  onLink={() => {
-                    if (entry.external_url) {
-                      window.open(entry.external_url, "_blank", "noopener,noreferrer");
-                    }
+                  item={{
+                    id: entry.id,
+                    title: loc.title,
+                    description: loc.description,
+                    code: codeBlock?.code,
+                    language: codeBlock?.language,
+                    tags: entry.tags,
+                    likes: entry.likes,
+                    url: entry.external_url,
                   }}
+                  index={index}
+                  isLiked={getLikedEntries().includes(entry.id)}
+                  onView={() => navigate(`/template/${entry.id}`)}
+                  onLike={() => {
+                    const currentlyLiked = getLikedEntries().includes(entry.id);
+                    setEntryLiked(entry.id, !currentlyLiked);
+                    toggleLike.mutate({ entryId: entry.id, isLiking: !currentlyLiked });
+                  }}
+                  onShare={() => shareEntry(entry.id, loc.title, `/template/${entry.id}`)}
                 />
               );
             })}

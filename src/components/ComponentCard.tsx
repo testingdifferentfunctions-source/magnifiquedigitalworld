@@ -1,4 +1,7 @@
-import { ArrowUpRight, Link2 } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+import { Heart, Share2, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface ComponentItem {
@@ -6,43 +9,136 @@ export interface ComponentItem {
   title: string;
   description: string;
   url?: string;
+  likes?: number;
+  tags?: string[];
 }
 
 interface ComponentCardProps {
   item: ComponentItem;
   index?: number;
   onView?: (item: ComponentItem) => void;
-  onLink?: (item: ComponentItem) => void;
+  onLike?: (item: ComponentItem) => void;
+  onShare?: (item: ComponentItem) => void;
+  isLiked?: boolean;
 }
 
-const ComponentCard = ({ item, index = 0, onView, onLink }: ComponentCardProps) => {
+const ComponentCard = ({
+  item,
+  index = 0,
+  onView,
+  onLike,
+  onShare,
+  isLiked: initialLiked = false,
+}: ComponentCardProps) => {
+  const navigate = useNavigate();
+  const [liked, setLiked] = useState(initialLiked);
+  const [, setLikesCount] = useState(item.likes ?? 0);
+
+  const handleView = () => {
+    if (onView) {
+      onView(item);
+    } else {
+      navigate(`/component/${item.id}`);
+    }
+  };
+
+  const handleLike = () => {
+    const next = !liked;
+    setLiked(next);
+    setLikesCount((prev) => prev + (next ? 1 : -1));
+    if (onLike) onLike(item);
+  };
+
+  const handleShare = () => {
+    if (onShare) {
+      onShare(item);
+    } else if (navigator.share) {
+      navigator.share({
+        title: item.title,
+        text: item.description,
+        url: window.location.origin + `/component/${item.id}`,
+      }).catch(() => {});
+    }
+  };
+
   return (
-    <article
-      className="bg-card border border-border rounded-xl p-5 flex flex-col gap-3 animate-fade-in"
-      style={{ animationDelay: `${index * 80}ms` }}
+    <motion.article
+      id={`component-card-${item.id}`}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: Math.min(index * 0.08, 0.4) }}
+      className="group w-full rounded-xl overflow-hidden bg-[#181818] border border-[#2B2B2B] shadow-md hover:border-neutral-400/60 hover:shadow-xl transition-all duration-300 flex flex-col p-5 sm:p-6 justify-between"
     >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
-        <ArrowUpRight className="w-5 h-5 text-foreground shrink-0" aria-hidden="true" />
+      <div>
+        {/* Title */}
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h2
+            onClick={handleView}
+            className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-100 group-hover:text-white transition-colors duration-200 leading-snug cursor-pointer"
+          >
+            {item.title}
+          </h2>
+          <ArrowUpRight
+            className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors shrink-0 cursor-pointer"
+            onClick={handleView}
+            aria-hidden="true"
+          />
+        </div>
+
+        {/* Short Description */}
+        <p className="mt-2 text-sm sm:text-base text-neutral-300 leading-relaxed line-clamp-3">
+          {item.description}
+        </p>
       </div>
 
-      <p className="text-sm text-muted-foreground line-clamp-3">{item.description}</p>
-
-      <div className="flex items-center gap-3 pt-2">
-        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => onView?.(item)}>
+      {/* Action Buttons Footer: Single horizontal row with View, Like, and Share */}
+      <footer
+        id={`component-footer-${item.id}`}
+        className="mt-5 pt-4 border-t border-[#2B2B2B] flex flex-row items-center gap-2"
+      >
+        {/* Button 1: "Переглянути" (View) */}
+        <Button
+          id={`component-view-btn-${item.id}`}
+          type="button"
+          onClick={handleView}
+          className="bg-white hover:bg-neutral-200 text-black font-semibold px-4 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm text-xs sm:text-sm"
+        >
           Переглянути
         </Button>
+
+        {/* Button 2: "Like" - strictly icon only */}
         <Button
-          size="sm"
-          variant="ghost"
-          className="gap-1.5 text-muted-foreground hover:text-foreground hover:bg-transparent"
-          onClick={() => onLink?.(item)}
+          id={`component-like-btn-${item.id}`}
+          type="button"
+          variant="secondary"
+          size="icon"
+          onClick={handleLike}
+          aria-label="Вподобати"
+          aria-pressed={liked}
+          className="bg-[#242424] hover:bg-[#303030] text-neutral-200 hover:text-white border border-[#383838] h-10 w-10 shrink-0 rounded-lg transition-colors ml-auto sm:ml-0"
         >
-          <Link2 className="w-4 h-4" aria-hidden="true" />
-          Посилання
+          <Heart
+            className={`w-4 h-4 transition-colors ${
+              liked ? "fill-white text-white" : ""
+            }`}
+            aria-hidden="true"
+          />
         </Button>
-      </div>
-    </article>
+
+        {/* Button 3: "Share" - strictly icon only */}
+        <Button
+          id={`component-share-btn-${item.id}`}
+          type="button"
+          variant="secondary"
+          size="icon"
+          onClick={handleShare}
+          aria-label="Поділитися"
+          className="bg-[#242424] hover:bg-[#303030] text-neutral-200 hover:text-white border border-[#383838] h-10 w-10 shrink-0 rounded-lg transition-colors"
+        >
+          <Share2 className="w-4 h-4" aria-hidden="true" />
+        </Button>
+      </footer>
+    </motion.article>
   );
 };
 

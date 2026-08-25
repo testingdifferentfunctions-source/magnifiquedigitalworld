@@ -23,7 +23,9 @@ export interface ModeEntry {
   likes: number;
   share_count: number;
   published: boolean;
-  sort_order: number;
+  sort_order?: number;
+  canonical_url_uk?: string | null;
+  canonical_url_en?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -3,7 +3,8 @@ import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 
 interface TagInputProps {
-  value: string[];
+  value?: string[];
+  tags?: string[];
   onChange: (tags: string[]) => void;
   placeholder?: string;
   maxTagLength?: number;
@@ -13,46 +14,53 @@ interface TagInputProps {
 
 const TagInput = ({
   value,
+  tags,
   onChange,
   placeholder,
   maxTagLength = 40,
   maxTags,
   maxTagsHelperText,
 }: TagInputProps) => {
+  const currentTags: string[] = Array.isArray(value)
+    ? value
+    : Array.isArray(tags)
+    ? tags
+    : [];
+
   const [draft, setDraft] = useState('');
 
-  const atLimit = typeof maxTags === 'number' && value.length >= maxTags;
+  const atLimit = typeof maxTags === 'number' && currentTags.length >= maxTags;
 
   const addTag = () => {
     if (atLimit) return;
     const t = draft.trim();
     if (!t) return;
     if (t.length > maxTagLength) return;
-    if (value.includes(t)) {
+    if (currentTags.includes(t)) {
       setDraft('');
       return;
     }
-    onChange([...value, t]);
+    onChange([...currentTags, t]);
     setDraft('');
   };
 
   const removeTag = (idx: number) => {
-    onChange(value.filter((_, i) => i !== idx));
+    onChange(currentTags.filter((_, i) => i !== idx));
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       addTag();
-    } else if (e.key === 'Backspace' && !draft && value.length) {
-      removeTag(value.length - 1);
+    } else if (e.key === 'Backspace' && !draft && currentTags.length) {
+      removeTag(currentTags.length - 1);
     }
   };
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {value.map((tag, i) => (
+        {currentTags.map((tag, i) => (
           <span
             key={`${tag}-${i}`}
             className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-[#A67DE8]/15 text-foreground border border-[#A67DE8]"

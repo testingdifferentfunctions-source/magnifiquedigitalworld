@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import SEO from "@/components/SEO";
-import BlockRenderer from "@/components/BlockRenderer";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -91,6 +90,10 @@ const PaletteDetail = () => {
     toggleLike.mutate({ entryId: entry.id, isLiking: next });
   };
 
+  const canonicalUrl = language === "en"
+    ? (entry.canonical_url_en || entry.canonical_url_uk || undefined)
+    : (entry.canonical_url_uk || entry.canonical_url_en || undefined);
+
   return (
     <PageLayout>
       <SEO
@@ -99,6 +102,7 @@ const PaletteDetail = () => {
         path={`/palette/${entry.id}`}
         image={entry.image_url ?? undefined}
         type="article"
+        canonicalUrl={canonicalUrl}
       />
 
       <article className="max-w-5xl mx-auto pb-20">
@@ -107,45 +111,15 @@ const PaletteDetail = () => {
           <Button
             id="palette-back-btn"
             variant="ghost"
-            className="-ml-2 text-neutral-300 hover:text-white inline-flex items-center text-sm font-medium"
+            className="-ml-2 text-neutral-300 hover:text-black inline-flex items-center text-sm font-medium"
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад
           </Button>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleLike}
-              aria-pressed={liked}
-              aria-label="Вподобати"
-              className="bg-[#2E2E2E] hover:bg-[#383838] text-neutral-200 hover:text-[#8ABEB9] border border-[#424242] h-9 px-3 text-xs font-medium"
-            >
-              <Heart
-                className={`w-3.5 h-3.5 mr-1.5 transition-colors ${
-                  liked ? "fill-[#8ABEB9] text-[#8ABEB9]" : ""
-                }`}
-                aria-hidden="true"
-              />
-              {likes}
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => shareEntry(entry.id, loc.title, `/palette/${entry.id}`)}
-              aria-label="Поділитися"
-              className="bg-[#2E2E2E] hover:bg-[#383838] text-neutral-200 hover:text-[#8ABEB9] border border-[#424242] h-9 px-3 text-xs font-medium"
-            >
-              <Share2 className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
-              Поділитися
-            </Button>
-          </div>
         </div>
 
-        {/* Header Section: Title, Meta, & Website Preview */}
+        {/* Header Section: Title, Meta, Actions & Website Preview */}
         <header className="mb-12">
           {/* Tags */}
           {entry.tags && entry.tags.length > 0 && (
@@ -162,11 +136,23 @@ const PaletteDetail = () => {
             </div>
           )}
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+          <div className="mb-4">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-neutral-100 leading-tight">
               {loc.title}
             </h1>
+          </div>
 
+          {loc.description && (
+            <p className="text-base sm:text-lg text-neutral-300 leading-relaxed max-w-3xl">
+              {loc.description}
+            </p>
+          )}
+
+          {/* Action Buttons Row directly below the short description */}
+          <div
+            id="palette-header-actions"
+            className="flex flex-row items-center gap-3 mt-6 mb-8"
+          >
             {entry.external_url && (
               <Button
                 asChild
@@ -178,13 +164,33 @@ const PaletteDetail = () => {
                 </a>
               </Button>
             )}
-          </div>
 
-          {loc.description && (
-            <p className="text-base sm:text-lg text-neutral-300 leading-relaxed max-w-3xl mb-8">
-              {loc.description}
-            </p>
-          )}
+            <Button
+              variant="secondary"
+              onClick={handleLike}
+              aria-pressed={liked}
+              aria-label="Вподобати"
+              className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 px-4 text-xs sm:text-sm font-medium rounded-lg transition-colors"
+            >
+              <Heart
+                className={`w-4 h-4 mr-2 transition-colors ${
+                  liked ? "fill-[#8ABEB9] text-[#8ABEB9]" : ""
+                }`}
+                aria-hidden="true"
+              />
+              {likes}
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => shareEntry(entry.id, loc.title, `/palette/${entry.id}`)}
+              aria-label="Поділитися"
+              className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 px-4 text-xs sm:text-sm font-medium rounded-lg transition-colors"
+            >
+              <Share2 className="w-4 h-4 mr-2" aria-hidden="true" />
+              Поділитися
+            </Button>
+          </div>
 
           {/* Website Preview Image */}
           <figure id="palette-preview-media" className="relative w-full rounded-2xl overflow-hidden bg-[#1E1E1E] border border-[#3E3E3E] shadow-2xl">
@@ -234,8 +240,14 @@ const PaletteDetail = () => {
           {/* List of individual color cards */}
           <div className="space-y-8">
             {swatches.map((swatch, index) => {
-              const snippets = generateColorSnippets(swatch, index);
+              const defaultSnippets = generateColorSnippets(swatch, index);
+              const snippets = {
+                css: swatch.css_snippet || defaultSnippets.css,
+                scss: swatch.scss_snippet || defaultSnippets.scss,
+                tailwind: swatch.tailwind_snippet || defaultSnippets.tailwind,
+              };
               const currentFormat = selectedFormat[swatch.hex] || "css";
+              const badgeLabel = swatch.badge !== undefined && swatch.badge !== "" ? swatch.badge : index + 1;
 
               return (
                 <div
@@ -254,21 +266,21 @@ const PaletteDetail = () => {
                           onClick={() => handleCopy(swatch.hex, "HEX")}
                           title="Клікніть, щоб скопіювати HEX"
                         >
-                          <span className="bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[10px] font-mono">
-                            {index + 1}
+                          <span className="bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">
+                            {badgeLabel}
                           </span>
                         </div>
 
                         {/* Swatch Title & Role */}
                         <div>
                           <span className="inline-block px-2.5 py-0.5 rounded text-xs font-semibold bg-[#222020] text-[#8ABEB9] border border-[#322F2F] mb-1.5">
-                            {swatch.role || `Колір ${index + 1}`}
+                            {swatch.subtitle || swatch.role || `Color ${index + 1}`}
                           </span>
                           <h3 className="text-xl font-bold text-neutral-100 leading-tight">
                             {swatch.name || swatch.hex}
                           </h3>
                           <p className="text-xs text-neutral-400 mt-1">
-                            Клікніть на значення нижче для швидкого копіювання
+                            {swatch.description || "Клікніть на значення нижче для швидкого копіювання"}
                           </p>
                         </div>
                       </div>
@@ -349,10 +361,35 @@ const PaletteDetail = () => {
                             </Button>
                           </div>
                         </div>
+
+                        {/* OKLCH */}
+                        <div className="flex items-center justify-between bg-[#121111] hover:bg-[#151414] px-3.5 py-2.5 rounded-lg border border-[#262424] transition-colors">
+                          <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                            OKLCH
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs font-mono text-neutral-200">
+                              {swatch.oklch}
+                            </code>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-neutral-400 hover:text-white"
+                              onClick={() => handleCopy(swatch.oklch, "OKLCH")}
+                              title="Копіювати OKLCH"
+                            >
+                              {copiedValue === swatch.oklch ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Right Column: 3. Code Snippets (CSS, SCSS, Tailwind CSS) */}
+                    {/* Right Column: 3. Code Snippets (CSS, SCSS, Tailwind CSS, OKLCH) */}
                     <div className="lg:col-span-7 flex flex-col h-full">
                       <div className="bg-[#121111] rounded-xl border border-[#292626] p-4 flex flex-col h-full shadow-inner">
                         <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-[#262424]">
@@ -404,7 +441,9 @@ const PaletteDetail = () => {
                                   : snippets.tailwind;
                               handleCopy(
                                 snippetText,
-                                currentFormat === "tailwind" ? "Tailwind snippet" : `${currentFormat.toUpperCase()} snippet`
+                                currentFormat === "tailwind"
+                                  ? "Tailwind snippet"
+                                  : `${currentFormat.toUpperCase()} snippet`
                               );
                             }}
                             className="absolute top-2.5 right-2.5 h-7 px-2.5 text-[11px] bg-[#1E1C1C] hover:bg-[#2A2727] text-neutral-200 border border-[#353232] shadow-sm gap-1"
@@ -421,14 +460,6 @@ const PaletteDetail = () => {
             })}
           </div>
         </section>
-
-        {/* Render optional blocks if present */}
-        {loc.blocks && loc.blocks.length > 0 && (
-          <section className="mt-12 pt-8 border-t border-[#3A3A3A] prose prose-invert max-w-none">
-            <h2 className="text-xl font-bold text-neutral-100 mb-4">Огляд концепції та дизайну</h2>
-            <BlockRenderer blocks={loc.blocks} />
-          </section>
-        )}
       </article>
     </PageLayout>
   );

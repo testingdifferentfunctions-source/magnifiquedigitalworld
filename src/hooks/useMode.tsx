@@ -7,7 +7,7 @@ export const MODE_LABELS: Record<AppMode, string> = {
   articles: "Статті",
   resources: "Ресурси",
   components: "Компоненти",
-  templates: "Шаблони коду",
+  templates: "Сніпети",
   palettes: "Палітри",
 };
 
@@ -17,7 +17,7 @@ export const MODE_ACCENTS: Record<AppMode, string> = {
   articles: "#A07DFA",
   resources: "#5DA7DB",
   components: "#F1F5F9",
-  templates: "#34D399",
+  templates: "#C562AF",
 };
 
 /**
@@ -72,18 +72,18 @@ const MODE_THEMES: Record<AppMode, ModeTheme> = {
     "--ring": "0 0% 100%",
   },
   templates: {
-    "--background": "220 18% 8%",
-    "--card": "220 16% 12%",
-    "--popover": "220 16% 12%",
-    "--muted": "220 12% 17%",
-    "--muted-foreground": "220 10% 62%",
-    "--border": "220 12% 22%",
-    "--input": "220 12% 22%",
-    "--primary": "160 55% 55%",
-    "--primary-foreground": "220 18% 8%",
-    "--accent": "160 55% 55%",
-    "--accent-foreground": "220 18% 8%",
-    "--ring": "160 55% 55%",
+    "--background": "300 12% 6%", // deep dark canvas with plum undertone
+    "--card": "300 10% 9%", // #1a1419
+    "--popover": "300 10% 9%",
+    "--muted": "300 8% 14%",
+    "--muted-foreground": "300 6% 65%",
+    "--border": "300 8% 17%", // #2e232c
+    "--input": "300 8% 17%",
+    "--primary": "313 47% 58%", // #C562AF
+    "--primary-foreground": "0 0% 100%",
+    "--accent": "313 47% 58%",
+    "--accent-foreground": "0 0% 100%",
+    "--ring": "313 47% 58%",
   },
   palettes: {
     "--background": "0 4% 6%", // #0F0E0E base layout

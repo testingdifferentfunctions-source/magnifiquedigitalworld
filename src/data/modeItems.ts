@@ -617,6 +617,25 @@ if __name__ == "__main__":
         type: "paragraph",
         text: "Приклад використання aiohttp разом із asyncio.Semaphore для запобігання перевантаженню цільового сервера.",
       },
+      {
+        id: "ar-c1",
+        type: "code",
+        language: "python",
+        code: `import asyncio
+import aiohttp
+
+async def fetch_url(session: aiohttp.ClientSession, url: string, sem: asyncio.Semaphore):
+    async with sem:
+        async with session.get(url) as response:
+            return await response.json()
+
+async def main(urls: list[str]):
+    sem = asyncio.Semaphore(10)
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_url(session, u, sem) for u in urls]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return results`,
+      },
     ],
     blocks_en: [],
   },
@@ -629,8 +648,8 @@ if __name__ == "__main__":
     description_uk: "Читання CSV, фільтрація, агрегація даних та генерація підсумкового звіту з використанням стандартного модуля csv.",
     description_en: "Reading CSV files, filtering, aggregating metrics, and exporting formatted summary reports.",
     tags: ["csv", "data", "python", "automation"],
-    image_url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=600&fit=crop",
-    image_source_url: "https://unsplash.com",
+    image_url: null,
+    image_source_url: null,
     external_url: null,
     likes: 52,
     share_count: 18,
@@ -649,6 +668,65 @@ if __name__ == "__main__":
         id: "csv-p1",
         type: "paragraph",
         text: "Автоматизуйте обробку табличних даних за лічені рядки коду.",
+      },
+      {
+        id: "csv-c1",
+        type: "code",
+        language: "python",
+        code: `import csv
+from collections import defaultdict
+
+def generate_report(input_file: str, output_file: str):
+    totals = defaultdict(float)
+    with open(input_file, mode="r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            totals[row["category"]] += float(row.get("amount", 0))
+
+    with open(output_file, mode="w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Категорія", "Сума"])
+        for cat, total in sorted(totals.items(), key=lambda x: x[1], reverse=True):
+            writer.writerow([cat, f"{total:.2f}"])`,
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "use-debounce-hook",
+    type: "template",
+    slug: "use-debounce-react-hook",
+    title_uk: "Кастомний хук useDebounce (React + TypeScript)",
+    title_en: "Custom useDebounce React Hook",
+    description_uk: "Оптимізований хук для відкладеного оновлення пошукового запиту або значень фільтрів без зайвих ререндерів.",
+    description_en: "Clean TypeScript React hook for debouncing fast state updates and expensive API queries.",
+    tags: ["react", "typescript", "hooks", "frontend"],
+    image_url: null,
+    image_source_url: null,
+    external_url: null,
+    likes: 128,
+    share_count: 53,
+    published: true,
+    sort_order: 4,
+    created_at: "2026-02-12T10:00:00Z",
+    updated_at: "2026-02-12T10:00:00Z",
+    blocks_uk: [
+      {
+        id: "ud-c1",
+        type: "code",
+        language: "typescript",
+        code: `import { useState, useEffect } from "react";
+
+export function useDebounce<T>(value: T, delay = 300): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+}`,
       },
     ],
     blocks_en: [],

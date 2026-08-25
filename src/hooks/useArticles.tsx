@@ -21,6 +21,8 @@ export interface Article {
   published: boolean;
   tags: string[];
   original_source_url: string | null;
+  canonical_url_uk?: string | null;
+  canonical_url_en?: string | null;
   created_at: string;
   updated_at: string;
 }

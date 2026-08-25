@@ -43,9 +43,8 @@ const NewsDetail = () => {
       <PageLayout>
         <div className="py-16 text-center space-y-4">
           <h1 className="text-2xl font-bold">Новину не знайдено</h1>
-          <Button variant="outline" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад до новин
+          <Button variant="outline" className="hover:text-black" onClick={() => navigate("/")}>
+            Назад
           </Button>
         </div>
       </PageLayout>
@@ -74,6 +73,10 @@ const NewsDetail = () => {
     }
   };
 
+  const canonicalUrl = language === "en"
+    ? (entry.canonical_url_en || entry.canonical_url_uk || undefined)
+    : (entry.canonical_url_uk || entry.canonical_url_en || undefined);
+
   return (
     <PageLayout>
       <SEO
@@ -82,18 +85,18 @@ const NewsDetail = () => {
         path={`/news/${entry.id}`}
         image={entry.image_url ?? undefined}
         type="article"
+        canonicalUrl={canonicalUrl}
       />
 
       <article className="max-w-4xl mx-auto pb-16">
-        {/* 1. TOP BAR: A simple "<- Назад" (Back) button */}
+        {/* 1. TOP BAR: A simple "Назад" (Back) button */}
         <div id="news-detail-top-bar" className="mb-4">
           <Button
             id="news-back-button"
             variant="ghost"
-            className="-ml-2 text-muted-foreground hover:text-foreground inline-flex items-center text-sm font-medium"
+            className="-ml-2 text-muted-foreground hover:text-black inline-flex items-center text-sm font-medium"
             onClick={() => navigate("/")}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
             Назад
           </Button>
         </div>

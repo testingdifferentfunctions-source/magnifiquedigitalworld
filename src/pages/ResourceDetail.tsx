@@ -40,9 +40,9 @@ const ResourceDetail = () => {
       <PageLayout>
         <div className="py-16 text-center space-y-4">
           <h1 className="text-2xl font-bold">Ресурс не знайдено</h1>
-          <Button variant="outline" onClick={() => navigate("/")}>
+          <Button variant="outline" className="hover:text-black" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад до директорії
+            Назад
           </Button>
         </div>
       </PageLayout>
@@ -60,6 +60,10 @@ const ResourceDetail = () => {
     toggleLike.mutate({ entryId: entry.id, isLiking: next });
   };
 
+  const canonicalUrl = language === "en"
+    ? (entry.canonical_url_en || entry.canonical_url_uk || undefined)
+    : (entry.canonical_url_uk || entry.canonical_url_en || undefined);
+
   return (
     <PageLayout>
       <SEO
@@ -68,6 +72,7 @@ const ResourceDetail = () => {
         path={`/resource/${entry.id}`}
         image={entry.image_url ?? undefined}
         type="article"
+        canonicalUrl={canonicalUrl}
       />
 
       <article className="max-w-4xl mx-auto pb-12">
@@ -75,11 +80,11 @@ const ResourceDetail = () => {
         <div className="mb-6">
           <Button
             variant="ghost"
-            className="-ml-2 text-muted-foreground hover:text-foreground inline-flex items-center"
+            className="-ml-2 text-muted-foreground hover:text-black inline-flex items-center"
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад до директорії
+            Назад
           </Button>
         </div>
 
@@ -114,11 +119,10 @@ const ResourceDetail = () => {
           {entry.external_url && (
             <Button
               asChild
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm transition-colors"
+              className="bg-[#5DA7DB] hover:bg-[#4b96cb] text-black font-semibold shadow-sm transition-colors"
             >
               <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
                 Спробувати
-                <ExternalLink className="w-4 h-4 ml-2" aria-hidden="true" />
               </a>
             </Button>
           )}

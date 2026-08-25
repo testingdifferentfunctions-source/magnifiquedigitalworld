@@ -11,7 +11,6 @@ import RequireAdmin from "@/components/RequireAdmin";
 import Index from "./pages/Index";
 import Popular from "./pages/Popular";
 import Favorites from "./pages/Favorites";
-import Sections from "./pages/Sections";
 import Section from "./pages/Section";
 import About from "./pages/About";
 import Article from "./pages/Article";
@@ -52,7 +51,6 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/popular" element={<Popular />} />
                 <Route path="/favorites" element={<Favorites />} />
-                <Route path="/sections" element={<Sections />} />
                 <Route path="/section/:categoryId" element={<Section />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/news/:id" element={<NewsDetail />} />

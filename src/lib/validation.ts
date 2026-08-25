@@ -43,30 +43,49 @@ export const articleSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(1, { message: 'Опис обов\'язковий' })
-    .max(500, { message: 'Опис занадто довгий (макс. 500 символів)' }),
+    .max(1000, { message: 'Опис занадто довгий (макс. 1000 символів)' })
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   content: z
     .string()
-    .max(50000, { message: 'Контент занадто довгий' }),
+    .max(100000, { message: 'Контент занадто довгий' })
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   image_url: z
     .string()
-    .url({ message: 'Невірний URL зображення' })
+    .trim()
     .optional()
+    .nullable()
     .or(z.literal('')),
   category_id: z
     .string()
-    .uuid({ message: 'Невірний ID категорії' })
     .nullable()
-    .optional(),
-  published: z.boolean(),
+    .optional()
+    .or(z.literal('')),
+  published: z.boolean().default(false),
   tags: z
     .array(z.string().trim().min(1).max(40))
-    .max(5, { message: 'Максимум 5 тегів' })
+    .max(15, { message: 'Максимум 15 тегів' })
     .optional(),
+  canonical_url_uk: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  canonical_url_en: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   original_source_url: z
     .string()
-    .url({ message: 'Невірний URL канонічного джерела' })
+    .trim()
     .optional()
+    .nullable()
     .or(z.literal('')),
 });
 
@@ -77,11 +96,58 @@ export const categorySchema = z.object({
     .trim()
     .min(1, { message: 'Назва обов\'язкова' })
     .max(100, { message: 'Назва занадто довга (макс. 100 символів)' }),
+  name_en: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  mode: z
+    .enum(['articles', 'news', 'resources', 'components', 'templates', 'palettes', 'resource', 'component', 'template', 'palette'])
+    .default('articles'),
+  slug: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   image_url: z
     .string()
-    .url({ message: 'Невірний URL зображення' })
+    .trim()
     .optional()
+    .nullable()
     .or(z.literal('')),
+  sort_order: z.number().int().default(0).optional(),
+});
+
+export const subcategorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { message: 'Назва підкатегорії обов\'язкова' })
+    .max(100, { message: 'Назва занадто довга' }),
+  name_en: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  category_id: z.string().min(1, { message: 'Категорія обов\'язкова' }),
+  mode: z
+    .string()
+    .default('articles')
+    .optional(),
+  slug: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  sort_order: z.number().int().default(0).optional(),
 });
 
 // URL sanitization

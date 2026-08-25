@@ -56,14 +56,18 @@ const ComponentDetail = () => {
       <PageLayout>
         <div className="py-16 text-center space-y-4">
           <h1 className="text-2xl font-bold">Матеріал не знайдено</h1>
-          <Button variant="outline" onClick={() => navigate("/")}>
+          <Button variant="outline" className="hover:text-black" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Усі бібліотеки
+            Назад
           </Button>
         </div>
       </PageLayout>
     );
   }
+
+  const canonicalUrl = language === "en"
+    ? (entry.canonical_url_en || entry.canonical_url_uk || undefined)
+    : (entry.canonical_url_uk || entry.canonical_url_en || undefined);
 
   return (
     <PageLayout>
@@ -73,6 +77,7 @@ const ComponentDetail = () => {
         path={`/component/${entry.id}`}
         image={entry.image_url ?? undefined}
         type="article"
+        canonicalUrl={canonicalUrl}
       />
 
       <div className="max-w-6xl mx-auto pb-12">
@@ -80,11 +85,11 @@ const ComponentDetail = () => {
         <div className="flex items-center justify-between gap-4 mb-8 pb-4 border-b border-border">
           <Button
             variant="ghost"
-            className="-ml-2 text-muted-foreground hover:text-foreground inline-flex items-center"
+            className="-ml-2 text-muted-foreground hover:text-black inline-flex items-center"
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Усі бібліотеки
+            Назад
           </Button>
 
           <div

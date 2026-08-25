@@ -186,3 +186,57 @@
 .text-purple-accent {
   color: #a855f7 !important; /* Tailwind purple-500 */
 }
+
+/* ==========================================================================
+   Глобальні стилі скролбарів (Global Dark Thin Scrollbars)
+   ========================================================================== */
+
+/* Webkit-based browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+
+/* Firefox standard scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #404040 transparent;
+}
+
+/* Кастомний тонкий скролбар для прев'ю коду у сніпетах */
+.snippet-code-scrollbar::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+
+.snippet-code-scrollbar::-webkit-scrollbar-track {
+  background: #181417;
+  border-radius: 4px;
+}
+
+.snippet-code-scrollbar::-webkit-scrollbar-thumb {
+  background: #382835;
+  border-radius: 4px;
+}
+
+.snippet-code-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #C562AF;
+}
+
+.snippet-code-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #382835 #181417;
+}

@@ -136,6 +136,10 @@ const Article = () => {
 
   const seoDescription = (displayDescription || '').slice(0, 155);
 
+  const canonicalUrl = language === 'en'
+    ? (article.canonical_url_en || article.canonical_url_uk || article.original_source_url)
+    : (article.canonical_url_uk || article.canonical_url_en || article.original_source_url);
+
   return (
     <PageLayout>
       <SEO
@@ -144,7 +148,7 @@ const Article = () => {
         path={`/article/${article.id}`}
         image={article.image_url}
         type="article"
-        canonicalUrl={article.original_source_url}
+        canonicalUrl={canonicalUrl}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Article",

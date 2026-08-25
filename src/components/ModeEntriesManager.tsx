@@ -24,7 +24,7 @@ const TYPES: { type: ModeEntryType; label: string }[] = [
   { type: "palette", label: "Палітри" },
   { type: "resource", label: "Ресурси" },
   { type: "component", label: "Компоненти" },
-  { type: "template", label: "Шаблони коду" },
+  { type: "template", label: "Сніпети" },
 ];
 
 const ModeEntriesManager = () => {

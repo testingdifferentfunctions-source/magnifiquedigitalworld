@@ -11,8 +11,10 @@ import {
   useDeleteModeEntry,
   type ModeEntryType,
 } from "@/hooks/useModeEntries";
+import { useCategories } from "@/hooks/useCategories";
 import PageLayout from "@/components/PageLayout";
 import BlockEditor from "@/components/BlockEditor";
+import PaletteColorEditor from "@/components/PaletteColorEditor";
 import TagInput from "@/components/TagInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,32 +42,33 @@ const TYPE_OPTIONS: { value: ModeEntryType; label: string }[] = [
   { value: "palette", label: "Палітри (Palettes)" },
   { value: "resource", label: "Ресурси (Resources)" },
   { value: "component", label: "Компоненти (Components)" },
-  { value: "template", label: "Шаблони коду (Code Templates)" },
+  { value: "template", label: "Сніпети (Snippets)" },
 ];
 
 const VALID_TYPES: ModeEntryType[] = ["news", "palette", "resource", "component", "template"];
 
 const modeEntrySchema = z.object({
   type: z.enum(["news", "palette", "resource", "component", "template"]),
-  slug: z.string().trim().optional().or(z.literal("")),
+  slug: z.string().trim().optional().nullable().or(z.literal("")),
   title_uk: z
     .string()
     .trim()
     .min(1, { message: "Заголовок (UK) обов'язковий" })
     .max(200, { message: "Заголовок занадто довгий" }),
-  title_en: z.string().trim().max(200).optional().or(z.literal("")),
+  title_en: z.string().trim().max(200).optional().nullable().or(z.literal("")),
   description_uk: z
     .string()
     .trim()
     .min(1, { message: "Опис (UK) обов'язковий" })
     .max(1000, { message: "Опис занадто довгий" }),
-  description_en: z.string().trim().max(1000).optional().or(z.literal("")),
-  image_url: z.string().trim().optional().or(z.literal("")),
-  image_source_url: z.string().trim().optional().or(z.literal("")),
-  external_url: z.string().trim().optional().or(z.literal("")),
+  description_en: z.string().trim().max(1000).optional().nullable().or(z.literal("")),
+  image_url: z.string().trim().optional().nullable().or(z.literal("")),
+  image_source_url: z.string().trim().optional().nullable().or(z.literal("")),
+  external_url: z.string().trim().optional().nullable().or(z.literal("")),
   tags: z.array(z.string()).default([]),
   published: z.boolean().default(true),
-  sort_order: z.number().default(0),
+  canonical_url_uk: z.string().trim().optional().nullable().or(z.literal("")),
+  canonical_url_en: z.string().trim().optional().nullable().or(z.literal("")),
   blocks_uk: z.array(z.any()).default([]),
   blocks_en: z.array(z.any()).default([]),
 });
@@ -88,6 +91,7 @@ const ModeEntryEditor = () => {
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [activeTab, setActiveTab] = useState<"uk" | "en">("uk");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const isEditing = !!id;
 
   const {
@@ -112,11 +116,19 @@ const ModeEntryEditor = () => {
       external_url: "",
       tags: [],
       published: true,
-      sort_order: 0,
+      canonical_url_uk: "",
+      canonical_url_en: "",
       blocks_uk: [],
       blocks_en: [],
     },
   });
+
+  const watchedType = watch("type");
+  const watchedTags = watch("tags") || [];
+  const { data: modeCategories = [] } = useCategories(watchedType);
+
+  const activeCategory = modeCategories.find((c) => c.id === selectedCategoryId) || modeCategories[0];
+  const categorySubcategories = activeCategory?.subcategories || [];
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -138,7 +150,8 @@ const ModeEntryEditor = () => {
         external_url: existingEntry.external_url ?? "",
         tags: existingEntry.tags ?? [],
         published: existingEntry.published,
-        sort_order: existingEntry.sort_order ?? 0,
+        canonical_url_uk: existingEntry.canonical_url_uk ?? "",
+        canonical_url_en: existingEntry.canonical_url_en ?? "",
         blocks_uk: existingEntry.blocks_uk ?? [],
         blocks_en: existingEntry.blocks_en ?? [],
       });
@@ -148,7 +161,7 @@ const ModeEntryEditor = () => {
   }, [existingEntry, rawType, reset, setValue]);
 
   const watchedImageUrl = watch("image_url");
-  const watchedType = watch("type");
+  const isCodeMode = watchedType === "component" || watchedType === "template";
 
   const handleImageUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -177,8 +190,18 @@ const ModeEntryEditor = () => {
     }
   };
 
+  const onFormError = (formErrors: any) => {
+    console.error("Form validation errors:", formErrors);
+    const firstKey = Object.keys(formErrors)[0];
+    const firstMsg =
+      formErrors[firstKey]?.message ||
+      "Виправте помилки у формі (українська назва та опис обов'язкові)";
+    toast.error(firstMsg);
+  };
+
   const onSubmit = async (values: FormValues) => {
     try {
+      const isCodeOnly = values.type === "component" || values.type === "template";
       const payload = {
         type: values.type,
         slug: values.slug?.trim() || null,
@@ -186,12 +209,13 @@ const ModeEntryEditor = () => {
         title_en: values.title_en?.trim() || null,
         description_uk: values.description_uk.trim(),
         description_en: values.description_en?.trim() || null,
-        image_url: sanitizeUrl(values.image_url || "") || null,
-        image_source_url: sanitizeUrl(values.image_source_url || "") || null,
+        image_url: isCodeOnly ? null : (sanitizeUrl(values.image_url || "") || null),
+        image_source_url: isCodeOnly ? null : (sanitizeUrl(values.image_source_url || "") || null),
         external_url: sanitizeUrl(values.external_url || "") || null,
         tags: values.tags || [],
         published: values.published,
-        sort_order: Number(values.sort_order) || 0,
+        canonical_url_uk: sanitizeUrl(values.canonical_url_uk || "") || null,
+        canonical_url_en: sanitizeUrl(values.canonical_url_en || "") || null,
         blocks_uk: (values.blocks_uk as ContentBlock[]) || [],
         blocks_en: (values.blocks_en as ContentBlock[]) || [],
       };
@@ -249,7 +273,7 @@ const ModeEntryEditor = () => {
           )}
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit, onFormError)} className="space-y-6">
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle>
@@ -367,81 +391,140 @@ const ModeEntryEditor = () => {
                 </div>
               </div>
 
-              {/* URLs and Meta */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="external_url">
-                    Зовнішнє посилання / Офіційний сайт
-                  </Label>
-                  <Input
-                    id="external_url"
-                    placeholder="https://..."
-                    {...register("external_url")}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sort_order">Порядок сортування (sort_order)</Label>
-                  <Input
-                    id="sort_order"
-                    type="number"
-                    {...register("sort_order", { valueAsNumber: true })}
-                  />
-                </div>
+              {/* External URL */}
+              <div className="space-y-2">
+                <Label htmlFor="external_url">
+                  Зовнішнє посилання / Офіційний сайт
+                </Label>
+                <Input
+                  id="external_url"
+                  placeholder="https://..."
+                  {...register("external_url")}
+                />
               </div>
 
-              {/* Cover Image & Source */}
-              <div className="space-y-3">
-                <Label htmlFor="image_url">Обкладинка / Зображення</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="image_url"
-                    placeholder="https://images.unsplash.com/..."
-                    {...register("image_url")}
-                  />
-                  <label className="cursor-pointer">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isUploadingImage}
-                      asChild
-                    >
-                      <span>
-                        <Upload className="w-4 h-4 mr-2" />
-                        {isUploadingImage ? "Завантаження..." : "Завантажити"}
-                      </span>
-                    </Button>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file);
-                      }}
+              {/* Cover Image & Source (Hidden for Components and Snippets) */}
+              {!isCodeMode && (
+                <div className="space-y-3">
+                  <Label htmlFor="image_url">Обкладинка / Зображення</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="image_url"
+                      placeholder="https://images.unsplash.com/..."
+                      {...register("image_url")}
                     />
-                  </label>
-                </div>
+                    <label className="cursor-pointer">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isUploadingImage}
+                        asChild
+                      >
+                        <span>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {isUploadingImage ? "Завантаження..." : "Завантажити"}
+                        </span>
+                      </Button>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file);
+                        }}
+                      />
+                    </label>
+                  </div>
 
-                {watchedImageUrl && (
-                  <div className="mt-2 aspect-video max-w-sm rounded-lg overflow-hidden border border-border bg-muted">
-                    <img
-                      src={watchedImageUrl}
-                      alt="Прев'ю обкладинки"
-                      className="w-full h-full object-cover"
+                  {watchedImageUrl && (
+                    <div className="mt-2 aspect-video max-w-sm rounded-lg overflow-hidden border border-border bg-muted">
+                      <img
+                        src={watchedImageUrl}
+                        alt="Прев'ю обкладинки"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="image_source_url">Посилання на джерело зображення</Label>
+                    <Input
+                      id="image_source_url"
+                      placeholder="https://unsplash.com/..."
+                      {...register("image_source_url")}
                     />
                   </div>
-                )}
-
-                <div className="space-y-2 pt-2">
-                  <Label htmlFor="image_source_url">Посилання на джерело зображення</Label>
-                  <Input
-                    id="image_source_url"
-                    placeholder="https://unsplash.com/..."
-                    {...register("image_source_url")}
-                  />
                 </div>
-              </div>
+              )}
+
+              {/* Category & Subcategories Selector */}
+              {modeCategories.length > 0 && (
+                <div className="space-y-3 p-4 rounded-lg bg-muted/20 border border-border">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="mode-category-select">Головна категорія розділу</Label>
+                    <Select
+                      value={selectedCategoryId || (activeCategory?.id ?? "")}
+                      onValueChange={(val) => setSelectedCategoryId(val)}
+                    >
+                      <SelectTrigger id="mode-category-select" className="bg-background border-border">
+                        <SelectValue placeholder="Оберіть категорію" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {modeCategories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name} {cat.name_en ? `(${cat.name_en})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {categorySubcategories.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <Label className="text-xs font-semibold text-muted-foreground">
+                        Підкатегорії ({activeCategory?.name}): клікніть, щоб додати або зняти з тегів
+                      </Label>
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {categorySubcategories.map((sub) => {
+                          const isTagSelected = watchedTags.includes(sub.name);
+                          return (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={() => {
+                                if (isTagSelected) {
+                                  setValue(
+                                    "tags",
+                                    watchedTags.filter((t) => t !== sub.name),
+                                    { shouldDirty: true }
+                                  );
+                                } else {
+                                  if (watchedTags.length < 8) {
+                                    setValue("tags", [...watchedTags, sub.name], {
+                                      shouldDirty: true,
+                                    });
+                                  } else {
+                                    toast.info("Максимум 8 тегів");
+                                  }
+                                }
+                              }}
+                              className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                                isTagSelected
+                                  ? "bg-primary text-primary-foreground border-primary font-semibold"
+                                  : "bg-background hover:bg-muted text-foreground border-border"
+                              }`}
+                            >
+                              {isTagSelected ? "✓ " : "+ "}
+                              {sub.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Tags */}
               <div className="space-y-2">
@@ -451,7 +534,8 @@ const ModeEntryEditor = () => {
                   name="tags"
                   render={({ field }) => (
                     <TagInput
-                      tags={field.value || []}
+                      value={field.value ?? []}
+                      tags={field.value ?? []}
                       onChange={field.onChange}
                       placeholder="Введіть тег та натисніть Enter..."
                       maxTags={8}
@@ -462,60 +546,143 @@ const ModeEntryEditor = () => {
             </CardContent>
           </Card>
 
-          {/* Block Editor Section */}
+          {/* Content Editor Section (Palette Color Detail Blocks OR General Block Editor) */}
+          {watchedType === "palette" ? (
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle>Блоки кольорів палітри (Color Detail Blocks)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(v) => setActiveTab(v as "uk" | "en")}
+                >
+                  <TabsList className="mb-4 grid w-full grid-cols-2">
+                    <TabsTrigger value="uk">Українська версія (UK)</TabsTrigger>
+                    <TabsTrigger value="en">English version (EN)</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="uk" className="space-y-4">
+                    <Controller
+                      control={control}
+                      name="blocks_uk"
+                      render={({ field }) => (
+                        <PaletteColorEditor
+                          blocks={field.value || []}
+                          onChange={(newBlocks) => field.onChange(newBlocks)}
+                          label="Блоки кольорів (UA)"
+                        />
+                      )}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="en" className="space-y-4">
+                    <Controller
+                      control={control}
+                      name="blocks_en"
+                      render={({ field }) => (
+                        <PaletteColorEditor
+                          blocks={field.value || []}
+                          onChange={(newBlocks) => field.onChange(newBlocks)}
+                          label="Color Detail Blocks (EN)"
+                        />
+                      )}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle>Контент сторінки (Блочний редактор)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(v) => setActiveTab(v as "uk" | "en")}
+                >
+                  <TabsList className="mb-4 grid w-full grid-cols-2">
+                    <TabsTrigger value="uk">Українська версія (UK)</TabsTrigger>
+                    <TabsTrigger value="en">English version (EN)</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="uk" className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Додавайте заголовки, абзаци, списки або фрагменти коду для
+                      детальної сторінки матеріалу.
+                    </p>
+                    <Controller
+                      control={control}
+                      name="blocks_uk"
+                      render={({ field }) => (
+                        <BlockEditor
+                          value={field.value || []}
+                          onChange={(blocks) =>
+                            field.onChange(blocks)
+                          }
+                          label="Блоки українського контенту"
+                        />
+                      )}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="en" className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Optional: Structured content blocks for English localization.
+                    </p>
+                    <Controller
+                      control={control}
+                      name="blocks_en"
+                      render={({ field }) => (
+                        <BlockEditor
+                          value={field.value || []}
+                          onChange={(blocks) =>
+                            field.onChange(blocks)
+                          }
+                          label="English Content Blocks"
+                        />
+                      )}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* SEO Settings Section */}
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle>Контент сторінки (Блочний редактор)</CardTitle>
+              <CardTitle className="text-base font-semibold">SEO Налаштування / SEO Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Tabs
-                value={activeTab}
-                onValueChange={(v) => setActiveTab(v as "uk" | "en")}
-              >
-                <TabsList className="mb-4">
-                  <TabsTrigger value="uk">Українська версія (UK)</TabsTrigger>
-                  <TabsTrigger value="en">English version (EN)</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="uk" className="space-y-4">
-                  <p className="text-xs text-muted-foreground">
-                    Додавайте заголовки, абзаци, списки або фрагменти коду для
-                    детальної сторінки матеріалу.
-                  </p>
-                  <Controller
-                    control={control}
-                    name="blocks_uk"
-                    render={({ field }) => (
-                      <BlockEditor
-                        value={field.value || []}
-                        onChange={(blocks) =>
-                          field.onChange(blocks)
-                        }
-                        label="Блоки українського контенту"
-                      />
-                    )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="canonical_url_uk">Canonical URL (UA)</Label>
+                  <Input
+                    id="canonical_url_uk"
+                    type="url"
+                    placeholder="https://example.com/ua/..."
+                    {...register("canonical_url_uk")}
                   />
-                </TabsContent>
-
-                <TabsContent value="en" className="space-y-4">
                   <p className="text-xs text-muted-foreground">
-                    Optional: Structured content blocks for English localization.
+                    Канонічне посилання для української версії матеріалу
                   </p>
-                  <Controller
-                    control={control}
-                    name="blocks_en"
-                    render={({ field }) => (
-                      <BlockEditor
-                        value={field.value || []}
-                        onChange={(blocks) =>
-                          field.onChange(blocks)
-                        }
-                        label="English Content Blocks"
-                      />
-                    )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="canonical_url_en">Canonical URL (EN)</Label>
+                  <Input
+                    id="canonical_url_en"
+                    type="url"
+                    placeholder="https://example.com/en/..."
+                    {...register("canonical_url_en")}
                   />
-                </TabsContent>
-              </Tabs>
+                  <p className="text-xs text-muted-foreground">
+                    Canonical link for the English version of the content
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

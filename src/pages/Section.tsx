@@ -45,7 +45,9 @@ const Section = () => {
   );
 
   const categoryName = category
-    ? language === "en" && categoryTranslations[category.id]
+    ? language === "en" && category.name_en
+      ? category.name_en
+      : language === "en" && categoryTranslations[category.id]
       ? categoryTranslations[category.id]
       : category.name
     : "";

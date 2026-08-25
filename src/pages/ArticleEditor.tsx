@@ -24,10 +24,14 @@ const ArticleEditor = () => {
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading } = useAuth();
   const { data: existingArticle, isLoading: articleLoading } = useArticle(id || '');
-  const { data: categories = [] } = useCategories();
+  const { data: categories = [] } = useCategories('articles');
   const createArticle = useCreateArticle();
   const updateArticle = useUpdateArticle();
   const deleteArticle = useDeleteArticle();
+
+  // Selected Category subcategories
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const availableSubcategories = selectedCategory?.subcategories || [];
 
   // Ukrainian (base) fields
   const [titleUk, setTitleUk] = useState('');
@@ -42,6 +46,8 @@ const ArticleEditor = () => {
   const [categoryId, setCategoryId] = useState<string>('');
   const [published, setPublished] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
+  const [canonicalUrlUk, setCanonicalUrlUk] = useState('');
+  const [canonicalUrlEn, setCanonicalUrlEn] = useState('');
   const [originalSourceUrl, setOriginalSourceUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,6 +72,8 @@ const ArticleEditor = () => {
       setCategoryId(existingArticle.category_id || '');
       setPublished(existingArticle.published);
       setTags(existingArticle.tags || []);
+      setCanonicalUrlUk(existingArticle.canonical_url_uk ?? existingArticle.original_source_url ?? '');
+      setCanonicalUrlEn(existingArticle.canonical_url_en ?? '');
       setOriginalSourceUrl(existingArticle.original_source_url || '');
     }
   }, [existingArticle]);
@@ -82,8 +90,10 @@ const ArticleEditor = () => {
 
   if (!isAdmin) return null;
 
-  const validateForm = (): boolean => {
+  const validateForm = (): { isValid: boolean; firstError?: string } => {
     const sanitizedImageUrl = sanitizeUrl(imageUrl);
+    const sanitizedCanonicalUk = sanitizeUrl(canonicalUrlUk);
+    const sanitizedCanonicalEn = sanitizeUrl(canonicalUrlEn);
 
     // Ukrainian is required (base language)
     const result = articleSchema.safeParse({
@@ -93,31 +103,39 @@ const ArticleEditor = () => {
       image_url: sanitizedImageUrl || undefined,
       category_id: categoryId || null,
       published,
+      canonical_url_uk: sanitizedCanonicalUk || undefined,
+      canonical_url_en: sanitizedCanonicalEn || undefined,
+      original_source_url: sanitizedCanonicalUk || sanitizedCanonicalEn || undefined,
     });
 
     if (!result.success) {
       const newErrors: Record<string, string> = {};
+      let firstMsg = '';
       result.error.errors.forEach((err) => {
         const field = err.path[0] as string;
         newErrors[field] = err.message;
+        if (!firstMsg) firstMsg = err.message;
       });
       setErrors(newErrors);
-      return false;
+      return { isValid: false, firstError: firstMsg };
     }
 
     setErrors({});
-    return true;
+    return { isValid: true };
   };
 
   const handleSave = async () => {
-    if (!validateForm()) {
-      toast.error('Виправте помилки у формі (українська версія обов’язкова)');
+    const validation = validateForm();
+    if (!validation.isValid) {
+      toast.error(validation.firstError || 'Виправте помилки у формі (заголовок статті є обов’язковим)');
       return;
     }
 
     setSaving(true);
     try {
       const sanitizedImageUrl = sanitizeUrl(imageUrl);
+      const sanitizedCanonicalUk = sanitizeUrl(canonicalUrlUk);
+      const sanitizedCanonicalEn = sanitizeUrl(canonicalUrlEn);
 
       const articleData = {
         // Legacy columns kept in sync with Ukrainian (base) content
@@ -135,7 +153,9 @@ const ArticleEditor = () => {
         category_id: categoryId || null,
         published,
         tags,
-        original_source_url: originalSourceUrl.trim() || null,
+        canonical_url_uk: sanitizedCanonicalUk || null,
+        canonical_url_en: sanitizedCanonicalEn || null,
+        original_source_url: sanitizedCanonicalUk || sanitizedCanonicalEn || originalSourceUrl.trim() || null,
         reads: existingArticle?.reads || 0,
         likes: existingArticle?.likes || 0,
         impressions: existingArticle?.impressions || 0,
@@ -300,7 +320,7 @@ const ArticleEditor = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Розділ</Label>
+              <Label htmlFor="category">Розділ (Головна категорія)</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
                 <SelectTrigger className="bg-background border-border">
                   <SelectValue placeholder="Оберіть розділ" />
@@ -308,12 +328,51 @@ const ArticleEditor = () => {
                 <SelectContent>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
+                      {cat.name} {cat.name_en ? `(${cat.name_en})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Quick subcategories badges */}
+            {availableSubcategories.length > 0 && (
+              <div className="space-y-1.5 p-3 rounded-lg bg-muted/20 border border-border">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Швидкі підкатегорії розділу (клікніть, щоб додати у теги):
+                </Label>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {availableSubcategories.map((sub) => {
+                    const isSelected = tags.includes(sub.name);
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setTags(tags.filter((t) => t !== sub.name));
+                          } else {
+                            if (tags.length < 5) {
+                              setTags([...tags, sub.name]);
+                            } else {
+                              toast.info('Максимум 5 тегів');
+                            }
+                          }
+                        }}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                          isSelected
+                            ? 'bg-[#A07DFA] text-white border-[#A07DFA] font-semibold'
+                            : 'bg-background hover:bg-muted text-foreground border-border'
+                        }`}
+                      >
+                        {isSelected ? '✓ ' : '+ '}
+                        {sub.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Теги (підтеми)</Label>
@@ -326,23 +385,50 @@ const ArticleEditor = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="original-source-url">Original Source URL (Canonical)</Label>
-              <Input
-                id="original-source-url"
-                type="url"
-                value={originalSourceUrl}
-                onChange={(e) => {
-                  setOriginalSourceUrl(e.target.value);
-                  if (errors.original_source_url) setErrors({ ...errors, original_source_url: '' });
-                }}
-                placeholder="https://example.com/original-article"
-                className={`bg-background border-border ${errors.original_source_url ? 'border-destructive' : ''}`}
-              />
-              {errors.original_source_url && <p className="text-sm text-destructive">{errors.original_source_url}</p>}
-              <p className="text-xs text-muted-foreground">
-                Leave empty unless this article was first published on another platform (to avoid Google SEO penalties).
-              </p>
+            <Separator />
+
+            {/* SEO Settings */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-base font-semibold text-foreground">SEO Налаштування / SEO Settings</h4>
+                <p className="text-xs text-muted-foreground">
+                  Вкажіть канонічні посилання для української та англійської версій статті
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="canonical-url-uk">Canonical URL (UA)</Label>
+                  <Input
+                    id="canonical-url-uk"
+                    type="url"
+                    value={canonicalUrlUk}
+                    onChange={(e) => {
+                      setCanonicalUrlUk(e.target.value);
+                      if (errors.canonical_url_uk) setErrors({ ...errors, canonical_url_uk: '' });
+                    }}
+                    placeholder="https://example.com/ua/article-slug"
+                    className={`bg-background border-border ${errors.canonical_url_uk ? 'border-destructive' : ''}`}
+                  />
+                  {errors.canonical_url_uk && <p className="text-sm text-destructive">{errors.canonical_url_uk}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="canonical-url-en">Canonical URL (EN)</Label>
+                  <Input
+                    id="canonical-url-en"
+                    type="url"
+                    value={canonicalUrlEn}
+                    onChange={(e) => {
+                      setCanonicalUrlEn(e.target.value);
+                      if (errors.canonical_url_en) setErrors({ ...errors, canonical_url_en: '' });
+                    }}
+                    placeholder="https://example.com/en/article-slug"
+                    className={`bg-background border-border ${errors.canonical_url_en ? 'border-destructive' : ''}`}
+                  />
+                  {errors.canonical_url_en && <p className="text-sm text-destructive">{errors.canonical_url_en}</p>}
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
