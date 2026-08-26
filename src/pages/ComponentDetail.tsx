@@ -12,7 +12,7 @@ import { blocksToPlainText, extractHeadings } from "@/lib/blocks";
 const ComponentDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
   const { data: entry, isLoading } = useModeEntry(id);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -81,38 +81,16 @@ const ComponentDetail = () => {
       />
 
       <div className="max-w-6xl mx-auto pb-12">
-        {/* Top Bar: Back button on the left, Language Switcher (UK / EN) on the right */}
+        {/* Top Bar: Back button */}
         <div className="flex items-center justify-between gap-4 mb-8 pb-4 border-b border-border">
           <Button
             variant="ghost"
-            className="-ml-2 text-muted-foreground hover:text-black inline-flex items-center"
+            className="-ml-2 text-muted-foreground hover:text-black inline-flex items-center cursor-pointer"
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад
+            {language === "en" ? "Back" : "Назад"}
           </Button>
-
-          <div
-            className="flex items-center rounded-lg border border-border bg-card p-1"
-            role="group"
-            aria-label="Мова матеріалу"
-          >
-            {(["uk", "en"] as const).map((lang) => (
-              <button
-                key={lang}
-                type="button"
-                onClick={() => setLanguage(lang)}
-                aria-pressed={language === lang}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                  language === lang
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {lang.toUpperCase()}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Header: Title, Description, Outline-style tag pills with small icons */}

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { authSchema, emailSchema, passwordSchema } from '@/lib/validation';
-import logo from '@/assets/logo.jpg';
+import logo from '@/assets/logo.svg';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 48 48" className="h-4 w-4" aria-hidden="true">
@@ -174,7 +174,7 @@ const Auth = () => {
       <Card className="w-full max-w-md bg-card border-border">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <img src={logo} alt="Magnifique numérique" className="w-16 h-16 rounded-lg" />
+            <img src={logo} alt="Magnifique numérique" className="w-16 h-16 rounded-full object-cover shadow-md" />
           </div>
           <CardTitle className="text-2xl">{t('auth.title')}</CardTitle>
           <CardDescription>

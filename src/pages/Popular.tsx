@@ -1,56 +1,111 @@
 import PageLayout from "@/components/PageLayout";
 import SEO from "@/components/SEO";
-import ArticleCard from "@/components/ArticleCard";
-import { useTopArticlesByReads, Article } from "@/hooks/useArticles";
+import ModeSwitcher from "@/components/ModeSwitcher";
+import ModeCardRenderer from "@/components/ModeCardRenderer";
+import { usePopularEntriesByMode } from "@/hooks/useModeEntries";
+import { useMode, MODE_LABELS } from "@/hooks/useMode";
 import { useLanguage } from "@/hooks/useLanguage";
-import { localizeArticle } from "@/lib/localize";
 import { TrendingUp } from "lucide-react";
 
 const Popular = () => {
-  const { data: articles = [], isLoading } = useTopArticlesByReads(10);
+  const { mode } = useMode();
+  // Editor mode has no content cards, default to articles in popular ranking
+  const effectiveMode = mode === "editor" ? "articles" : mode;
+  const { data: popularData = [], isLoading } = usePopularEntriesByMode(effectiveMode, 10);
   const { t, language } = useLanguage();
+
+  // Task 3: Debugging log for Popular Data verification
+  console.log("Current Mode:", effectiveMode, "Fetched Popular Data:", popularData);
+
+  const getModeSubtitle = () => {
+    switch (effectiveMode) {
+      case "resources":
+        return language === "uk"
+          ? "Топ-10 корисних ресурсів та інструментів за популярністю"
+          : "Top 10 resources and tools by popularity";
+      case "news":
+        return language === "uk"
+          ? "Топ-10 актуальних новин за популярністю"
+          : "Top 10 news by popularity";
+      case "components":
+        return language === "uk"
+          ? "Топ-10 UI компонентів та бібліотек за популярністю"
+          : "Top 10 UI components and libraries by popularity";
+      case "templates":
+        return language === "uk"
+          ? "Топ-10 готових сніпетів та шаблонів коду за популярністю"
+          : "Top 10 code snippets and templates by popularity";
+      case "palettes":
+        return language === "uk"
+          ? "Топ-10 колірних палітр за популярністю"
+          : "Top 10 color palettes by popularity";
+      case "dictionary":
+        return language === "uk"
+          ? "Топ-10 термінів зі словника за популярністю"
+          : "Top 10 technical terms by popularity";
+      case "design":
+        return language === "uk"
+          ? "Топ-10 UI дизайнів та градієнтів за популярністю"
+          : "Top 10 UI designs and gradients by popularity";
+      case "articles":
+      default:
+        return t("popular.subtitle");
+    }
+  };
 
   return (
     <PageLayout>
       <SEO
-        title="Найпопулярніші статті про Python — Magnifique numérique"
-        description="Топ-10 найпопулярніших статей про Python за кількістю переглядів на Magnifique numérique."
+        title={`${t("popular.title")} (${MODE_LABELS[effectiveMode]}) — Magnifique numérique`}
+        description={getModeSubtitle()}
         path="/popular"
       />
-      <section className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <TrendingUp className="w-8 h-8 text-primary" />
-          <h1 className="text-3xl font-bold">{t('popular.title')}</h1>
+      <section className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <TrendingUp className="w-8 h-8 text-primary" />
+            <h1 className="text-3xl font-bold">{t("popular.title")}</h1>
+          </div>
+          <p className="text-muted-foreground">{getModeSubtitle()}</p>
         </div>
-        <p className="text-muted-foreground">
-          {t('popular.subtitle')}
-        </p>
+        <div className="self-start md:self-auto">
+          <ModeSwitcher excludeModes={["editor"]} />
+        </div>
       </section>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <p className="text-muted-foreground">{t('index.loading')}</p>
+          <p className="text-muted-foreground">{t("index.loading")}</p>
+        </div>
+      ) : popularData.length === 0 ? (
+        <div className="flex justify-center py-12">
+          <p className="text-muted-foreground">
+            {language === "uk" ? "Поки що немає записів у цьому розділі" : "No entries found in this section yet"}
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {articles.map((article: Article, index: number) => {
-            const loc = localizeArticle(article, language);
-            return (
-              <ArticleCard
-                key={article.id}
-                article={{
-                  id: article.id,
-                  title: loc.title,
-                  description: loc.description,
-                  image: article.image_url,
-                  likes: article.likes,
-                  reads: article.reads,
-                  category: article.category_id || ''
-                }}
-                index={index}
-              />
-            );
-          })}
+        <div
+          className={
+            effectiveMode === "design" || effectiveMode === "дизайн"
+              ? "grid grid-cols-1 gap-6 w-full"
+              : effectiveMode === "dictionary" || effectiveMode === "Словник"
+              ? "grid grid-cols-1 gap-4 w-full"
+              : effectiveMode === "news"
+              ? "flex flex-col max-w-5xl mx-auto w-full space-y-8"
+              : effectiveMode === "templates" || effectiveMode === "palettes"
+              ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          }
+        >
+          {popularData.map((item: any, index: number) => (
+            <ModeCardRenderer
+              key={item.id}
+              item={item}
+              index={index}
+              mode={effectiveMode}
+              language={language}
+            />
+          ))}
         </div>
       )}
     </PageLayout>

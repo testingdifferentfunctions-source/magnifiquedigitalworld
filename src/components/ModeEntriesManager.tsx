@@ -25,6 +25,8 @@ const TYPES: { type: ModeEntryType; label: string }[] = [
   { type: "resource", label: "Ресурси" },
   { type: "component", label: "Компоненти" },
   { type: "template", label: "Сніпети" },
+  { type: "dictionary", label: "Словник" },
+  { type: "design", label: "Дизайн" },
 ];
 
 const ModeEntriesManager = () => {
@@ -61,7 +63,7 @@ const ModeEntriesManager = () => {
             return (
               <TabsContent key={type} value={type} className="space-y-4">
                 <Button asChild size="sm">
-                  <Link to={`/admin/entry/${type}`}>
+                  <Link to={type === "dictionary" ? "/admin/dictionary" : `/admin/entry/${type}`}>
                     <Plus className="w-4 h-4 mr-2" />
                     Додати ({label})
                   </Link>
@@ -116,7 +118,13 @@ const ModeEntriesManager = () => {
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
                                 <Button asChild variant="ghost" size="icon" aria-label="Редагувати">
-                                  <Link to={`/admin/entry/${entry.type}/${entry.id}`}>
+                                  <Link
+                                    to={
+                                      entry.type === "dictionary"
+                                        ? `/admin/dictionary/${entry.id}`
+                                        : `/admin/entry/${entry.type}/${entry.id}`
+                                    }
+                                  >
                                     <Pencil className="w-4 h-4" />
                                   </Link>
                                 </Button>

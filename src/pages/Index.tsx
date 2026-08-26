@@ -8,6 +8,9 @@ import ComponentCard, { ComponentItem } from "@/components/ComponentCard";
 import NewsCard from "@/components/NewsCard";
 import PaletteCard from "@/components/PaletteCard";
 import SnippetCard from "@/components/SnippetCard";
+import DictionaryCard from "@/components/DictionaryCard";
+import DesignCard from "@/components/DesignCard";
+import CodePlayground from "@/components/CodePlayground";
 import SearchBar from "@/components/SearchBar";
 import ArticleFilters, { SortOption, FilterCategoryOption } from "@/components/ArticleFilters";
 import CategoryPills, { PillItem } from "@/components/CategoryPills";
@@ -15,7 +18,14 @@ import { useArticles, useIncrementImpressions } from "@/hooks/useArticles";
 import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
 import { localizeArticle } from "@/lib/localize";
-import { useMode, MODE_LABELS, MODE_ACCENTS } from "@/hooks/useMode";
+import {
+  useMode,
+  MODE_ACCENTS,
+  getModeTitle,
+  getModeSubtitle,
+  getModeSearchPlaceholder,
+  getModeEmptyMessage,
+} from "@/hooks/useMode";
 import {
   useModeEntries,
   localizeEntry,
@@ -47,17 +57,36 @@ const getFilteredModeEntries = (
   activePill: string,
   sort: SortOption,
   lang: string,
-  categoriesList: any[]
+  categoriesList: any[],
+  rpcScores: Record<string, number> = {}
 ) => {
   let list = entries.map((entry) => {
     const loc = localizeEntry(entry, lang as any);
-    const semanticScore = query.trim()
-      ? computeSemanticScore(query, {
+    const contentText = (loc.blocks || [])
+      .map((b: any) => {
+        if (!b) return "";
+        if (b.type === "header" || b.type === "paragraph") return b.text || "";
+        if (b.type === "list" && Array.isArray(b.items)) return b.items.join(" ");
+        if (b.type === "code") return `${b.language || ""} ${b.code || ""}`;
+        return "";
+      })
+      .filter(Boolean)
+      .join(" ");
+
+    let semanticScore = 1;
+    if (query.trim()) {
+      if (rpcScores[entry.id] !== undefined) {
+        semanticScore = rpcScores[entry.id];
+      } else {
+        semanticScore = computeSemanticScore(query, {
           title: loc.title,
           description: loc.description,
           tags: entry.tags,
-        })
-      : 1;
+          content: contentText,
+        });
+      }
+    }
+
     return {
       entry,
       loc,
@@ -141,6 +170,8 @@ const Index = () => {
   const { data: components = [], isLoading: componentsLoading } = useModeEntries("component");
   const { data: templates = [], isLoading: templatesLoading } = useModeEntries("template");
   const { data: palettes = [], isLoading: palettesLoading } = useModeEntries("palette");
+  const { data: dictionary = [], isLoading: dictionaryLoading } = useModeEntries("dictionary");
+  const { data: design = [], isLoading: designLoading } = useModeEntries("design");
   const toggleLike = useToggleModeEntryLike();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -155,6 +186,7 @@ const Index = () => {
   });
   const [categoryId, setCategoryId] = useState<string>("all");
   const [activePill, setActivePill] = useState<string>("all");
+  const [rpcScores, setRpcScores] = useState<Record<string, number>>({});
 
   // Task 3: State Reset on Mode Switch
   // When switching mode, immediately reset category, pill, and search query to provide a clean, unfiltered index
@@ -167,6 +199,7 @@ const Index = () => {
     setCategoryId("all");
     setActivePill("all");
     setSearchQuery("");
+    setRpcScores({});
   }, [mode]);
 
   // Reset secondary pill when primary category dropdown changes
@@ -205,7 +238,7 @@ const Index = () => {
 
   // Derive secondary pills dynamically based on active mode & selected category
   const availablePills: PillItem[] = useMemo(() => {
-    const allPill: PillItem = { id: "all", label: "Всі" };
+    const allPill: PillItem = { id: "all", label: language === "en" ? "All" : "Всі" };
 
     if (categoryId === "all") {
       const pillsSet = new Set<string>();
@@ -228,7 +261,9 @@ const Index = () => {
             ? resources
             : mode === "components"
             ? components
-            : templates;
+            : mode === "templates"
+            ? templates
+            : dictionary;
         currentEntries.forEach((entry) => (entry.tags || []).forEach((t) => pillsSet.add(t)));
       }
 
@@ -270,12 +305,14 @@ const Index = () => {
             ? resources
             : mode === "components"
             ? components
-            : templates;
+            : mode === "templates"
+            ? templates
+            : dictionary;
         currentEntries.forEach((e) => (e.tags || []).forEach((t) => tagsSet.add(t)));
       }
       return [allPill, ...Array.from(tagsSet).slice(0, 15).map((t) => ({ id: t, label: t }))];
     }
-  }, [mode, categoryId, modeCategories, articles, news, palettes, resources, components, templates, language]);
+  }, [mode, categoryId, modeCategories, articles, news, palettes, resources, components, templates, dictionary, language]);
 
   // Localized articles
   const localizedArticles = useMemo(
@@ -285,12 +322,24 @@ const Index = () => {
 
   // Trigger Supabase semantic vector RPC search when search query changes
   useEffect(() => {
-    if (!searchQuery.trim()) return;
-    const timer = setTimeout(() => {
-      searchSemanticRpc(searchQuery, mode).catch(() => {
-        /* handled gracefully */
-      });
-    }, 300);
+    if (!searchQuery.trim()) {
+      setRpcScores({});
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchSemanticRpc(searchQuery, mode);
+        if (results && results.length > 0) {
+          const map: Record<string, number> = {};
+          results.forEach((r) => {
+            map[r.id] = r.similarity;
+          });
+          setRpcScores(map);
+        }
+      } catch (err) {
+        console.debug("Semantic RPC search fallback:", err);
+      }
+    }, 250);
     return () => clearTimeout(timer);
   }, [searchQuery, mode]);
 
@@ -299,12 +348,14 @@ const Index = () => {
     if (mode !== "articles") return [];
     let result = localizedArticles.map(({ article, loc }) => {
       const semanticScore = searchQuery.trim()
-        ? computeSemanticScore(searchQuery, {
-            title: loc.title,
-            description: loc.description,
-            tags: article.tags,
-            content: article.content || "",
-          })
+        ? rpcScores[article.id] !== undefined
+          ? rpcScores[article.id]
+          : computeSemanticScore(searchQuery, {
+              title: loc.title,
+              description: loc.description,
+              tags: article.tags,
+              content: article.content || "",
+            })
         : 1;
       return { article, loc, semanticScore };
     });
@@ -341,46 +392,62 @@ const Index = () => {
     });
 
     return result;
-  }, [mode, localizedArticles, searchQuery, sortBy, categoryId, activePill]);
+  }, [mode, localizedArticles, searchQuery, sortBy, categoryId, activePill, rpcScores]);
 
   const filteredNews = useMemo(
     () =>
       mode === "news"
-        ? getFilteredModeEntries(news, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        ? getFilteredModeEntries(news, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores)
         : [],
-    [mode, news, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
+    [mode, news, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
   );
 
   const filteredResources = useMemo(
     () =>
       mode === "resources"
-        ? getFilteredModeEntries(resources, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        ? getFilteredModeEntries(resources, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores)
         : [],
-    [mode, resources, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
+    [mode, resources, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
   );
 
   const filteredComponents = useMemo(
     () =>
       mode === "components"
-        ? getFilteredModeEntries(components, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        ? getFilteredModeEntries(components, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores)
         : [],
-    [mode, components, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
+    [mode, components, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
   );
 
   const filteredTemplates = useMemo(
     () =>
       mode === "templates"
-        ? getFilteredModeEntries(templates, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        ? getFilteredModeEntries(templates, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores)
         : [],
-    [mode, templates, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
+    [mode, templates, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
   );
 
   const filteredPalettes = useMemo(
     () =>
       mode === "palettes"
-        ? getFilteredModeEntries(palettes, searchQuery, categoryId, activePill, sortBy, language, modeCategories)
+        ? getFilteredModeEntries(palettes, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores)
         : [],
-    [mode, palettes, searchQuery, categoryId, activePill, sortBy, language, modeCategories]
+    [mode, palettes, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
+  );
+
+  const filteredDictionary = useMemo(
+    () =>
+      mode === "dictionary"
+        ? getFilteredModeEntries(dictionary, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores)
+        : [],
+    [mode, dictionary, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
+  );
+
+  const filteredDesign = useMemo(
+    () =>
+      mode === "design"
+        ? getFilteredModeEntries(design, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores)
+        : [],
+    [mode, design, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
   );
 
   // Active suggestions for SearchBar based on current mode
@@ -400,8 +467,14 @@ const Index = () => {
     if (mode === "templates") {
       return templates.map((t) => localizeEntry(t, language).title);
     }
+    if (mode === "dictionary") {
+      return dictionary.map((d) => localizeEntry(d, language).title);
+    }
+    if (mode === "design") {
+      return design.map((d) => localizeEntry(d, language).title);
+    }
     return palettes.map((p) => localizeEntry(p, language).title);
-  }, [mode, news, localizedArticles, resources, components, templates, palettes, language]);
+  }, [mode, news, localizedArticles, resources, components, templates, palettes, dictionary, design, language]);
 
   const isLoading =
     mode === "news"
@@ -414,6 +487,10 @@ const Index = () => {
       ? componentsLoading
       : mode === "templates"
       ? templatesLoading
+      : mode === "dictionary"
+      ? dictionaryLoading
+      : mode === "design"
+      ? designLoading
       : palettesLoading;
 
   return (
@@ -435,57 +512,37 @@ const Index = () => {
       {/* Persistent Top Header Section across ALL modes */}
       <section className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">
-          {mode === "articles" ? t("index.title") : MODE_LABELS[mode]}
+          {getModeTitle(mode, language)}
         </h1>
         <p className="text-muted-foreground mb-6 text-base">
-          {mode === "news"
-            ? "Свіжі новини IT-індустрії, релізи мов програмування, веб-технологій та штучного інтелекту."
-            : mode === "articles"
-            ? t("index.subtitle")
-            : mode === "resources"
-            ? "Корисні сервіси, інструменти та сервіси для навчання й продуктивної розробки."
-            : mode === "components"
-            ? "Бібліотеки, пакети та фреймворки для ваших Python-проєктів."
-            : mode === "templates"
-            ? "Готові до копіювання сніпети, функції та шаблони коду для швидкої розробки."
-            : "Добірка колірних палітр реальних вебсайтів для вашого натхнення та швидкої інтеграції."}
+          {getModeSubtitle(mode, language)}
         </p>
 
-        {/* Tier 1 Primary Controls: Search + Sort + ModeSwitcher + Dropdown */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            suggestions={activeSuggestions}
-            placeholder={
-              mode === "news"
-                ? "Пошук новин..."
-                : mode === "articles"
-                ? t("search.placeholder")
-                : mode === "resources"
-                ? "Пошук ресурсів та інструментів..."
-                : mode === "components"
-                ? "Пошук бібліотек та компонентів..."
-                : mode === "templates"
-                ? "Пошук сніпетів коду..."
-                : "Пошук колірних палітр..."
-            }
-          />
-          <ArticleFilters
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            categoryId={categoryId}
-            onCategoryChange={(val) => {
-              setCategoryId(val);
-              setActivePill("all");
-            }}
-            categoryOptions={activeCategoryOptions}
-            dropdownPlaceholder={activeDropdownPlaceholder}
-          />
-        </div>
+        {/* Tier 1 Primary Controls: Search + Sort + ModeSwitcher + Dropdown (Hidden in Editor mode) */}
+        {mode !== "editor" && (
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              suggestions={activeSuggestions}
+              placeholder={getModeSearchPlaceholder(mode, language)}
+            />
+            <ArticleFilters
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              categoryId={categoryId}
+              onCategoryChange={(val) => {
+                setCategoryId(val);
+                setActivePill("all");
+              }}
+              categoryOptions={activeCategoryOptions}
+              dropdownPlaceholder={activeDropdownPlaceholder}
+            />
+          </div>
+        )}
 
-        {/* Tier 2 Secondary Controls: CategoryPills with dynamic mode accent color */}
-        {(availablePills.length > 1 || (categoryId !== "all" && modeCategories.some((c) => c.id === categoryId))) && (
+        {/* Tier 2 Secondary Controls: CategoryPills with dynamic mode accent color (Hidden in Editor mode) */}
+        {mode !== "editor" && (availablePills.length > 1 || (categoryId !== "all" && modeCategories.some((c) => c.id === categoryId))) && (
           <div className="mt-4 pt-1 border-t border-border/40">
             <CategoryPills
               pills={availablePills}
@@ -508,9 +565,7 @@ const Index = () => {
         filteredNews.length === 0 ? (
           <div className="flex justify-center py-16">
             <p className="text-muted-foreground">
-              {searchQuery || categoryId !== "all" || activePill !== "all"
-                ? "Нічого не знайдено за вашим запитом"
-                : "Ще немає новин"}
+              {getModeEmptyMessage("news", Boolean(searchQuery || categoryId !== "all" || activePill !== "all"), language)}
             </p>
           </div>
         ) : (
@@ -576,9 +631,7 @@ const Index = () => {
         filteredResources.length === 0 ? (
           <div className="flex justify-center py-16">
             <p className="text-muted-foreground">
-              {searchQuery || categoryId !== "all" || activePill !== "all"
-                ? "Нічого не знайдено за вашим запитом"
-                : "Ще немає ресурсів"}
+              {getModeEmptyMessage("resources", Boolean(searchQuery || categoryId !== "all" || activePill !== "all"), language)}
             </p>
           </div>
         ) : (
@@ -621,9 +674,7 @@ const Index = () => {
         filteredComponents.length === 0 ? (
           <div className="flex justify-center py-16">
             <p className="text-muted-foreground">
-              {searchQuery || categoryId !== "all" || activePill !== "all"
-                ? "Нічого не знайдено за вашим запитом"
-                : "Ще немає компонентів"}
+              {getModeEmptyMessage("components", Boolean(searchQuery || categoryId !== "all" || activePill !== "all"), language)}
             </p>
           </div>
         ) : (
@@ -659,9 +710,7 @@ const Index = () => {
         filteredTemplates.length === 0 ? (
           <div className="flex justify-center py-16">
             <p className="text-muted-foreground">
-              {searchQuery || categoryId !== "all" || activePill !== "all"
-                ? "Нічого не знайдено за вашим запитом"
-                : "Ще немає сніпетів коду"}
+              {getModeEmptyMessage("templates", Boolean(searchQuery || categoryId !== "all" || activePill !== "all"), language)}
             </p>
           </div>
         ) : (
@@ -698,14 +747,11 @@ const Index = () => {
             })}
           </div>
         )
-      ) : (
-        /* mode === 'palettes' */
+      ) : mode === "palettes" ? (
         filteredPalettes.length === 0 ? (
           <div className="flex justify-center py-16">
-            <p className="text-neutral-400">
-              {searchQuery || categoryId !== "all" || activePill !== "all"
-                ? "Нічого не знайдено за вашим запитом"
-                : "Ще немає доданих палітр"}
+            <p className="text-muted-foreground">
+              {getModeEmptyMessage("palettes", Boolean(searchQuery || categoryId !== "all" || activePill !== "all"), language)}
             </p>
           </div>
         ) : (
@@ -738,6 +784,78 @@ const Index = () => {
                   toggleLike.mutate({ entryId: entry.id, isLiking: !currentlyLiked });
                 }}
                 onShare={() => shareEntry(entry.id, loc.title, `/palette/${entry.id}`)}
+              />
+            ))}
+          </div>
+        )
+      ) : mode === "editor" ? (
+        <div className="w-full max-w-6xl mx-auto">
+          <CodePlayground />
+        </div>
+      ) : mode === "design" ? (
+        filteredDesign.length === 0 ? (
+          <div className="flex justify-center py-16">
+            <p className="text-muted-foreground">
+              {getModeEmptyMessage("design", Boolean(searchQuery || categoryId !== "all" || activePill !== "all"), language)}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {filteredDesign.map(({ entry, loc }, index) => (
+              <DesignCard
+                key={entry.id}
+                item={{
+                  id: entry.id,
+                  title: loc.title,
+                  description: loc.description,
+                  likes: entry.likes,
+                  tags: entry.tags,
+                  url: entry.external_url,
+                  blocks: loc.blocks,
+                }}
+                index={index}
+                isLiked={getLikedEntries().includes(entry.id)}
+                onView={() => navigate(`/design/${entry.id}`)}
+                onLike={() => {
+                  const currentlyLiked = getLikedEntries().includes(entry.id);
+                  setEntryLiked(entry.id, !currentlyLiked);
+                  toggleLike.mutate({ entryId: entry.id, isLiking: !currentlyLiked });
+                }}
+                onShare={() => shareEntry(entry.id, loc.title, `/design/${entry.id}`)}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        /* mode === 'dictionary' */
+        filteredDictionary.length === 0 ? (
+          <div className="flex justify-center py-16">
+            <p className="text-muted-foreground">
+              {getModeEmptyMessage("dictionary", Boolean(searchQuery || categoryId !== "all" || activePill !== "all"), language)}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {filteredDictionary.map(({ entry, loc }, index) => (
+              <DictionaryCard
+                key={entry.id}
+                item={{
+                  id: entry.id,
+                  title: loc.title,
+                  description: loc.description,
+                  likes: entry.likes,
+                  tags: entry.tags,
+                  url: entry.external_url,
+                }}
+                index={index}
+                isLiked={getLikedEntries().includes(entry.id)}
+                onRead={() => navigate(`/dictionary/${entry.id}`)}
+                onLike={() => {
+                  const currentlyLiked = getLikedEntries().includes(entry.id);
+                  setEntryLiked(entry.id, !currentlyLiked);
+                  toggleLike.mutate({ entryId: entry.id, isLiking: !currentlyLiked });
+                }}
+                onShare={() => shareEntry(entry.id, loc.title, `/dictionary/${entry.id}`)}
               />
             ))}
           </div>

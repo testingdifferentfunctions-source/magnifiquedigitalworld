@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface SearchBarProps {
   value: string;
@@ -14,10 +15,12 @@ interface SearchBarProps {
 const SearchBar = ({ 
   value, 
   onChange, 
-  placeholder = "Семантичний пошук...",
+  placeholder,
   suggestions = [],
   semanticMode = true,
 }: SearchBarProps) => {
+  const { t } = useLanguage();
+  const resolvedPlaceholder = placeholder || t("search.semantic_default");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,7 +92,7 @@ const SearchBar = ({
         }}
         onFocus={() => setShowSuggestions(true)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         className="pl-9 pr-10 bg-background/70 backdrop-blur-sm border-border focus-visible:ring-primary/50 text-sm"
       />
       {value && (
@@ -100,7 +103,7 @@ const SearchBar = ({
           size="sm"
           onClick={() => onChange("")}
           className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-          aria-label="Очистити пошук"
+          aria-label={t("search.clear") || (resolvedPlaceholder ? "Clear" : "Очистити пошук")}
         >
           <X className="w-4 h-4" />
         </Button>

@@ -875,6 +875,899 @@ export function useDebounce<T>(value: T, delay = 300): T {
     ],
     blocks_en: [],
   },
+  // ===================== DICTIONARY =====================
+  {
+    id: "dict-idempotency",
+    type: "dictionary",
+    slug: "idempotency",
+    title_uk: "Ідемпотентність (Idempotency)",
+    title_en: "Idempotency",
+    description_uk: "Властивість операції, повторне виконання якої з тими самими вхідними даними не змінює кінцевий стан системи та повертає ідентичний результат (наприклад, HTTP GET, PUT, DELETE).",
+    description_en: "A property of an operation whereby performing it multiple times with the same input yields the same result and leaves the system in the exact same state.",
+    tags: ["REST", "API", "Архітектура", "HTTP"],
+    image_url: null,
+    image_source_url: null,
+    external_url: null,
+    likes: 194,
+    share_count: 52,
+    published: true,
+    sort_order: 1,
+    created_at: "2026-02-20T10:00:00Z",
+    updated_at: "2026-02-20T10:00:00Z",
+    blocks_uk: [
+      {
+        id: "idem-h1",
+        type: "header",
+        level: 2,
+        text: "Що таке ідемпотентність у веб-розробці?",
+      },
+      {
+        id: "idem-p1",
+        type: "paragraph",
+        text: "В архітектурі розподілених систем та REST API ідемпотентність гарантує надійність при повторній відправці запитів (retries) у разі тимчасових мережевих збоїв, запобігаючи дублюванню платежів чи записів.",
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "dict-cap-theorem",
+    type: "dictionary",
+    slug: "cap-theorem",
+    title_uk: "CAP-теорема (Брюера)",
+    title_en: "CAP Theorem",
+    description_uk: "Фундаментальний принцип розподілених систем, згідно з яким система може одночасно гарантувати лише 2 з 3 властивостей: узгодженість (Consistency), доступність (Availability) та стійкість до розділення (Partition Tolerance).",
+    description_en: "A theorem in distributed computer systems stating that any distributed data store can only simultaneously provide at most two out of three guarantees: Consistency, Availability, and Partition Tolerance.",
+    tags: ["Databases", "Distributed Systems", "Computer Science"],
+    image_url: null,
+    image_source_url: null,
+    external_url: null,
+    likes: 312,
+    share_count: 88,
+    published: true,
+    sort_order: 2,
+    created_at: "2026-02-21T11:00:00Z",
+    updated_at: "2026-02-21T11:00:00Z",
+    blocks_uk: [
+      {
+        id: "cap-h1",
+        type: "header",
+        level: 2,
+        text: "Три стовпи CAP-теореми",
+      },
+      {
+        id: "cap-l1",
+        type: "list",
+        items: [
+          "Consistency (Узгодженість) — кожен запит на читання отримує найсвіжіший запис або помилку",
+          "Availability (Доступність) — кожен робочий вузол повертає успішну відповідь без помилок",
+          "Partition Tolerance (Стійкість до розділення) — система продовжує працювати при втраті зв'язку між вузлами",
+        ],
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "dict-cqrs",
+    type: "dictionary",
+    slug: "cqrs-pattern",
+    title_uk: "CQRS (Command Query Responsibility Segregation)",
+    title_en: "Command Query Responsibility Segregation (CQRS)",
+    description_uk: "Архітектурний патерн, що розділяє моделі читання (Queries) та модифікації (Commands) даних, оптимізуючи продуктивність, масштабованість та безпеку високо flip-навантажених сервісів.",
+    description_en: "An architectural pattern that separates read and update operations for a data store, enabling isolated scaling and optimization of reads versus writes.",
+    tags: ["CQRS", "Архітектура", "Event Sourcing", "Microservices"],
+    image_url: null,
+    image_source_url: null,
+    external_url: null,
+    likes: 178,
+    share_count: 41,
+    published: true,
+    sort_order: 3,
+    created_at: "2026-02-22T09:30:00Z",
+    updated_at: "2026-02-22T09:30:00Z",
+    blocks_uk: [
+      {
+        id: "cqrs-h1",
+        type: "header",
+        level: 2,
+        text: "Переваги відокремлення запитів від команд",
+      },
+      {
+        id: "cqrs-p1",
+        type: "paragraph",
+        text: "CQRS дозволяє використовувати різні схеми даних та навіть різні СУБД для читання (наприклад, Elasticsearch чи Redis) та запису (PostgreSQL, Cassandra).",
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "dict-solid",
+    type: "dictionary",
+    slug: "solid-principles",
+    title_uk: "Принципи SOLID",
+    title_en: "SOLID Principles",
+    description_uk: "Акронім 5 базових принципів об'єктно-орієнтованого проєктування та програмування: Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation та Dependency Inversion.",
+    description_en: "A mnemonic acronym for five design principles intended to make software designs more understandable, flexible, and maintainable.",
+    tags: ["SOLID", "OOP", "Clean Architecture", "Патерни"],
+    image_url: null,
+    image_source_url: null,
+    external_url: null,
+    likes: 425,
+    share_count: 120,
+    published: true,
+    sort_order: 4,
+    created_at: "2026-02-23T14:15:00Z",
+    updated_at: "2026-02-23T14:15:00Z",
+    blocks_uk: [
+      {
+        id: "solid-h1",
+        type: "header",
+        level: 2,
+        text: "Розшифровка принципів SOLID",
+      },
+      {
+        id: "solid-l1",
+        type: "list",
+        items: [
+          "S — Single Responsibility Principle (Принцип єдиної відповідальності)",
+          "O — Open/Closed Principle (Принцип відкритості/закритості)",
+          "L — Liskov Substitution Principle (Принцип підстановки Лісков)",
+          "I — Interface Segregation Principle (Принцип розділення інтерфейсу)",
+          "D — Dependency Inversion Principle (Принцип інверсії залежностей)",
+        ],
+      },
+    ],
+    blocks_en: [],
+  },
+  // ===================== DESIGN SHOWCASE =====================
+  {
+    id: "design-aurora-glow-card",
+    type: "design",
+    slug: "aurora-glow-gradient-card",
+    title_uk: "Aurora Glow: Багатошаровий Аврора-Градієнт",
+    title_en: "Aurora Glow: Multi-layer Aurora Mesh Gradient",
+    description_uk: "Органічний плавний аврора-градієнт із глибоким відтінком #1E212D, пастельним неоновим спалахом #FFBCBC та м'яким розмиттям світлових сфер.",
+    description_en: "Organic fluid aurora mesh gradient combining deep slate #1E212D base with pastel neon peach #FFBCBC highlights and multi-layer radial glow.",
+    tags: ["Gradient", "Aurora", "Glow", "Mesh", "CSS3"],
+    image_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=600&fit=crop",
+    image_source_url: null,
+    external_url: null,
+    likes: 384,
+    share_count: 92,
+    published: true,
+    sort_order: 1,
+    created_at: "2026-02-24T10:00:00Z",
+    updated_at: "2026-02-24T10:00:00Z",
+    blocks_uk: [
+      {
+        id: "d1-prompt",
+        type: "paragraph",
+        text: "Design a luxury dark OLED/slate UI card featuring a luminous aurora mesh gradient background. Combine deep navy #1E212D with radiant peach-pink #FFBCBC highlights, subtle violet depth #8B5CF6, 40px backdrop blur, and crisp 1px border glow for high-end SaaS hero visual modules.",
+      },
+      {
+        id: "d1-html",
+        type: "code",
+        language: "html",
+        code: `<div class="aurora-card">
+  <div class="aurora-glow aurora-glow-1"></div>
+  <div class="aurora-glow aurora-glow-2"></div>
+  <div class="aurora-content">
+    <span class="badge">AURORA MESH</span>
+    <h3>Luminous Atmosphere</h3>
+    <p>Atmospheric multi-stop organic gradient with hardware-accelerated blur.</p>
+  </div>
+</div>`,
+      },
+      {
+        id: "d1-css",
+        type: "code",
+        language: "css",
+        code: `.aurora-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #1E212D;
+  border: 1px solid rgba(255, 188, 188, 0.25);
+  padding: 32px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+}
+
+.aurora-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+  pointer-events: none;
+  opacity: 0.65;
+  transition: transform 0.5s ease;
+}
+
+.aurora-glow-1 {
+  width: 220px;
+  height: 220px;
+  top: -40px;
+  right: -30px;
+  background: radial-gradient(circle, #FFBCBC 0%, rgba(255, 188, 188, 0) 70%);
+}
+
+.aurora-glow-2 {
+  width: 180px;
+  height: 180px;
+  bottom: -30px;
+  left: 20px;
+  background: radial-gradient(circle, #8B5CF6 0%, rgba(139, 92, 246, 0) 70%);
+}`,
+      },
+      {
+        id: "d1-scss",
+        type: "code",
+        language: "scss",
+        code: `$bg-slate: #1E212D;
+$accent-pink: #FFBCBC;
+$accent-purple: #8B5CF6;
+
+.aurora-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: $bg-slate;
+  border: 1px solid rgba($accent-pink, 0.25);
+  padding: 2rem;
+
+  .aurora-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(50px);
+    pointer-events: none;
+
+    &-1 {
+      width: 220px;
+      height: 220px;
+      top: -40px;
+      right: -30px;
+      background: radial-gradient(circle, $accent-pink 0%, transparent 70%);
+    }
+
+    &-2 {
+      width: 180px;
+      height: 180px;
+      bottom: -30px;
+      left: 20px;
+      background: radial-gradient(circle, $accent-purple 0%, transparent 70%);
+    }
+  }
+}`,
+      },
+      {
+        id: "d1-tailwind",
+        type: "code",
+        language: "tailwind",
+        code: `<div className="relative overflow-hidden rounded-2xl bg-[#1E212D] p-8 border border-[#FFBCBC]/25 shadow-2xl">
+  <div className="absolute -top-10 -right-8 w-56 h-56 rounded-full bg-[#FFBCBC]/40 blur-3xl pointer-events-none" />
+  <div className="absolute -bottom-8 left-5 w-44 h-44 rounded-full bg-violet-600/35 blur-3xl pointer-events-none" />
+  <div className="relative z-10 space-y-3">
+    <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wider text-[#1E212D] bg-[#FFBCBC]">
+      AURORA MESH
+    </span>
+    <h3 className="text-xl font-bold text-white">Luminous Atmosphere</h3>
+    <p className="text-sm text-slate-300">Atmospheric multi-stop organic gradient with hardware-accelerated blur.</p>
+  </div>
+</div>`,
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "design-frosted-glass-card",
+    type: "design",
+    slug: "frosted-glassmorphism-card",
+    title_uk: "Frosted Glass: Матова Картка з Неоновим Контуром",
+    title_en: "Frosted Glass: Glassmorphic Card with Neon Rim",
+    description_uk: "Преміальний ефект матового скла з 20px backdrop-filter, градієнтним 1px кантом та інтерактивним відблиском при наведенні.",
+    description_en: "High-end frosted glassmorphism card featuring 20px backdrop blur, refined 1px gradient rim, and responsive interactive reflection on hover.",
+    tags: ["Glassmorphism", "Card", "UI", "BackdropFilter", "Modern"],
+    image_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=600&fit=crop",
+    image_source_url: null,
+    external_url: null,
+    likes: 412,
+    share_count: 115,
+    published: true,
+    sort_order: 2,
+    created_at: "2026-02-24T11:00:00Z",
+    updated_at: "2026-02-24T11:00:00Z",
+    blocks_uk: [
+      {
+        id: "d2-prompt",
+        type: "paragraph",
+        text: "Create a modern dark frosted glass card component with 24px backdrop blur, 1px gradient border (#FFBCBC fading to transparent), ultra-fine inner shadow, and an interactive micro-tilt cursor highlight.",
+      },
+      {
+        id: "d2-html",
+        type: "code",
+        language: "html",
+        code: `<div class="glass-card">
+  <div class="glass-header">
+    <span class="glass-chip">PRO DESIGN</span>
+    <button class="glass-action">↗</button>
+  </div>
+  <h4 class="glass-title">Frosted Glass Surface</h4>
+  <p class="glass-desc">Ultra-clean refractive glass container for modern dashboards.</p>
+</div>`,
+      },
+      {
+        id: "d2-css",
+        type: "code",
+        language: "css",
+        code: `.glass-card {
+  background: rgba(30, 33, 45, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 188, 188, 0.3);
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4),
+              inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 188, 188, 0.6);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5),
+              0 0 24px rgba(255, 188, 188, 0.2);
+}`,
+      },
+      {
+        id: "d2-scss",
+        type: "code",
+        language: "scss",
+        code: `$glass-bg: rgba(30, 33, 45, 0.65);
+$accent-peach: #FFBCBC;
+
+.glass-card {
+  background: $glass-bg;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba($accent-peach, 0.3);
+  border-radius: 1.125rem;
+  padding: 1.75rem;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(#fff, 0.15);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: rgba($accent-peach, 0.6);
+  }
+}`,
+      },
+      {
+        id: "d2-tailwind",
+        type: "code",
+        language: "tailwind",
+        code: `<div className="rounded-2xl bg-[#1E212D]/70 backdrop-blur-xl p-7 border border-[#FFBCBC]/30 shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#FFBCBC]/60 hover:shadow-[#FFBCBC]/10">
+  <div className="flex items-center justify-between mb-4">
+    <span className="px-3 py-0.5 rounded-full text-xs font-medium text-[#FFBCBC] bg-[#FFBCBC]/10 border border-[#FFBCBC]/20">
+      PRO DESIGN
+    </span>
+    <span className="text-[#FFBCBC] font-mono text-sm">↗</span>
+  </div>
+  <h4 className="text-lg font-bold text-white mb-1">Frosted Glass Surface</h4>
+  <p className="text-sm text-slate-300">Ultra-clean refractive glass container for modern dashboards.</p>
+</div>`,
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "design-cyber-neon-button",
+    type: "design",
+    slug: "cyber-neon-glow-button",
+    title_uk: "Cyber Neon: Кнопка з Контурним Сяйвом",
+    title_en: "Cyber Neon: Button with Dynamic Border Glow",
+    description_uk: "Інтерактивна кнопка нового покоління з анімованим конічним градієнтом, пружним тактильним натисканням та розсіяним неоновим ореолом.",
+    description_en: "Next-gen interactive button component with animated conic border gradient, spring-based click physics, and diffuse neon halo.",
+    tags: ["Button", "Neon", "Animation", "Interactive", "MicroInteractions"],
+    image_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&h=600&fit=crop",
+    image_source_url: null,
+    external_url: null,
+    likes: 516,
+    share_count: 148,
+    published: true,
+    sort_order: 3,
+    created_at: "2026-02-24T12:00:00Z",
+    updated_at: "2026-02-24T12:00:00Z",
+    blocks_uk: [
+      {
+        id: "d3-prompt",
+        type: "paragraph",
+        text: "Interactive cyberpunk neon button with rotating conic-gradient border (#FFBCBC, #8B5CF6, #FFBCBC), spring active press state, soft ambient glow, and crisp high-contrast center label.",
+      },
+      {
+        id: "d3-html",
+        type: "code",
+        language: "html",
+        code: `<button class="cyber-neon-btn">
+  <span class="cyber-neon-border"></span>
+  <span class="cyber-neon-content">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    Запустити Інновацію
+  </span>
+</button>`,
+      },
+      {
+        id: "d3-css",
+        type: "code",
+        language: "css",
+        code: `.cyber-neon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cyber-neon-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 30px rgba(255, 188, 188, 0.4);
+}
+
+.cyber-neon-btn:active {
+  transform: scale(0.96);
+}
+
+.cyber-neon-border {
+  position: absolute;
+  inset: -200%;
+  background: conic-gradient(from 0deg, #FFBCBC, #8B5CF6, #FFBCBC);
+  animation: spin 3.5s linear infinite;
+}
+
+.cyber-neon-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 9999px;
+  background: #1E212D;
+  color: #FFBCBC;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}`,
+      },
+      {
+        id: "d3-scss",
+        type: "code",
+        language: "scss",
+        code: `$accent-pink: #FFBCBC;
+$accent-violet: #8B5CF6;
+$bg-dark: #1E212D;
+
+.cyber-neon-btn {
+  position: relative;
+  padding: 2px;
+  border-radius: 9999px;
+  cursor: pointer;
+
+  .cyber-neon-border {
+    position: absolute;
+    inset: -200%;
+    background: conic-gradient(from 0deg, $accent-pink, $accent-violet, $accent-pink);
+    animation: spin 3.5s linear infinite;
+  }
+
+  .cyber-neon-content {
+    position: relative;
+    padding: 12px 28px;
+    border-radius: 9999px;
+    background: $bg-dark;
+    color: $accent-pink;
+  }
+}`,
+      },
+      {
+        id: "d3-tailwind",
+        type: "code",
+        language: "tailwind",
+        code: `<button className="group relative inline-flex items-center justify-center p-[2px] rounded-full overflow-hidden transition-transform duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-[#FFBCBC]/30">
+  <div className="absolute -inset-[200%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_0deg,#FFBCBC,#8B5CF6,#FFBCBC)]" />
+  <span className="relative flex items-center gap-2 px-7 py-3 rounded-full bg-[#1E212D] text-[#FFBCBC] font-semibold text-sm transition-colors group-hover:bg-[#252937]">
+    <span className="w-2 h-2 rounded-full bg-[#FFBCBC] animate-pulse" />
+    Запустити Інновацію
+  </span>
+</button>`,
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "design-sunset-gradient-sphere",
+    type: "design",
+    slug: "sunset-peach-gradient-sphere",
+    title_uk: "Sunset Orb: Об'ємна 3D Градієнтна Сфера",
+    title_en: "Sunset Orb: Volumetric 3D Gradient Sphere",
+    description_uk: "Ефектна 3D сфера з градієнтним підсвічуванням по краях, внутрішнім моделюванням тіней та ефектом левітації.",
+    description_en: "Volumetric 3D gradient sphere featuring realistic rim lighting in peach #FFBCBC, deep diffuse shadow falloff, and smooth levitation effect.",
+    tags: ["3D", "Gradient", "Sphere", "Orb", "VisualArt"],
+    image_url: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1200&h=600&fit=crop",
+    image_source_url: null,
+    external_url: null,
+    likes: 295,
+    share_count: 67,
+    published: true,
+    sort_order: 4,
+    created_at: "2026-02-24T13:00:00Z",
+    updated_at: "2026-02-24T13:00:00Z",
+    blocks_uk: [
+      {
+        id: "d4-prompt",
+        type: "paragraph",
+        text: "Volumetric 3D gradient orb with realistic peach-rose #FFBCBC rim illumination, deep slate occlusion #1E212D, floating levitation physics, and soft atmospheric ground reflection.",
+      },
+      {
+        id: "d4-html",
+        type: "code",
+        language: "html",
+        code: `<div class="sphere-stage">
+  <div class="gradient-sphere"></div>
+  <div class="sphere-shadow"></div>
+</div>`,
+      },
+      {
+        id: "d4-css",
+        type: "code",
+        language: "css",
+        code: `.sphere-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 220px;
+}
+
+.gradient-sphere {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FFF0F0 0%, #FFBCBC 35%, #9E4770 70%, #1E212D 100%);
+  box-shadow: 0 10px 30px rgba(255, 188, 188, 0.3),
+              inset -12px -12px 25px rgba(0, 0, 0, 0.7),
+              inset 8px 8px 15px rgba(255, 255, 255, 0.4);
+  animation: levitate 4s ease-in-out infinite alternate;
+}
+
+.sphere-shadow {
+  width: 90px;
+  height: 14px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.5) 0%, transparent 75%);
+  border-radius: 50%;
+  margin-top: 20px;
+  animation: shadowPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes levitate {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-16px); }
+}
+
+@keyframes shadowPulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(0.75); opacity: 0.25; }
+}`,
+      },
+      {
+        id: "d4-scss",
+        type: "code",
+        language: "scss",
+        code: `$color-light: #FFF0F0;
+$color-peach: #FFBCBC;
+$color-magenta: #9E4770;
+$color-base: #1E212D;
+
+.sphere-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  .gradient-sphere {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, $color-light 0%, $color-peach 35%, $color-magenta 70%, $color-base 100%);
+    box-shadow: 0 10px 30px rgba($color-peach, 0.3);
+    animation: levitate 4s ease-in-out infinite alternate;
+  }
+}`,
+      },
+      {
+        id: "d4-tailwind",
+        type: "code",
+        language: "tailwind",
+        code: `<div className="flex flex-col items-center justify-center p-6">
+  <div className="w-32 h-32 rounded-full bg-[radial-gradient(circle_at_35%_30%,#FFF0F0_0%,#FFBCBC_35%,#9E4770_70%,#1E212D_100%)] shadow-2xl shadow-[#FFBCBC]/20 animate-bounce duration-1000" />
+  <div className="w-24 h-3 rounded-full bg-black/40 blur-sm mt-4" />
+</div>`,
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "design-bento-stat-card",
+    type: "design",
+    slug: "bento-grid-stat-widget",
+    title_uk: "Bento Stat: Модульна Картка Метрики",
+    title_en: "Bento Stat: Modular Analytics Tile",
+    description_uk: "Компактний віджет Bento-сітки з динамічним індикатором прогресу, пульсуючим бейджем та неоновим спарклайном.",
+    description_en: "Compact Bento grid widget featuring dynamic progress metrics, pulsating status badge, and glowing sparkline graph.",
+    tags: ["Bento", "Widget", "Dashboard", "Analytics", "Tailwind"],
+    image_url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=600&fit=crop",
+    image_source_url: null,
+    external_url: null,
+    likes: 340,
+    share_count: 88,
+    published: true,
+    sort_order: 5,
+    created_at: "2026-02-24T14:00:00Z",
+    updated_at: "2026-02-24T14:00:00Z",
+    blocks_uk: [
+      {
+        id: "d5-prompt",
+        type: "paragraph",
+        text: "Clean minimalist dark bento-grid tile layout with rounded-2xl geometry, subtle border #3A3F53, live trend pill (+24.8%), glowing peach #FFBCBC accent metric display, and CSS-based sparkline.",
+      },
+      {
+        id: "d5-html",
+        type: "code",
+        language: "html",
+        code: `<div class="bento-tile">
+  <div class="bento-top">
+    <span class="bento-label">Active Deployments</span>
+    <span class="bento-badge">+24.8%</span>
+  </div>
+  <div class="bento-value">1,482<span class="unit">pods</span></div>
+  <div class="bento-bar">
+    <div class="bento-progress" style="width: 78%;"></div>
+  </div>
+</div>`,
+      },
+      {
+        id: "d5-css",
+        type: "code",
+        language: "css",
+        code: `.bento-tile {
+  background: #242836;
+  border: 1px solid #3A3F53;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.25s ease;
+}
+
+.bento-tile:hover {
+  border-color: #FFBCBC;
+}
+
+.bento-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.bento-label {
+  font-size: 13px;
+  color: #A8ADC0;
+  font-weight: 500;
+}
+
+.bento-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFBCBC;
+  background: rgba(255, 188, 188, 0.12);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.bento-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+}
+
+.bento-value .unit {
+  font-size: 14px;
+  color: #FFBCBC;
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+.bento-bar {
+  height: 6px;
+  background: #313647;
+  border-radius: 999px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.bento-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #8B5CF6, #FFBCBC);
+  border-radius: 999px;
+}`,
+      },
+      {
+        id: "d5-scss",
+        type: "code",
+        language: "scss",
+        code: `$bg-card: #242836;
+$border: #3A3F53;
+$accent: #FFBCBC;
+
+.bento-tile {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: 1rem;
+  padding: 1.5rem;
+
+  &:hover {
+    border-color: $accent;
+  }
+
+  .bento-badge {
+    color: $accent;
+    background: rgba($accent, 0.12);
+  }
+}`,
+      },
+      {
+        id: "d5-tailwind",
+        type: "code",
+        language: "tailwind",
+        code: `<div className="rounded-2xl bg-[#242836] border border-[#3A3F53] p-6 hover:border-[#FFBCBC] transition-colors shadow-lg">
+  <div className="flex items-center justify-between mb-3">
+    <span className="text-xs font-medium text-[#A8ADC0]">Active Deployments</span>
+    <span className="text-[11px] font-bold text-[#FFBCBC] bg-[#FFBCBC]/10 px-2 py-0.5 rounded-full">+24.8%</span>
+  </div>
+  <div className="text-3xl font-extrabold text-white tracking-tight">
+    1,482 <span className="text-sm font-medium text-[#FFBCBC]">pods</span>
+  </div>
+  <div className="w-full h-1.5 bg-[#313647] rounded-full mt-4 overflow-hidden">
+    <div className="h-full bg-gradient-to-r from-violet-500 to-[#FFBCBC] rounded-full w-[78%]" />
+  </div>
+</div>`,
+      },
+    ],
+    blocks_en: [],
+  },
+  {
+    id: "design-interactive-toggle-pill",
+    type: "design",
+    slug: "fluid-segmented-toggle-pill",
+    title_uk: "Toggle Pill: Плавний Сегментний Перемикач",
+    title_en: "Toggle Pill: Fluid Segmented Switch",
+    description_uk: "Елегантний перемикач із пружинною анімацією активної каретки, глянцевою текстурою та світлодіодним статусом.",
+    description_en: "Refined segmented pill switch with physics-based sliding thumb, subtle depth gloss, and LED glowing indicator.",
+    tags: ["Toggle", "Pill", "Switch", "Interaction", "CSSAnimation"],
+    image_url: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200&h=600&fit=crop",
+    image_source_url: null,
+    external_url: null,
+    likes: 310,
+    share_count: 74,
+    published: true,
+    sort_order: 6,
+    created_at: "2026-02-24T15:00:00Z",
+    updated_at: "2026-02-24T15:00:00Z",
+    blocks_uk: [
+      {
+        id: "d6-prompt",
+        type: "paragraph",
+        text: "Segmented interactive toggle pill with spring sliding transition, dark slate container #1E212D, high-contrast active peach #FFBCBC thumb, and subtle tactile inner shadow.",
+      },
+      {
+        id: "d6-html",
+        type: "code",
+        language: "html",
+        code: `<div class="pill-switch">
+  <button class="pill-option active">Дизайн</button>
+  <button class="pill-option">Код</button>
+  <button class="pill-option">Стилі</button>
+</div>`,
+      },
+      {
+        id: "d6-css",
+        type: "code",
+        language: "css",
+        code: `.pill-switch {
+  display: inline-flex;
+  background: #1E212D;
+  border: 1px solid #3A3F53;
+  padding: 4px;
+  border-radius: 999px;
+  gap: 4px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.pill-option {
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #A8ADC0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pill-option.active {
+  background: #FFBCBC;
+  color: #1E212D;
+  box-shadow: 0 4px 12px rgba(255, 188, 188, 0.35);
+}
+
+.pill-option:hover:not(.active) {
+  color: #FFFFFF;
+}`,
+      },
+      {
+        id: "d6-scss",
+        type: "code",
+        language: "scss",
+        code: `$bg: #1E212D;
+$border: #3A3F53;
+$accent: #FFBCBC;
+
+.pill-switch {
+  display: inline-flex;
+  background: $bg;
+  border: 1px solid $border;
+  padding: 4px;
+  border-radius: 999px;
+
+  .pill-option {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #A8ADC0;
+
+    &.active {
+      background: $accent;
+      color: $bg;
+    }
+  }
+}`,
+      },
+      {
+        id: "d6-tailwind",
+        type: "code",
+        language: "tailwind",
+        code: `<div className="inline-flex bg-[#1E212D] border border-[#3A3F53] p-1 rounded-full gap-1 shadow-inner">
+  <button className="px-5 py-2 rounded-full text-xs font-semibold bg-[#FFBCBC] text-[#1E212D] shadow-md shadow-[#FFBCBC]/20">
+    Дизайн
+  </button>
+  <button className="px-5 py-2 rounded-full text-xs font-semibold text-[#A8ADC0] hover:text-white transition-colors">
+    Код
+  </button>
+  <button className="px-5 py-2 rounded-full text-xs font-semibold text-[#A8ADC0] hover:text-white transition-colors">
+    Стилі
+  </button>
+</div>`,
+      },
+    ],
+    blocks_en: [],
+  },
 ];
 
 export const getFallbackEntries = (type: ModeEntryType): ModeEntry[] =>

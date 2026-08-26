@@ -18,6 +18,9 @@ import NewsDetail from "./pages/NewsDetail";
 import PaletteDetail from "./pages/PaletteDetail";
 import ResourceDetail from "./pages/ResourceDetail";
 import ComponentDetail from "./pages/ComponentDetail";
+import DictionaryDetail from "./pages/DictionaryDetail";
+import DesignDetail from "./pages/DesignDetail";
+import EditorPage from "./pages/EditorPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ResetRequest from "./pages/ResetRequest";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -29,6 +32,7 @@ import SecretGate from "./pages/SecretGate";
 const Admin = lazy(() => import("./pages/Admin"));
 const ArticleEditor = lazy(() => import("./pages/ArticleEditor"));
 const ModeEntryEditor = lazy(() => import("./pages/ModeEntryEditor"));
+const DictionaryEditor = lazy(() => import("./pages/DictionaryEditor"));
 
 const AdminFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -60,6 +64,9 @@ const App = () => (
                 <Route path="/component/:id" element={<ComponentDetail />} />
                 <Route path="/library/:id" element={<ComponentDetail />} />
                 <Route path="/template/:id" element={<ComponentDetail />} />
+                <Route path="/dictionary/:id" element={<DictionaryDetail />} />
+                <Route path="/design/:id" element={<DesignDetail />} />
+                <Route path="/editor" element={<EditorPage />} />
                 <Route path="/auth" element={<NotFound />} />
                 <Route path="/reset-request/:token" element={<ResetRequest />} />
                 <Route path="/reset-password" element={<UpdatePassword />} />
@@ -109,6 +116,26 @@ const App = () => (
                     <RequireAdmin>
                       <Suspense fallback={<AdminFallback />}>
                         <ModeEntryEditor />
+                      </Suspense>
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/dictionary"
+                  element={
+                    <RequireAdmin>
+                      <Suspense fallback={<AdminFallback />}>
+                        <DictionaryEditor />
+                      </Suspense>
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/dictionary/:id"
+                  element={
+                    <RequireAdmin>
+                      <Suspense fallback={<AdminFallback />}>
+                        <DictionaryEditor />
                       </Suspense>
                     </RequireAdmin>
                   }

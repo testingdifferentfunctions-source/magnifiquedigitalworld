@@ -27,8 +27,42 @@ const translations: Record<Language, Record<string, string>> = {
     'index.no_results': 'Статей не знайдено',
     'index.no_articles': 'Немає статей',
 
+    // Modes
+    'modes.news': 'Новини',
+    'modes.articles': 'Статті',
+    'modes.resources': 'Ресурси',
+    'modes.components': 'Компоненти',
+    'modes.templates': 'Сніпети',
+    'modes.palettes': 'Палітри',
+    'modes.dictionary': 'Словник',
+    'modes.editor': 'Редактор',
+    'modes.design': 'Дизайн',
+
+    // Editor Mode
+    'editor.title': 'Онлайн-Редактор Коду',
+    'editor.subtitle': 'Пишіть та виконуйте код Python безпосередньо у браузері через WebAssembly (Pyodide) без серверного навантаження.',
+    'editor.run': 'Запустити код',
+    'editor.running': 'Виконується...',
+    'editor.stop': 'Зупинити',
+    'editor.reset': 'Скинути код',
+    'editor.clear_console': 'Очистити консоль',
+    'editor.copy': 'Скопіювати код',
+    'editor.copied': 'Скопійовано!',
+    'editor.presets': 'Шаблони коду',
+    'editor.terminal_title': 'Термінал / Консоль',
+    'editor.status_ready': 'Готовий',
+    'editor.status_running': 'Виконується',
+    'editor.status_success': 'Успішно завершено',
+    'editor.status_error': 'Помилка виконання',
+    'editor.status_timeout': 'Перевищено ліміт часу (10с)',
+    'editor.welcome': 'Готово до виконання. Натисніть "Запустити код" для тестування скрипту.',
+    'editor.loading_engine': 'Ініціалізація рушія WebAssembly Pyodide...',
+    'editor.exec_time': 'Час виконання',
+
     // Search
     'search.placeholder': 'Пошук статей...',
+    'search.semantic_default': 'Семантичний пошук...',
+    'pills.all': 'Всі',
 
     // Filters
     'filters.sort': 'Сортування',
@@ -128,8 +162,42 @@ const translations: Record<Language, Record<string, string>> = {
     'index.no_results': 'No articles found',
     'index.no_articles': 'No articles yet',
 
+    // Modes
+    'modes.news': 'News',
+    'modes.articles': 'Articles',
+    'modes.resources': 'Resources',
+    'modes.components': 'Components',
+    'modes.templates': 'Snippets',
+    'modes.palettes': 'Palettes',
+    'modes.dictionary': 'Dictionary',
+    'modes.editor': 'Editor',
+    'modes.design': 'Design',
+
+    // Editor Mode
+    'editor.title': 'Online Code Editor',
+    'editor.subtitle': 'Write and execute Python code directly in your browser via WebAssembly (Pyodide) with zero server latency.',
+    'editor.run': 'Run Code',
+    'editor.running': 'Running...',
+    'editor.stop': 'Stop',
+    'editor.reset': 'Reset Code',
+    'editor.clear_console': 'Clear Console',
+    'editor.copy': 'Copy Code',
+    'editor.copied': 'Copied!',
+    'editor.presets': 'Code Templates',
+    'editor.terminal_title': 'Terminal / Console',
+    'editor.status_ready': 'Ready',
+    'editor.status_running': 'Running',
+    'editor.status_success': 'Completed Successfully',
+    'editor.status_error': 'Execution Error',
+    'editor.status_timeout': 'Timed Out (10s limit)',
+    'editor.welcome': 'Ready for execution. Click "Run Code" to test the script.',
+    'editor.loading_engine': 'Initializing Pyodide WebAssembly engine...',
+    'editor.exec_time': 'Execution time',
+
     // Search
     'search.placeholder': 'Search articles...',
+    'search.semantic_default': 'Semantic search...',
+    'pills.all': 'All',
 
     // Filters
     'filters.sort': 'Sort',

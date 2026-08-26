@@ -41,6 +41,7 @@ import {
   Newspaper,
   Palette,
   BookOpen,
+  BookMarked,
   Code,
   Tag,
   Search,
@@ -98,6 +99,20 @@ const MODE_CONFIG: {
     subLabel: "Стилі та теми кольорів",
     icon: Palette,
     accent: "#8ABEB9",
+  },
+  {
+    id: "design",
+    label: "Дизайн",
+    subLabel: "UI картки, компоненти та ефекти",
+    icon: Sparkles,
+    accent: "#FFBCBC",
+  },
+  {
+    id: "dictionary",
+    label: "Словник",
+    subLabel: "Терміни та концепції CS",
+    icon: BookMarked,
+    accent: "#F3CD97",
   },
 ];
 

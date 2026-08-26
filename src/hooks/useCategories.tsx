@@ -7,7 +7,10 @@ export type CategoryMode =
   | "resources"
   | "components"
   | "templates"
-  | "palettes";
+  | "palettes"
+  | "dictionary"
+  | "design"
+  | "editor";
 
 export interface Subcategory {
   id: string;
@@ -44,6 +47,9 @@ export const normalizeCategoryMode = (mode?: string): CategoryMode => {
   if (m === "component" || m === "components") return "components";
   if (m === "template" || m === "templates" || m === "snippets") return "templates";
   if (m === "palette" || m === "palettes") return "palettes";
+  if (m === "dictionary" || m === "terms" || m === "vocab") return "dictionary";
+  if (m === "design" || m === "designs") return "design";
+  if (m === "editor" || m === "code" || m === "playground") return "editor";
   return "articles";
 };
 
@@ -301,6 +307,100 @@ export const DEFAULT_SEED_CATEGORIES: Record<
       slug: "fintech",
       image_url: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&fit=crop",
       subcategories: ["Crypto Indigo", "Banking Emerald", "Purple Glow", "Sunset Gold", "Royal Navy"],
+    },
+  ],
+  dictionary: [
+    {
+      id: "dict-arch",
+      name: "Архітектура & Патерни",
+      name_en: "Architecture & Patterns",
+      slug: "architecture",
+      image_url: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400&fit=crop",
+      subcategories: ["Microservices", "CQRS", "Event Sourcing", "SOLID", "Clean Architecture", "Dependency Injection"],
+    },
+    {
+      id: "dict-cs",
+      name: "Computer Science",
+      name_en: "Computer Science",
+      slug: "cs",
+      image_url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&fit=crop",
+      subcategories: ["Алгоритми", "Структури даних", "Складність O(n)", "Конкурентність", "Мемоізація"],
+    },
+    {
+      id: "dict-web",
+      name: "Веб & Мережі",
+      name_en: "Web & Networking",
+      slug: "networking",
+      image_url: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=400&fit=crop",
+      subcategories: ["HTTP/3", "WebSocket", "GraphQL", "REST", "CORS", "OAuth2", "gRPC"],
+    },
+    {
+      id: "dict-db",
+      name: "Бази даних & Storage",
+      name_en: "Databases & Storage",
+      slug: "databases",
+      image_url: "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&fit=crop",
+      subcategories: ["ACID", "Індексація", "Sharding", "CAP теорема", "Vector Search", "Redis"],
+    },
+  ],
+  editor: [
+    {
+      id: "ed-basics",
+      name: "Основи & Синтаксис",
+      name_en: "Basics & Syntax",
+      slug: "basics",
+      image_url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&fit=crop",
+      subcategories: ["Hello World", "Змінні & Типи", "Списки & Словники", "Функції", "OOP Класи"],
+    },
+    {
+      id: "ed-algo",
+      name: "Алгоритми & CS",
+      name_en: "Algorithms & CS",
+      slug: "algorithms",
+      image_url: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400&fit=crop",
+      subcategories: ["Фібоначчі", "Швидке сортування", "Бінарний пошук", "Динамічне програмування", "Графи BFS/DFS"],
+    },
+    {
+      id: "ed-math",
+      name: "Математика & Data",
+      name_en: "Math & Data",
+      slug: "math-data",
+      image_url: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&fit=crop",
+      subcategories: ["Генератор чисел", "Статистика", "Матриці", "JSON Парсер", "Регулярні вирази"],
+    },
+    {
+      id: "ed-wasm",
+      name: "WebAssembly & Скрипти",
+      name_en: "WebAssembly & Scripts",
+      slug: "wasm-scripts",
+      image_url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&fit=crop",
+      subcategories: ["ASCII Арт", "Таймер & Бенчмарк", "Шифрування", "Обробка тексту"],
+    },
+  ],
+  design: [
+    {
+      id: "des-ui-kits",
+      name: "UI Компоненти & Елементи",
+      name_en: "UI Components & Elements",
+      slug: "ui-elements",
+      image_url: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=400&fit=crop",
+      subcategories: ["Glow кнопки", "Карточки", "Segmented Controls", "Glassmorphism", "Bento Grid", "Анімації"],
+    },
+    {
+      id: "des-visual-effects",
+      name: "Візуальні ефекти & Градієнти",
+      name_en: "Visual Effects & Gradients",
+      slug: "visual-effects",
+      image_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&fit=crop",
+      subcategories: ["Aurora Mesh", "Neon Glow", "Cyberpunk", "3D Сфери", "Dark Mode UI"],
+    },
+    {
+      id: "des-layouts",
+      name: "Макети та Dashboards",
+      name_en: "Layouts & Dashboards",
+      slug: "layouts",
+      image_url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&fit=crop",
+      subcategories: ["SaaS Дашборди", "Hero секції", "Навігаційні бари", "Footer блоки"],
     },
   ],
 };

@@ -3,8 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseBlocks, type ContentBlock } from "@/lib/blocks";
 import type { Lang } from "@/lib/localize";
 import { getFallbackEntries, getFallbackEntryById } from "@/data/modeItems";
+import type { AppMode } from "@/hooks/useMode";
+import type { Article } from "@/hooks/useArticles";
+import { generateEntryEmbedding } from "@/lib/semanticSearch";
 
-export type ModeEntryType = "news" | "resource" | "component" | "template" | "palette";
+export type ModeEntryType = "news" | "resource" | "component" | "template" | "palette" | "dictionary" | "design";
 
 export interface ModeEntry {
   id: string;
@@ -96,6 +99,8 @@ export const useAllModeEntries = (publishedOnly = false) =>
         ...getFallbackEntries("component"),
         ...getFallbackEntries("template"),
         ...getFallbackEntries("palette"),
+        ...getFallbackEntries("dictionary"),
+        ...getFallbackEntries("design"),
       ];
     },
   });
@@ -128,9 +133,22 @@ export const useCreateModeEntry = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (entry: ModeEntryInput) => {
+      const embedding = generateEntryEmbedding({
+        title_uk: entry.title_uk,
+        title_en: entry.title_en,
+        description_uk: entry.description_uk,
+        description_en: entry.description_en,
+        tags: entry.tags,
+        blocks_uk: entry.blocks_uk,
+        blocks_en: entry.blocks_en,
+      });
+
       const { data, error } = await supabase
         .from("mode_entries")
-        .insert(entry as any)
+        .insert({
+          ...entry,
+          embedding: embedding as any,
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -144,9 +162,29 @@ export const useUpdateModeEntry = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...entry }: Partial<ModeEntryInput> & { id: string }) => {
+      const payload: Record<string, any> = { ...entry };
+
+      // Re-generate vector embedding if title, description, tags or blocks are being updated
+      if (
+        entry.title_uk !== undefined ||
+        entry.description_uk !== undefined ||
+        entry.tags !== undefined ||
+        entry.blocks_uk !== undefined
+      ) {
+        payload.embedding = generateEntryEmbedding({
+          title_uk: entry.title_uk || "",
+          title_en: entry.title_en,
+          description_uk: entry.description_uk || "",
+          description_en: entry.description_en,
+          tags: entry.tags,
+          blocks_uk: entry.blocks_uk,
+          blocks_en: entry.blocks_en,
+        });
+      }
+
       const { data, error } = await supabase
         .from("mode_entries")
-        .update(entry as any)
+        .update(payload as any)
         .eq("id", id)
         .select()
         .single();
@@ -192,4 +230,133 @@ export const incrementModeEntryShares = async (entryId: string) => {
   } catch (err) {
     console.error("Failed to increment entry share count:", err);
   }
+};
+
+/**
+ * Universal hook to fetch most popular entries strictly based on activeMode.
+ * Uses exact dynamic table and ordering (reads/views for articles, share_count/likes for mode entries).
+ */
+export const usePopularEntriesByMode = (mode: AppMode | string, limit = 10) => {
+  return useQuery({
+    queryKey: ["popular-entries", mode, limit],
+    queryFn: async () => {
+      let normalized = (mode || "articles").toLowerCase();
+      if (normalized === "editor" || normalized === "редактор") {
+        normalized = "articles";
+      }
+      if (normalized === "articles" || normalized === "article") {
+        const { data, error } = await supabase
+          .from("articles")
+          .select("*")
+          .eq("published", true)
+          .order("reads", { ascending: false })
+          .limit(limit);
+        if (error) {
+          console.warn("Failed to fetch popular articles:", error);
+          return [];
+        }
+        return (data || []) as Article[];
+      }
+
+      let type: ModeEntryType = "news";
+      if (normalized === "resources" || normalized === "resource") type = "resource";
+      else if (normalized === "components" || normalized === "component") type = "component";
+      else if (
+        normalized === "templates" ||
+        normalized === "template" ||
+        normalized === "snippets" ||
+        normalized === "snippet"
+      )
+        type = "template";
+      else if (normalized === "palettes" || normalized === "palette") type = "palette";
+      else if (normalized === "dictionary" || normalized === "terms") type = "dictionary";
+      else if (normalized === "design" || normalized === "дизайн") type = "design";
+      else if (normalized === "news") type = "news";
+
+      try {
+        const { data, error } = await supabase
+          .from("mode_entries")
+          .select("*")
+          .eq("type", type)
+          .eq("published", true)
+          .order("share_count", { ascending: false })
+          .order("likes", { ascending: false })
+          .limit(limit);
+
+        if (!error && data && data.length > 0) {
+          return (data ?? []).map(mapRow);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch popular mode entries from Supabase, using fallback:", err);
+      }
+
+      const fallbacks = getFallbackEntries(type);
+      return [...fallbacks]
+        .sort((a, b) => ((b.share_count || 0) + (b.likes || 0)) - ((a.share_count || 0) + (a.likes || 0)))
+        .slice(0, limit);
+    },
+  });
+};
+
+/**
+ * Universal hook to fetch most liked entries strictly based on activeMode.
+ * Uses exact dynamic table and ordering (likes descending).
+ */
+export const useLikedEntriesByMode = (mode: AppMode | string, limit = 10) => {
+  return useQuery({
+    queryKey: ["liked-entries", mode, limit],
+    queryFn: async () => {
+      let normalized = (mode || "articles").toLowerCase();
+      if (normalized === "editor" || normalized === "редактор") {
+        normalized = "articles";
+      }
+      if (normalized === "articles" || normalized === "article") {
+        const { data, error } = await supabase
+          .from("articles")
+          .select("*")
+          .eq("published", true)
+          .order("likes", { ascending: false })
+          .limit(limit);
+        if (error) {
+          console.warn("Failed to fetch liked articles:", error);
+          return [];
+        }
+        return (data || []) as Article[];
+      }
+
+      let type: ModeEntryType = "news";
+      if (normalized === "resources" || normalized === "resource") type = "resource";
+      else if (normalized === "components" || normalized === "component") type = "component";
+      else if (
+        normalized === "templates" ||
+        normalized === "template" ||
+        normalized === "snippets" ||
+        normalized === "snippet"
+      )
+        type = "template";
+      else if (normalized === "palettes" || normalized === "palette") type = "palette";
+      else if (normalized === "dictionary" || normalized === "terms") type = "dictionary";
+      else if (normalized === "design" || normalized === "дизайн") type = "design";
+      else if (normalized === "news") type = "news";
+
+      try {
+        const { data, error } = await supabase
+          .from("mode_entries")
+          .select("*")
+          .eq("type", type)
+          .eq("published", true)
+          .order("likes", { ascending: false })
+          .limit(limit);
+
+        if (!error && data && data.length > 0) {
+          return (data ?? []).map(mapRow);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch liked mode entries from Supabase, using fallback:", err);
+      }
+
+      const fallbacks = getFallbackEntries(type);
+      return [...fallbacks].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, limit);
+    },
+  });
 };

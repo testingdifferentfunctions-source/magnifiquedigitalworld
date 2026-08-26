@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.svg";
 import { LogOut, Settings, Globe } from "lucide-react";
 
 const Header = () => {
@@ -23,15 +23,15 @@ const Header = () => {
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-3 sm:py-3.5">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3 group">
             <img 
               src={logo} 
-               alt="Magnifique numérique" 
-               className="w-10 h-10 rounded-lg object-cover"
+              alt="Magnifique numérique" 
+              className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform duration-200"
             />
-            <span className="text-xl font-bold text-foreground">Magnifique numérique</span>
+            <span className="text-xl font-bold text-foreground tracking-tight">Magnifique numérique</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">

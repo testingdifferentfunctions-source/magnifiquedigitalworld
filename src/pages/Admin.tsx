@@ -20,6 +20,7 @@ import {
   Newspaper,
   Palette,
   BookOpen,
+  BookMarked,
   Layers,
   Code,
   Settings,
@@ -32,6 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sparkles } from 'lucide-react';
 import SocialLinksManager from '@/components/SocialLinksManager';
 import ModeEntriesManager from '@/components/ModeEntriesManager';
 import CategoryManager from '@/components/CategoryManager';
@@ -119,6 +121,18 @@ const Admin = () => {
                 <Link to="/admin/entry/template" className="flex items-center gap-2 cursor-pointer">
                   <Code className="w-4 h-4 text-[#C562AF]" />
                   <span>Сніпет коду (Сніпети)</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/admin/dictionary" className="flex items-center gap-2 cursor-pointer">
+                  <BookMarked className="w-4 h-4 text-[#F3CD97]" />
+                  <span>Термін (Словник)</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/admin/entry/design" className="flex items-center gap-2 cursor-pointer">
+                  <Sparkles className="w-4 h-4 text-[#FFBCBC]" />
+                  <span>Дизайн (UI & Градієнти)</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>

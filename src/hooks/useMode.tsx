@@ -1,6 +1,200 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 
-export type AppMode = "news" | "articles" | "resources" | "components" | "templates" | "palettes";
+export type AppMode = "news" | "articles" | "resources" | "components" | "templates" | "palettes" | "design" | "dictionary" | "editor";
+
+export type Language = "uk" | "en";
+
+export interface ModeInfo {
+  label: Record<Language, string>;
+  title: Record<Language, string>;
+  subtitle: Record<Language, string>;
+  searchPlaceholder: Record<Language, string>;
+  emptySearch: Record<Language, string>;
+  emptyDefault: Record<Language, string>;
+}
+
+export const MODE_METADATA: Record<AppMode, ModeInfo> = {
+  news: {
+    label: { uk: "Новини", en: "News" },
+    title: { uk: "Новини", en: "Latest News" },
+    subtitle: {
+      uk: "Свіжі новини IT-індустрії, релізи мов програмування, веб-технологій та штучного інтелекту.",
+      en: "Latest IT industry news, programming language releases, web tech, and AI updates.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук новин...",
+      en: "Search news...",
+    },
+    emptySearch: {
+      uk: "Нічого не знайдено за вашим запитом",
+      en: "No news found matching your query",
+    },
+    emptyDefault: {
+      uk: "Ще немає новин",
+      en: "No news yet",
+    },
+  },
+  articles: {
+    label: { uk: "Статті", en: "Articles" },
+    title: { uk: "Останні статті", en: "Latest Articles" },
+    subtitle: {
+      uk: "Вивчайте програмування разом з нами",
+      en: "Learn programming with us",
+    },
+    searchPlaceholder: {
+      uk: "Пошук статей...",
+      en: "Search articles...",
+    },
+    emptySearch: {
+      uk: "Статей не знайдено",
+      en: "No articles found",
+    },
+    emptyDefault: {
+      uk: "Немає статей",
+      en: "No articles yet",
+    },
+  },
+  resources: {
+    label: { uk: "Ресурси", en: "Resources" },
+    title: { uk: "Ресурси", en: "Resources" },
+    subtitle: {
+      uk: "Корисні сервіси, інструменти та платформи для навчання й продуктивної розробки.",
+      en: "Useful services, tools, and platforms for learning and productive development.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук ресурсів та інструментів...",
+      en: "Search resources & tools...",
+    },
+    emptySearch: {
+      uk: "Нічого не знайдено за вашим запитом",
+      en: "No resources found matching your query",
+    },
+    emptyDefault: {
+      uk: "Ще немає ресурсів",
+      en: "No resources yet",
+    },
+  },
+  components: {
+    label: { uk: "Компоненти", en: "Components" },
+    title: { uk: "Компоненти", en: "Components" },
+    subtitle: {
+      uk: "Бібліотеки, пакети та фреймворки для ваших проєктів.",
+      en: "Libraries, packages, and frameworks for your projects.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук бібліотек та компонентів...",
+      en: "Search libraries & components...",
+    },
+    emptySearch: {
+      uk: "Нічого не знайдено за вашим запитом",
+      en: "No components found matching your query",
+    },
+    emptyDefault: {
+      uk: "Ще немає компонентів",
+      en: "No components yet",
+    },
+  },
+  templates: {
+    label: { uk: "Сніпети", en: "Snippets" },
+    title: { uk: "Сніпети", en: "Code Snippets" },
+    subtitle: {
+      uk: "Готові до копіювання сніпети, функції та шаблони коду для швидкої розробки.",
+      en: "Ready-to-copy code snippets, functions, and templates for rapid development.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук сніпетів коду...",
+      en: "Search code snippets...",
+    },
+    emptySearch: {
+      uk: "Нічого не знайдено за вашим запитом",
+      en: "No snippets found matching your query",
+    },
+    emptyDefault: {
+      uk: "Ще немає сніпетів коду",
+      en: "No snippets yet",
+    },
+  },
+  palettes: {
+    label: { uk: "Палітри", en: "Palettes" },
+    title: { uk: "Палітри", en: "Color Palettes" },
+    subtitle: {
+      uk: "Добірка колірних палітр реальних вебсайтів для вашого натхнення та швидкої інтеграції.",
+      en: "Curated color palettes from real websites for inspiration and fast integration.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук колірних палітр...",
+      en: "Search color palettes...",
+    },
+    emptySearch: {
+      uk: "Нічого не знайдено за вашим запитом",
+      en: "No palettes found matching your query",
+    },
+    emptyDefault: {
+      uk: "Ще немає доданих палітр",
+      en: "No palettes yet",
+    },
+  },
+  design: {
+    label: { uk: "Дизайн", en: "Design" },
+    title: { uk: "UI-Елементи та Градієнти", en: "UI Elements & Gradients" },
+    subtitle: {
+      uk: "Ексклюзивні UI-компоненти, естетичні градієнти та готові стилі для сучасного веб-дизайну.",
+      en: "Exclusive UI components, aesthetic gradients, and ready-to-use styles for modern web design.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук дизайнів, градієнтів та UI-елементів...",
+      en: "Search designs, gradients & UI elements...",
+    },
+    emptySearch: {
+      uk: "Дизайнів не знайдено за вашим запитом",
+      en: "No designs found matching your query",
+    },
+    emptyDefault: {
+      uk: "Ще немає доданих дизайнів",
+      en: "No designs yet",
+    },
+  },
+  dictionary: {
+    label: { uk: "Словник", en: "Dictionary" },
+    title: { uk: "IT-Словник", en: "IT Dictionary" },
+    subtitle: {
+      uk: "Грунтовні пояснення технічних термінів, концепцій компʼютерних наук та архітектурних патернів.",
+      en: "In-depth explanations of technical terms, computer science concepts, and architectural patterns.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук термінів у словнику...",
+      en: "Search technical terms in dictionary...",
+    },
+    emptySearch: {
+      uk: "Термінів не знайдено за вашим запитом",
+      en: "No dictionary terms found matching your query",
+    },
+    emptyDefault: {
+      uk: "Ще немає доданих термінів",
+      en: "No dictionary terms yet",
+    },
+  },
+  editor: {
+    label: { uk: "Редактор", en: "Editor" },
+    title: { uk: "Онлайн-Редактор Коду", en: "Online Code Editor" },
+    subtitle: {
+      uk: "Пишіть та виконуйте код Python безпосередньо у браузері через WebAssembly (Pyodide) без серверного навантаження.",
+      en: "Write and execute Python code directly in your browser via WebAssembly (Pyodide) with zero server latency.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук коду та функцій...",
+      en: "Search code & functions...",
+    },
+    emptySearch: {
+      uk: "Нічого не знайдено за вашим запитом",
+      en: "No results found matching your query",
+    },
+    emptyDefault: {
+      uk: "Консоль готова до роботи",
+      en: "Console ready for execution",
+    },
+  },
+};
 
 export const MODE_LABELS: Record<AppMode, string> = {
   news: "Новини",
@@ -9,15 +203,47 @@ export const MODE_LABELS: Record<AppMode, string> = {
   components: "Компоненти",
   templates: "Сніпети",
   palettes: "Палітри",
+  design: "Дизайн",
+  dictionary: "Словник",
+  editor: "Редактор",
+};
+
+export const getModeLabel = (mode: AppMode, lang: Language = "uk"): string => {
+  return MODE_METADATA[mode]?.label[lang] || MODE_LABELS[mode] || mode;
+};
+
+export const getModeTitle = (mode: AppMode, lang: Language = "uk"): string => {
+  return MODE_METADATA[mode]?.title[lang] || MODE_METADATA[mode]?.label[lang] || mode;
+};
+
+export const getModeSubtitle = (mode: AppMode, lang: Language = "uk"): string => {
+  return MODE_METADATA[mode]?.subtitle[lang] || "";
+};
+
+export const getModeSearchPlaceholder = (mode: AppMode, lang: Language = "uk"): string => {
+  return MODE_METADATA[mode]?.searchPlaceholder[lang] || (lang === "en" ? "Search..." : "Пошук...");
+};
+
+export const getModeEmptyMessage = (
+  mode: AppMode,
+  isSearching: boolean,
+  lang: Language = "uk"
+): string => {
+  const meta = MODE_METADATA[mode];
+  if (!meta) return isSearching ? (lang === "en" ? "No results found" : "Нічого не знайдено") : "";
+  return isSearching ? meta.emptySearch[lang] : meta.emptyDefault[lang];
 };
 
 export const MODE_ACCENTS: Record<AppMode, string> = {
   news: "#A4B885",
   palettes: "#8ABEB9",
+  design: "#FFBCBC",
   articles: "#A07DFA",
   resources: "#5DA7DB",
   components: "#F1F5F9",
   templates: "#C562AF",
+  dictionary: "#F3CD97",
+  editor: "#BDA6CE",
 };
 
 /**
@@ -98,6 +324,48 @@ const MODE_THEMES: Record<AppMode, ModeTheme> = {
     "--accent": "174 29% 65%", // #8ABEB9 accent
     "--accent-foreground": "0 0% 12%",
     "--ring": "174 29% 65%",
+  },
+  design: {
+    "--background": "246 100% 5.5%", // #03001C ultra-dark aesthetic
+    "--card": "246 60% 8%", // #08051E deep dark card container
+    "--popover": "246 60% 8%", // #08051E
+    "--muted": "246 30% 14%", // #181433
+    "--muted-foreground": "246 15% 70%", // #9ea0b8
+    "--border": "246 35% 18%", // #231f3d
+    "--input": "246 35% 18%", // #231f3d
+    "--primary": "0 100% 87%", // #FFBCBC pastel peach accent
+    "--primary-foreground": "246 100% 5.5%", // #03001C high contrast dark text
+    "--accent": "0 100% 87%", // #FFBCBC
+    "--accent-foreground": "246 100% 5.5%", // #03001C
+    "--ring": "0 100% 87%",
+  },
+  dictionary: {
+    "--background": "0 0% 8.2%", // #151515 sleek classic dark background
+    "--card": "0 0% 12%", // #1F1F1F
+    "--popover": "0 0% 12%",
+    "--muted": "0 0% 16%", // #292929
+    "--muted-foreground": "0 0% 72%",
+    "--border": "0 0% 20%", // #333333
+    "--input": "0 0% 20%",
+    "--primary": "35 79% 77%", // #F3CD97 softer gold accent
+    "--primary-foreground": "0 0% 8.2%", // #151515
+    "--accent": "35 79% 77%", // #F3CD97
+    "--accent-foreground": "0 0% 8.2%",
+    "--ring": "35 79% 77%",
+  },
+  editor: {
+    "--background": "0 0% 1.2%", // #030303 OLED pure dark background
+    "--card": "0 0% 2.4%", // #060606
+    "--popover": "0 0% 2.4%",
+    "--muted": "0 0% 6%", // #0f0f0f
+    "--muted-foreground": "0 0% 70%",
+    "--border": "0 0% 13%", // #212121
+    "--input": "0 0% 13%",
+    "--primary": "275 29% 73%", // #BDA6CE lavender accent
+    "--primary-foreground": "0 0% 10%",
+    "--accent": "275 29% 73%", // #BDA6CE
+    "--accent-foreground": "0 0% 10%",
+    "--ring": "275 29% 73%",
   },
 };
 

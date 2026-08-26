@@ -15,6 +15,7 @@ import { useCategories } from "@/hooks/useCategories";
 import PageLayout from "@/components/PageLayout";
 import BlockEditor from "@/components/BlockEditor";
 import PaletteColorEditor from "@/components/PaletteColorEditor";
+import DesignEntryEditor from "@/components/DesignEntryEditor";
 import TagInput from "@/components/TagInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,12 +44,14 @@ const TYPE_OPTIONS: { value: ModeEntryType; label: string }[] = [
   { value: "resource", label: "Ресурси (Resources)" },
   { value: "component", label: "Компоненти (Components)" },
   { value: "template", label: "Сніпети (Snippets)" },
+  { value: "dictionary", label: "Словник (Dictionary)" },
+  { value: "design", label: "Дизайн (Design)" },
 ];
 
-const VALID_TYPES: ModeEntryType[] = ["news", "palette", "resource", "component", "template"];
+const VALID_TYPES: ModeEntryType[] = ["news", "palette", "resource", "component", "template", "dictionary", "design"];
 
 const modeEntrySchema = z.object({
-  type: z.enum(["news", "palette", "resource", "component", "template"]),
+  type: z.enum(["news", "palette", "resource", "component", "template", "dictionary", "design"]),
   slug: z.string().trim().optional().nullable().or(z.literal("")),
   title_uk: z
     .string()
@@ -161,7 +164,10 @@ const ModeEntryEditor = () => {
   }, [existingEntry, rawType, reset, setValue]);
 
   const watchedImageUrl = watch("image_url");
-  const isCodeMode = watchedType === "component" || watchedType === "template";
+  const isCodeMode =
+    watchedType === "component" ||
+    watchedType === "template" ||
+    watchedType === "dictionary";
 
   const handleImageUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -201,7 +207,10 @@ const ModeEntryEditor = () => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const isCodeOnly = values.type === "component" || values.type === "template";
+      const isCodeOnly =
+        values.type === "component" ||
+        values.type === "template" ||
+        values.type === "dictionary";
       const payload = {
         type: values.type,
         slug: values.slug?.trim() || null,
@@ -546,7 +555,7 @@ const ModeEntryEditor = () => {
             </CardContent>
           </Card>
 
-          {/* Content Editor Section (Palette Color Detail Blocks OR General Block Editor) */}
+          {/* Content Editor Section (Palette, Design, OR General Block Editor) */}
           {watchedType === "palette" ? (
             <Card className="bg-card border-border">
               <CardHeader>
@@ -592,6 +601,54 @@ const ModeEntryEditor = () => {
                 </Tabs>
               </CardContent>
             </Card>
+          ) : watchedType === "design" ? (
+            <div className="space-y-4">
+              <Tabs
+                value={activeTab}
+                onValueChange={(v) => setActiveTab(v as "uk" | "en")}
+              >
+                <TabsList className="mb-4 grid w-full grid-cols-2">
+                  <TabsTrigger value="uk">Українська версія (UK)</TabsTrigger>
+                  <TabsTrigger value="en">English version (EN)</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="uk" className="space-y-4">
+                  <Controller
+                    control={control}
+                    name="blocks_uk"
+                    render={({ field }) => (
+                      <DesignEntryEditor
+                        blocks={field.value || []}
+                        onChange={(newBlocks) => field.onChange(newBlocks)}
+                        titleUk={watch("title_uk")}
+                        descriptionUk={watch("description_uk")}
+                        imageUrl={watch("image_url") || ""}
+                        onImageUrlChange={(url) => setValue("image_url", url, { shouldDirty: true })}
+                        locale="uk"
+                      />
+                    )}
+                  />
+                </TabsContent>
+
+                <TabsContent value="en" className="space-y-4">
+                  <Controller
+                    control={control}
+                    name="blocks_en"
+                    render={({ field }) => (
+                      <DesignEntryEditor
+                        blocks={field.value || []}
+                        onChange={(newBlocks) => field.onChange(newBlocks)}
+                        titleUk={watch("title_en") || watch("title_uk")}
+                        descriptionUk={watch("description_en") || watch("description_uk")}
+                        imageUrl={watch("image_url") || ""}
+                        onImageUrlChange={(url) => setValue("image_url", url, { shouldDirty: true })}
+                        locale="en"
+                      />
+                    )}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
           ) : (
             <Card className="bg-card border-border">
               <CardHeader>

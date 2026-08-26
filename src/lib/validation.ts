@@ -89,6 +89,69 @@ export const articleSchema = z.object({
     .or(z.literal('')),
 });
 
+// Dictionary entry validation schema (strictly text-focused, no image requirements)
+export const dictionaryEntrySchema = z.object({
+  type: z.literal("dictionary").default("dictionary"),
+  slug: z.string().trim().max(120).optional().nullable().or(z.literal("")),
+  title_uk: z
+    .string()
+    .trim()
+    .min(1, { message: "Назва терміну (UK) обов'язкова" })
+    .max(200, { message: "Назва занадто довга (макс. 200 символів)" }),
+  title_en: z
+    .string()
+    .trim()
+    .max(200, { message: "Title is too long (max 200 chars)" })
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  description_uk: z
+    .string()
+    .trim()
+    .min(1, { message: "Коротке визначення (UK) обов'язкове" })
+    .max(2000, { message: "Визначення занадто довге (макс. 2000 символів)" }),
+  description_en: z
+    .string()
+    .trim()
+    .max(2000, { message: "Description is too long (max 2000 chars)" })
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  category_id: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  external_url: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  tags: z
+    .array(z.string().trim().min(1).max(40))
+    .max(15, { message: "Максимум 15 тегів" })
+    .default([]),
+  published: z.boolean().default(true),
+  canonical_url_uk: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  canonical_url_en: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  blocks_uk: z.array(z.any()).default([]),
+  blocks_en: z.array(z.any()).default([]),
+});
+
+export type DictionaryEntryFormValues = z.infer<typeof dictionaryEntrySchema>;
+
 // Category validation schemas
 export const categorySchema = z.object({
   name: z
@@ -104,7 +167,7 @@ export const categorySchema = z.object({
     .nullable()
     .or(z.literal('')),
   mode: z
-    .enum(['articles', 'news', 'resources', 'components', 'templates', 'palettes', 'resource', 'component', 'template', 'palette'])
+    .enum(['articles', 'news', 'resources', 'components', 'templates', 'palettes', 'resource', 'component', 'template', 'palette', 'dictionary', 'design', 'designs', 'editor'])
     .default('articles'),
   slug: z
     .string()

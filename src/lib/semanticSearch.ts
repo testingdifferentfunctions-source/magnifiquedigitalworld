@@ -62,6 +62,47 @@ export function generateEmbedding(text: string, dimensions = EMBEDDING_DIMENSION
   return Array.from(vector);
 }
 
+/**
+ * Generates an aggregated embedding vector for a dictionary entry from its title, definition, tags, and content blocks.
+ */
+export function generateEntryEmbedding(entry: {
+  title_uk: string;
+  title_en?: string | null;
+  description_uk: string;
+  description_en?: string | null;
+  tags?: string[];
+  blocks_uk?: any[];
+  blocks_en?: any[];
+}): number[] {
+  const extractBlockText = (blocks?: any[]): string => {
+    if (!blocks || !Array.isArray(blocks)) return "";
+    return blocks
+      .map((b) => {
+        if (!b) return "";
+        if (b.type === "header" || b.type === "paragraph") return b.text || "";
+        if (b.type === "list" && Array.isArray(b.items)) return b.items.join(" ");
+        if (b.type === "code") return `${b.language || ""} ${b.code || ""}`;
+        return "";
+      })
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  const textPayload = [
+    entry.title_uk,
+    entry.title_en || "",
+    entry.description_uk,
+    entry.description_en || "",
+    (entry.tags || []).join(" "),
+    extractBlockText(entry.blocks_uk),
+    extractBlockText(entry.blocks_en),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return generateEmbedding(textPayload);
+}
+
 export interface SemanticSearchResult {
   id: string;
   title: string;
@@ -71,7 +112,63 @@ export interface SemanticSearchResult {
 }
 
 /**
- * Queries Supabase match_documents / match_articles / match_mode_entries RPC functions
+ * Searches dictionary entries specifically via Supabase RPC match_dictionary_entries
+ */
+export async function searchDictionarySemanticRpc(
+  query: string,
+  threshold = 0.05,
+  limit = 30
+): Promise<SemanticSearchResult[]> {
+  if (!query || !query.trim()) return [];
+  const embedding = generateEmbedding(query);
+
+  try {
+    const { data, error } = await supabase.rpc("match_dictionary_entries" as any, {
+      query_embedding: embedding as any,
+      match_threshold: threshold,
+      match_count: limit,
+    });
+
+    if (!error && data && Array.isArray(data) && data.length > 0) {
+      return data.map((item: any) => ({
+        id: item.id,
+        title: item.title_uk || item.title || "",
+        description: item.description_uk || item.description || "",
+        similarity: item.similarity ?? 0.5,
+        content_type: "dictionary",
+      }));
+    }
+  } catch (err) {
+    console.debug("match_dictionary_entries RPC fallback:", err);
+  }
+
+  // Fallback to match_mode_entries
+  try {
+    const { data, error } = await supabase.rpc("match_mode_entries" as any, {
+      query_embedding: embedding as any,
+      filter_type: "dictionary",
+      match_threshold: threshold,
+      match_count: limit,
+    });
+
+    if (!error && data && Array.isArray(data) && data.length > 0) {
+      return data.map((item: any) => ({
+        id: item.id,
+        title: item.title_uk || item.title || "",
+        description: item.description_uk || item.description || "",
+        similarity: item.similarity ?? 0.5,
+        content_type: "dictionary",
+      }));
+    }
+  } catch (err) {
+    console.debug("match_mode_entries RPC fallback:", err);
+  }
+
+  return [];
+}
+
+/**
+ * Queries Supabase match_documents / match_dictionary_entries / match_mode_entries RPC functions
  * with a vector(384) query embedding.
  */
 export async function searchSemanticRpc(
@@ -81,6 +178,11 @@ export async function searchSemanticRpc(
   limit = 30
 ): Promise<SemanticSearchResult[]> {
   if (!query || !query.trim()) return [];
+
+  const isDictionary = mode === "dictionary" || mode === "Словник";
+  if (isDictionary) {
+    return searchDictionarySemanticRpc(query, threshold, limit);
+  }
 
   const embedding = generateEmbedding(query);
 

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="sphereGrad" x1="85%" y1="15%" x2="20%" y2="85%">
+      <stop offset="0%" stop-color="#4F85BE" />
+      <stop offset="25%" stop-color="#3B6FA9" />
+      <stop offset="55%" stop-color="#5E638D" />
+      <stop offset="78%" stop-color="#B86C89" />
+      <stop offset="100%" stop-color="#DE829A" />
+    </linearGradient>
+    <clipPath id="sphereClip">
+      <circle cx="256" cy="256" r="188" />
+    </clipPath>
+  </defs>
+
+  <!-- Background black circle/canvas -->
+  <circle cx="256" cy="256" r="256" fill="#050505" />
+
+  <!-- Gradient Sphere bounded by clip -->
+  <g clip-path="url(#sphereClip)">
+    <circle cx="256" cy="256" r="188" fill="url(#sphereGrad)" />
+
+    <!-- Upper arc black cutout -->
+    <path 
+      d="M 68 215 C 130 185 270 148 444 142 L 444 160 C 270 166 130 203 68 233 Z" 
+      fill="#050505" 
+    />
+
+    <!-- Lower arc black cutout -->
+    <path 
+      d="M 68 238 C 76 270 120 310 444 382 L 444 364 C 120 292 76 252 68 220 Z" 
+      fill="#050505" 
+    />
+
+    <!-- Left connecting junction curve -->
+    <path
+      d="M 80 205 C 65 228 65 250 82 272 C 60 250 60 228 80 205 Z"
+      fill="#050505"
+    />
+  </g>
+</svg>

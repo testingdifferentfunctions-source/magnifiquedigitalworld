@@ -70,10 +70,12 @@ const PaletteDetail = () => {
     return (
       <PageLayout>
         <div className="py-16 text-center space-y-4">
-          <h1 className="text-2xl font-bold">Палітру не знайдено</h1>
+          <h1 className="text-2xl font-bold">
+            {language === "en" ? "Palette not found" : "Палітру не знайдено"}
+          </h1>
           <Button variant="outline" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад до палітр
+            {language === "en" ? "Back" : "Назад"}
           </Button>
         </div>
       </PageLayout>
@@ -111,11 +113,11 @@ const PaletteDetail = () => {
           <Button
             id="palette-back-btn"
             variant="ghost"
-            className="-ml-2 text-neutral-300 hover:text-black inline-flex items-center text-sm font-medium"
+            className="-ml-2 text-neutral-300 hover:text-black inline-flex items-center text-sm font-medium cursor-pointer"
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад
+            {language === "en" ? "Back" : "Назад"}
           </Button>
         </div>
 

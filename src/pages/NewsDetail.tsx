@@ -42,9 +42,12 @@ const NewsDetail = () => {
     return (
       <PageLayout>
         <div className="py-16 text-center space-y-4">
-          <h1 className="text-2xl font-bold">Новину не знайдено</h1>
+          <h1 className="text-2xl font-bold">
+            {language === "en" ? "News not found" : "Новину не знайдено"}
+          </h1>
           <Button variant="outline" className="hover:text-black" onClick={() => navigate("/")}>
-            Назад
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            {language === "en" ? "Back" : "Назад"}
           </Button>
         </div>
       </PageLayout>
@@ -94,10 +97,11 @@ const NewsDetail = () => {
           <Button
             id="news-back-button"
             variant="ghost"
-            className="-ml-2 text-muted-foreground hover:text-black inline-flex items-center text-sm font-medium"
+            className="-ml-2 text-muted-foreground hover:text-black inline-flex items-center text-sm font-medium cursor-pointer"
             onClick={() => navigate("/")}
           >
-            Назад
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            {language === "en" ? "Back" : "Назад"}
           </Button>
         </div>
 
