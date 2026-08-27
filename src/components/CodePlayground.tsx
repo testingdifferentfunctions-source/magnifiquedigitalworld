@@ -332,10 +332,10 @@ export const CodePlayground: React.FC = () => {
   return (
     <div
       id="editor-mode-container"
-      className="w-full h-[700px] sm:h-[780px] md:h-[820px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden flex flex-col transition-all"
+      className="w-full h-[calc(100dvh-160px)] min-h-[560px] sm:h-[780px] md:h-[820px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden flex flex-col transition-all"
     >
       {/* Task 1: Top Main Toolbar Container with #222831 & Touch-Friendly Controls */}
-      <div className="p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-3">
+      <div className="p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-3 shrink-0">
         {/* Global Mode Switcher in Editor mode toolbar */}
         <div className="shrink-0">
           <ModeSwitcher className="bg-[#1A1F26] border-[#393E46] text-white hover:border-[#BDA6CE] transition-colors h-10 px-3 text-sm rounded-xl" />
@@ -413,14 +413,14 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 2: Monaco Code Editor wrapper with flex-1 relative min-h-[300px] w-full */}
+        {/* Step 2: Monaco Code Editor wrapper with flex-1 overflow-hidden relative min-h-[250px] */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
-          className="flex-1 relative min-h-[320px] sm:min-h-[400px] w-full bg-[#222831]"
+          className="flex-1 overflow-hidden relative min-h-[250px] w-full bg-[#222831]"
         >
           {/* Step 3: Absolute Inset-0 inner container for Monaco Editor */}
-          <div className="absolute inset-0 h-full w-full">
+          <div className="absolute inset-0 h-full w-full overflow-hidden">
             <Editor
               height="100%"
               width="100%"
@@ -468,8 +468,8 @@ export const CodePlayground: React.FC = () => {
           </div>
         </div>
 
-        {/* Step 5: Bottom Console container with fixed min/max bounds */}
-        <div className="w-full bg-[#222831] flex flex-col h-64 sm:h-72 shrink-0 overflow-hidden">
+        {/* Step 3: Bottom Console container with fixed height and shrink-0 */}
+        <div className="w-full bg-[#222831] flex flex-col h-60 sm:h-72 shrink-0 flex-shrink-0 overflow-hidden">
           {/* Terminal Title Bar */}
           <div className="px-3.5 sm:px-4 py-2.5 bg-[#1A1F26] border-b border-[#393E46] flex flex-wrap items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2">
