@@ -72,6 +72,30 @@ export const CodePlayground: React.FC = () => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
+  const editorContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // ResizeObserver to recalculate Monaco layout on container resize
+  useEffect(() => {
+    if (!editorContainerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (editorRef.current) {
+        editorRef.current.layout();
+      }
+    });
+    observer.observe(editorContainerRef.current);
+
+    const handleWindowResize = () => {
+      if (editorRef.current) {
+        editorRef.current.layout();
+      }
+    };
+    window.addEventListener("resize", handleWindowResize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", handleWindowResize);
+    };
+  }, []);
 
   const formatTimestamp = () => {
     const d = new Date();
@@ -285,129 +309,169 @@ export const CodePlayground: React.FC = () => {
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
-    monaco.editor.setTheme("customSlateTheme");
+    try {
+      monaco.editor.setTheme("customSlateTheme");
+    } catch (e) {
+      console.warn("Theme apply error", e);
+    }
+    // Force layout recalculations across microtasks and render frames
+    requestAnimationFrame(() => {
+      editor.layout();
+    });
+    setTimeout(() => {
+      editor.layout();
+    }, 50);
+    setTimeout(() => {
+      editor.layout();
+    }, 200);
+    setTimeout(() => {
+      editor.layout();
+    }, 600);
   };
 
   return (
     <div
       id="editor-mode-container"
-      className="w-full rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden flex flex-col transition-all"
+      className="w-full h-[700px] sm:h-[780px] md:h-[820px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden flex flex-col transition-all"
     >
-      {/* Task 1: Top Main Toolbar Container with #222831 */}
-      <div className="p-3 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-row items-center justify-start gap-3 sm:gap-4 overflow-x-auto">
+      {/* Task 1: Top Main Toolbar Container with #222831 & Touch-Friendly Controls */}
+      <div className="p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-3">
         {/* Global Mode Switcher in Editor mode toolbar */}
         <div className="shrink-0">
-          <ModeSwitcher className="bg-[#1A1F26] border-[#393E46] text-white hover:border-[#BDA6CE] transition-colors" />
+          <ModeSwitcher className="bg-[#1A1F26] border-[#393E46] text-white hover:border-[#BDA6CE] transition-colors h-10 px-3 text-sm rounded-xl" />
         </div>
 
-        {/* Run / Stop Button */}
-        {status === "running" ? (
-          <Button
-            id="stop-code-button"
-            onClick={handleStopExecution}
-            size="sm"
-            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 gap-2 font-medium shrink-0 whitespace-nowrap"
-          >
-            <Square className="w-4 h-4 fill-current" />
-            <span>{t("editor.stop")}</span>
-          </Button>
-        ) : (
-          <Button
-            id="run-code-button"
-            onClick={handleRunCode}
-            disabled={!engineReady && status === "idle"}
-            size="sm"
-            className="!bg-[#BDA6CE] hover:!bg-[#ab93bd] !text-[#1A1F26] font-semibold gap-2 shadow-lg shadow-[#BDA6CE]/20 transition-all active:scale-95 shrink-0 whitespace-nowrap"
-          >
-            <Play className="w-4 h-4 fill-current" />
-            <span>{status === "running" ? t("editor.running") : t("editor.run")}</span>
-          </Button>
-        )}
-
-        {/* Clear Console */}
-        <Button
-          id="clear-console-button"
-          variant="outline"
-          size="sm"
-          onClick={handleClearConsole}
-          title={t("editor.clear_console")}
-          className="border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>{t("editor.clear_console")}</span>
-        </Button>
-
-        {/* Reset Code */}
-        <Button
-          id="reset-code-button"
-          variant="outline"
-          size="sm"
-          onClick={handleResetCode}
-          title={t("editor.reset")}
-          className="border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>{t("editor.reset")}</span>
-        </Button>
-
-        {/* Copy Code */}
-        <Button
-          id="copy-code-button"
-          variant="outline"
-          size="sm"
-          onClick={handleCopyCode}
-          title={t("editor.copy")}
-          className="border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
-        >
-          {copied ? (
-            <>
-              <Check className="w-3.5 h-3.5 text-[#BDA6CE]" />
-              <span className="text-[#BDA6CE] whitespace-nowrap">{t("editor.copied")}</span>
-            </>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 ml-auto sm:ml-0">
+          {/* Run / Stop Button */}
+          {status === "running" ? (
+            <Button
+              id="stop-code-button"
+              onClick={handleStopExecution}
+              className="h-10 px-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 gap-2 font-medium shrink-0 whitespace-nowrap active:scale-95 transition-transform"
+            >
+              <Square className="w-4 h-4 fill-current" />
+              <span>{t("editor.stop")}</span>
+            </Button>
           ) : (
-            <>
-              <Copy className="w-3.5 h-3.5" />
-              <span>{t("editor.copy")}</span>
-            </>
+            <Button
+              id="run-code-button"
+              onClick={handleRunCode}
+              disabled={!engineReady && status === "idle"}
+              className="h-10 px-4 rounded-xl !bg-[#BDA6CE] hover:!bg-[#ab93bd] !text-[#1A1F26] font-semibold gap-2 shadow-lg shadow-[#BDA6CE]/20 transition-all active:scale-95 shrink-0 whitespace-nowrap"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>{status === "running" ? t("editor.running") : t("editor.run")}</span>
+            </Button>
           )}
-        </Button>
+
+          {/* Clear Console */}
+          <Button
+            id="clear-console-button"
+            variant="outline"
+            onClick={handleClearConsole}
+            title={t("editor.clear_console")}
+            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline sm:inline">{t("editor.clear_console")}</span>
+          </Button>
+
+          {/* Reset Code */}
+          <Button
+            id="reset-code-button"
+            variant="outline"
+            onClick={handleResetCode}
+            title={t("editor.reset")}
+            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline sm:inline">{t("editor.reset")}</span>
+          </Button>
+
+          {/* Copy Code */}
+          <Button
+            id="copy-code-button"
+            variant="outline"
+            onClick={handleCopyCode}
+            title={t("editor.copy")}
+            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-[#BDA6CE]" />
+                <span className="text-[#BDA6CE] whitespace-nowrap">{t("editor.copied")}</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline sm:inline">{t("editor.copy")}</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Main Responsive Split Layout */}
-      <div className="flex flex-col flex-1 divide-y divide-[#393E46]">
-        {/* Task 2: Monaco Code Editor wrapper with #222831 */}
-        <div className="w-full h-[380px] sm:h-[440px] bg-[#222831] relative">
-          <Editor
-            height="100%"
-            defaultLanguage="python"
-            language="python"
-            value={code}
-            onChange={(val) => setCode(val || "")}
-            beforeMount={handleBeforeMount}
-            onMount={handleEditorDidMount}
-            theme="customSlateTheme"
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-              fontLigatures: true,
-              padding: { top: 16, bottom: 16 },
-              lineNumbers: "on",
-              renderLineHighlight: "all",
-              automaticLayout: true,
-              tabSize: 4,
-              scrollBeyondLastLine: false,
-              wordWrap: "on",
-              cursorBlinking: "smooth",
-              smoothScrolling: true,
-            }}
-          />
+      <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
+        {/* Step 2: Monaco Code Editor wrapper with flex-1 relative min-h-[300px] w-full */}
+        <div
+          ref={editorContainerRef}
+          id="monaco-editor-outer-container"
+          className="flex-1 relative min-h-[320px] sm:min-h-[400px] w-full bg-[#222831]"
+        >
+          {/* Step 3: Absolute Inset-0 inner container for Monaco Editor */}
+          <div className="absolute inset-0 h-full w-full">
+            <Editor
+              height="100%"
+              width="100%"
+              className="h-full w-full"
+              defaultLanguage="python"
+              language="python"
+              value={code}
+              onChange={(val) => setCode(val || "")}
+              beforeMount={handleBeforeMount}
+              onMount={handleEditorDidMount}
+              theme="customSlateTheme"
+              loading={
+                <div className="flex items-center justify-center h-full text-neutral-400 text-sm font-mono py-12">
+                  {language === "en" ? "Loading Monaco Editor..." : "Завантаження редактора..."}
+                </div>
+              }
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+                fontLigatures: true,
+                padding: { top: 14, bottom: 14 },
+                lineNumbers: "on",
+                lineNumbersMinChars: 3,
+                renderLineHighlight: "all",
+                automaticLayout: true,
+                fixedOverflowWidgets: true,
+                tabSize: 4,
+                scrollBeyondLastLine: false,
+                wordWrap: "on",
+                wrappingIndent: "indent",
+                cursorBlinking: "smooth",
+                smoothScrolling: true,
+                scrollbar: {
+                  vertical: "visible",
+                  horizontal: "auto",
+                  verticalScrollbarSize: 8,
+                  horizontalScrollbarSize: 8,
+                  useShadows: false,
+                },
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+              }}
+            />
+          </div>
         </div>
 
-        {/* Task 3: Bottom Console container with #222831 */}
-        <div className="w-full bg-[#222831] flex flex-col flex-1 min-h-[220px] max-h-[360px]">
+        {/* Step 5: Bottom Console container with fixed min/max bounds */}
+        <div className="w-full bg-[#222831] flex flex-col h-64 sm:h-72 shrink-0 overflow-hidden">
           {/* Terminal Title Bar */}
-          <div className="px-4 py-2.5 bg-[#1A1F26] border-b border-[#393E46] flex items-center justify-between">
+          <div className="px-3.5 sm:px-4 py-2.5 bg-[#1A1F26] border-b border-[#393E46] flex flex-wrap items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2">
               <TerminalIcon className="w-4 h-4 text-[#BDA6CE]" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#BDA6CE]">
@@ -448,10 +512,11 @@ export const CodePlayground: React.FC = () => {
             </div>
           </div>
 
-          {/* Terminal Stream Body with #222831 */}
+          {/* Terminal Stream Body with touch-pan-y */}
           <div
             id="terminal-output-area"
-            className="p-4 overflow-y-auto font-mono text-xs sm:text-sm space-y-1 select-text flex-1 bg-[#222831]"
+            className="p-3.5 sm:p-4 overflow-y-auto touch-pan-y font-mono text-xs sm:text-sm space-y-1.5 select-text flex-1 bg-[#222831]"
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
             {logs.length === 0 ? (
               <div className="text-neutral-400 py-6 text-center italic">
