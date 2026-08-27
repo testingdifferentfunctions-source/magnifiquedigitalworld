@@ -341,17 +341,17 @@ export const CodePlayground: React.FC = () => {
   return (
     <div
       id="editor-mode-container"
-      className="w-full h-[calc(100dvh-100px)] min-h-[540px] sm:h-[780px] md:h-[820px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden flex flex-col transition-all"
+      className="flex flex-col h-[calc(100dvh-5rem)] min-h-[520px] w-full rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden transition-all"
       style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
     >
-      {/* Task 1: Top Main Toolbar Container with #222831 & Touch-Friendly Controls */}
-      <div className="p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-3 shrink-0">
+      {/* Task 1: Top Main Toolbar Container with horizontal scroll on mobile */}
+      <div className="p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-row overflow-x-auto whitespace-nowrap shrink-0 w-full items-center gap-2 sm:gap-3 no-scrollbar touch-pan-x">
         {/* Global Mode Switcher in Editor mode toolbar */}
         <div className="shrink-0">
           <ModeSwitcher className="bg-[#1A1F26] border-[#393E46] text-white hover:border-[#BDA6CE] transition-colors h-10 px-3 text-sm rounded-xl" />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 ml-auto sm:ml-0">
+        <div className="flex flex-row items-center gap-2 sm:gap-2.5 shrink-0 whitespace-nowrap">
           {/* Run / Stop Button */}
           {status === "running" ? (
             <Button
@@ -383,7 +383,7 @@ export const CodePlayground: React.FC = () => {
             className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline sm:inline">{t("editor.clear_console")}</span>
+            <span>{t("editor.clear_console")}</span>
           </Button>
 
           {/* Reset Code */}
@@ -395,7 +395,7 @@ export const CodePlayground: React.FC = () => {
             className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline sm:inline">{t("editor.reset")}</span>
+            <span>{t("editor.reset")}</span>
           </Button>
 
           {/* Copy Code */}
@@ -414,7 +414,7 @@ export const CodePlayground: React.FC = () => {
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline sm:inline">{t("editor.copy")}</span>
+                <span>{t("editor.copy")}</span>
               </>
             )}
           </Button>
@@ -423,12 +423,12 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 1 & 2: CSS Quarantine Wrapper with translate="no", notranslate, and system monospace */}
+        {/* Step 1 & 2: CSS Quarantine Wrapper with translate="no", notranslate, and flex-1 min-h-0 relative w-full overflow-hidden */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
           translate="no"
-          className="notranslate relative w-full h-[60%] min-h-[260px] flex-1 overflow-hidden text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none"
+          className="notranslate flex-1 min-h-0 relative w-full overflow-hidden text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none"
           style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left" }}
         >
           {isReady ? (
