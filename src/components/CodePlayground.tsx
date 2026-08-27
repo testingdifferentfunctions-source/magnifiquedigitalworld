@@ -341,7 +341,7 @@ export const CodePlayground: React.FC = () => {
   return (
     <div
       id="editor-mode-container"
-      className="w-full h-[calc(100dvh-160px)] min-h-[560px] sm:h-[780px] md:h-[820px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden flex flex-col transition-all"
+      className="w-full h-[calc(100dvh-100px)] min-h-[540px] sm:h-[780px] md:h-[820px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden flex flex-col transition-all"
       style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
     >
       {/* Task 1: Top Main Toolbar Container with #222831 & Touch-Friendly Controls */}
@@ -428,8 +428,8 @@ export const CodePlayground: React.FC = () => {
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
           translate="no"
-          className="notranslate relative block w-full h-full min-h-[300px] text-left leading-normal isolate !p-0 !m-0 overflow-hidden bg-transparent z-0 !outline-none"
-          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "normal", textAlign: "left" }}
+          className="notranslate relative w-full h-[60%] min-h-[260px] flex-1 overflow-hidden text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none"
+          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left" }}
         >
           {isReady ? (
             <Editor
@@ -457,6 +457,8 @@ export const CodePlayground: React.FC = () => {
                 wordWrap: "on",
                 scrollBeyondLastLine: false,
                 fontSize: 14,
+                lineHeight: 22,
+                letterSpacing: 0,
                 fontFamily: "'Consolas', 'Courier New', monospace",
                 padding: { top: 14, bottom: 14 },
                 lineNumbers: "on",
@@ -485,7 +487,7 @@ export const CodePlayground: React.FC = () => {
         </div>
 
         {/* Step 3: Bottom Console container with fixed height and shrink-0 */}
-        <div className="w-full bg-[#222831] flex flex-col h-60 sm:h-72 shrink-0 flex-shrink-0 overflow-hidden">
+        <div className="w-full bg-[#222831] flex flex-col h-56 sm:h-64 md:h-72 shrink-0 flex-shrink-0 overflow-hidden">
           {/* Terminal Title Bar */}
           <div className="px-3.5 sm:px-4 py-2.5 bg-[#1A1F26] border-b border-[#393E46] flex flex-wrap items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2">
