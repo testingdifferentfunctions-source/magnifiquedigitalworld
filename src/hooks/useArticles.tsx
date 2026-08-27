@@ -23,6 +23,8 @@ export interface Article {
   original_source_url: string | null;
   canonical_url_uk?: string | null;
   canonical_url_en?: string | null;
+  show_test_button?: boolean | null;
+  showTestButton?: boolean | null;
   created_at: string;
   updated_at: string;
 }

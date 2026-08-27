@@ -326,31 +326,31 @@ const MODE_THEMES: Record<AppMode, ModeTheme> = {
     "--ring": "174 29% 65%",
   },
   design: {
-    "--background": "246 100% 5.5%", // #03001C ultra-dark aesthetic
-    "--card": "246 60% 8%", // #08051E deep dark card container
-    "--popover": "246 60% 8%", // #08051E
-    "--muted": "246 30% 14%", // #181433
-    "--muted-foreground": "246 15% 70%", // #9ea0b8
-    "--border": "246 35% 18%", // #231f3d
-    "--input": "246 35% 18%", // #231f3d
+    "--background": "263 100% 1.6%", // #030008 deep soft black primary background
+    "--card": "248 100% 12.5%", // #090040 deep flat card container
+    "--popover": "263 100% 1.6%", // #030008 dropdown / popover menu container
+    "--muted": "248 40% 16%", // #171145
+    "--muted-foreground": "263 15% 72%", // #a69fb0
+    "--border": "248 40% 21%", // #1b1458
+    "--input": "248 40% 21%", // #1b1458
     "--primary": "0 100% 87%", // #FFBCBC pastel peach accent
-    "--primary-foreground": "246 100% 5.5%", // #03001C high contrast dark text
+    "--primary-foreground": "263 100% 1.6%", // #030008 high contrast dark text
     "--accent": "0 100% 87%", // #FFBCBC
-    "--accent-foreground": "246 100% 5.5%", // #03001C
+    "--accent-foreground": "263 100% 1.6%", // #030008
     "--ring": "0 100% 87%",
   },
   dictionary: {
-    "--background": "0 0% 8.2%", // #151515 sleek classic dark background
-    "--card": "0 0% 12%", // #1F1F1F
-    "--popover": "0 0% 12%",
-    "--muted": "0 0% 16%", // #292929
-    "--muted-foreground": "0 0% 72%",
-    "--border": "0 0% 20%", // #333333
-    "--input": "0 0% 20%",
+    "--background": "0 60% 2%", // #080202 deep dark background
+    "--card": "0 20% 6%", // #140c0c card container
+    "--popover": "0 20% 6%", // #140c0c
+    "--muted": "0 15% 10%", // #1e1414
+    "--muted-foreground": "0 10% 70%", // #b8a8a8
+    "--border": "0 15% 15%", // #2a1d1d
+    "--input": "0 15% 15%", // #2a1d1d
     "--primary": "35 79% 77%", // #F3CD97 softer gold accent
-    "--primary-foreground": "0 0% 8.2%", // #151515
+    "--primary-foreground": "0 60% 2%", // #080202
     "--accent": "35 79% 77%", // #F3CD97
-    "--accent-foreground": "0 0% 8.2%",
+    "--accent-foreground": "0 60% 2%", // #080202
     "--ring": "35 79% 77%",
   },
   editor: {

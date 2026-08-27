@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { Heart, Share2, ImageIcon, Palette } from "lucide-react";
+import { Heart, Share2, ImageIcon } from "lucide-react";
 import type { ColorSwatch } from "@/lib/colors";
 
 export interface PaletteCardItem {
@@ -114,14 +114,13 @@ const PaletteCard = ({
             id={`palette-actions-${item.id}`}
             className="mt-5 flex flex-row items-center gap-2"
           >
-            {/* Button 1: "Кольори" (Colors) */}
+            {/* Button 1: "Кольори" (Colors) - text only */}
             <Button
               id={`palette-colors-btn-${item.id}`}
               type="button"
               onClick={handleColors}
-              className="bg-[#8ABEB9] hover:bg-[#78aca7] text-[#0F0E0E] font-semibold px-3.5 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm gap-1.5 text-xs sm:text-sm"
+              className="bg-[#8ABEB9] hover:bg-[#78aca7] text-[#0F0E0E] font-semibold px-3.5 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm text-xs sm:text-sm"
             >
-              <Palette className="w-4 h-4" aria-hidden="true" />
               Кольори
             </Button>
 

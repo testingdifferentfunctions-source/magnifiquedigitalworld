@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useMode } from "@/hooks/useMode";
 import { localizeEntry, useModeEntry, useToggleModeEntryLike } from "@/hooks/useModeEntries";
 import { blocksToPlainText } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
@@ -28,6 +29,7 @@ export const DesignDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { setMode } = useMode();
   const { data: entry, isLoading } = useModeEntry(id);
   const toggleLike = useToggleModeEntryLike();
 
@@ -36,6 +38,11 @@ export const DesignDetail = () => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [activeTab, setActiveTab] = useState<CodeTab>("html");
+
+  // Enforce Design mode and design tokens (#FFBCBC on #030008)
+  useEffect(() => {
+    setMode("design");
+  }, [setMode]);
 
   useEffect(() => {
     setLiked(getLikedEntries().includes(id));
@@ -341,9 +348,9 @@ export const DesignDetail = () => {
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-border">
           <Button
             onClick={() => navigate("/")}
-            className="h-10 px-4 rounded-xl text-sm font-semibold bg-[#FFBCBC] text-[#03001C] hover:bg-[#FFBCBC]/90 shadow-sm inline-flex items-center gap-2 border-0 transition-all cursor-pointer"
+            className="h-10 px-4 rounded-xl text-sm font-semibold bg-transparent text-[#94A3B8] hover:bg-[#FFBCBC] hover:text-black [&:hover>svg]:text-black border-0 shadow-none inline-flex items-center gap-2 transition-all cursor-pointer"
           >
-            <ArrowLeft className="w-4.5 h-4.5 text-[#03001C]" />
+            <ArrowLeft className="w-4.5 h-4.5 text-[#94A3B8] transition-colors" />
             <span>{language === "en" ? "Back" : "Назад"}</span>
           </Button>
         </div>
@@ -354,14 +361,18 @@ export const DesignDetail = () => {
             <div className="space-y-3 flex-1">
               {entry.tags && entry.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 items-center">
-                  {entry.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs font-medium px-3 py-0.5 rounded-full bg-[#FFBCBC]/10 text-[#FFBCBC] border border-[#FFBCBC]/25"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+                  {entry.tags.map((tag) => {
+                    const cleanTag = tag.replace(/^#+/, "").trim();
+                    if (!cleanTag) return null;
+                    return (
+                      <span
+                        key={tag}
+                        className="text-xs font-semibold px-3 py-0.5 rounded-full bg-transparent text-[#FFBCBC] border border-[#FFBCBC]"
+                      >
+                        {cleanTag}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
               <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
@@ -380,8 +391,8 @@ export const DesignDetail = () => {
                 onClick={handleLike}
                 className={`gap-2 border-[#FFBCBC]/30 transition-all ${
                   liked
-                    ? "bg-[#FFBCBC] text-[#03001C] hover:bg-[#FFBCBC]/90 font-bold border-[#FFBCBC]"
-                    : "bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#03001C]"
+                    ? "bg-[#FFBCBC] text-[#030008] hover:bg-[#FFBCBC]/90 font-bold border-[#FFBCBC]"
+                    : "bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#030008]"
                 }`}
               >
                 <Heart className={`w-4 h-4 ${liked ? "fill-current" : ""}`} />
@@ -392,7 +403,7 @@ export const DesignDetail = () => {
                 variant="outline"
                 size="default"
                 onClick={handleShare}
-                className="gap-2 border-[#FFBCBC]/30 bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#03001C] transition-all"
+                className="gap-2 border-[#FFBCBC]/30 bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#030008] transition-all"
               >
                 <Share2 className="w-4 h-4" />
                 <span>Поділитися</span>
@@ -419,7 +430,7 @@ export const DesignDetail = () => {
                 variant="outline"
                 size="sm"
                 onClick={handleCopyPrompt}
-                className="h-8 px-3 text-xs gap-1.5 border-[#FFBCBC]/30 bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#03001C] transition-all font-semibold"
+                className="h-8 px-3 text-xs gap-1.5 border-[#FFBCBC]/30 bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#030008] transition-all font-semibold"
               >
                 {copiedPrompt ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copiedPrompt ? "Скопійовано" : "Скопіювати промпт"}</span>
@@ -442,8 +453,8 @@ export const DesignDetail = () => {
                 <div className="p-3 rounded-xl bg-[#161922] border border-[#3A3F53]/60 space-y-1">
                   <span className="text-muted-foreground block text-[11px]">Основний фон</span>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#03001C] border border-white/20" />
-                    <span className="font-mono text-white font-bold">#03001C</span>
+                    <div className="w-3 h-3 rounded-full bg-[#030008] border border-white/20" />
+                    <span className="font-mono text-white font-bold">#030008</span>
                   </div>
                 </div>
 

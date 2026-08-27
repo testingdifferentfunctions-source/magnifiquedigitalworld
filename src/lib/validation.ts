@@ -87,6 +87,8 @@ export const articleSchema = z.object({
     .optional()
     .nullable()
     .or(z.literal('')),
+  show_test_button: z.boolean().optional().nullable(),
+  showTestButton: z.boolean().optional().nullable(),
 });
 
 // Dictionary entry validation schema (strictly text-focused, no image requirements)

@@ -49,6 +49,7 @@ const ArticleEditor = () => {
   const [canonicalUrlUk, setCanonicalUrlUk] = useState('');
   const [canonicalUrlEn, setCanonicalUrlEn] = useState('');
   const [originalSourceUrl, setOriginalSourceUrl] = useState('');
+  const [showTestButton, setShowTestButton] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -71,6 +72,7 @@ const ArticleEditor = () => {
       setImageUrl(existingArticle.image_url);
       setCategoryId(existingArticle.category_id || '');
       setPublished(existingArticle.published);
+      setShowTestButton(Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton));
       setTags(existingArticle.tags || []);
       setCanonicalUrlUk(existingArticle.canonical_url_uk ?? existingArticle.original_source_url ?? '');
       setCanonicalUrlEn(existingArticle.canonical_url_en ?? '');
@@ -103,6 +105,8 @@ const ArticleEditor = () => {
       image_url: sanitizedImageUrl || undefined,
       category_id: categoryId || null,
       published,
+      show_test_button: showTestButton,
+      showTestButton,
       canonical_url_uk: sanitizedCanonicalUk || undefined,
       canonical_url_en: sanitizedCanonicalEn || undefined,
       original_source_url: sanitizedCanonicalUk || sanitizedCanonicalEn || undefined,
@@ -152,6 +156,8 @@ const ArticleEditor = () => {
         image_url: sanitizedImageUrl || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop',
         category_id: categoryId || null,
         published,
+        show_test_button: showTestButton,
+        showTestButton: showTestButton,
         tags,
         canonical_url_uk: sanitizedCanonicalUk || null,
         canonical_url_en: sanitizedCanonicalEn || null,
@@ -431,13 +437,33 @@ const ArticleEditor = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Switch
-                id="published"
-                checked={published}
-                onCheckedChange={setPublished}
-              />
-              <Label htmlFor="published">Опублікувати статтю</Label>
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border">
+                <div className="space-y-0.5 pr-4">
+                  <Label htmlFor="show-test-button" className="text-base font-semibold cursor-pointer">
+                    Додати кнопку &quot;Тестувати&quot;
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Відображає кнопку &quot;Тестувати&quot; поруч із кнопкою &quot;Поділитися&quot; внизу статті для швидкого переходу до інтерактивного онлайн-редактора коду.
+                  </p>
+                </div>
+                <Switch
+                  id="show-test-button"
+                  checked={showTestButton}
+                  onCheckedChange={setShowTestButton}
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Switch
+                  id="published"
+                  checked={published}
+                  onCheckedChange={setPublished}
+                />
+                <Label htmlFor="published" className="cursor-pointer font-medium">Опублікувати статтю</Label>
+              </div>
             </div>
           </CardContent>
         </Card>

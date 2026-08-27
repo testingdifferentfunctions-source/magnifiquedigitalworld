@@ -34,17 +34,17 @@ const DictionaryDetail = () => {
   const [liked, setLiked] = useState(false);
   const [likeOffset, setLikeOffset] = useState(0);
 
-  // Enforce Dictionary mode and design tokens (#F3CD97)
+  // Enforce Dictionary mode and design tokens (#F3CD97 on #080202)
   useEffect(() => {
     setMode("dictionary");
     const root = document.documentElement;
     root.style.setProperty("--primary", "35 79% 77%");
     root.style.setProperty("--accent", "35 79% 77%");
     root.style.setProperty("--ring", "35 79% 77%");
-    root.style.setProperty("--border", "0 0% 20%");
-    root.style.setProperty("--card", "0 0% 12%");
-    root.style.setProperty("--background", "0 0% 8.2%");
-    root.style.setProperty("--muted", "0 0% 16%");
+    root.style.setProperty("--border", "0 15% 15%");
+    root.style.setProperty("--card", "0 20% 6%");
+    root.style.setProperty("--background", "0 60% 2%"); // #080202
+    root.style.setProperty("--muted", "0 15% 10%");
   }, [setMode]);
 
   useEffect(() => {
@@ -61,7 +61,7 @@ const DictionaryDetail = () => {
   if (isLoading) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center min-h-[50vh] bg-[#151515]">
+        <div className="flex items-center justify-center min-h-[50vh] bg-[#080202]">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 rounded-full border-2 border-[#F3CD97] border-t-transparent animate-spin" />
             <p className="text-sm text-neutral-400">
@@ -89,10 +89,10 @@ const DictionaryDetail = () => {
               : "Запитуваний запис словника не знайдено або він був переміщений."}
           </p>
           <Button
-            className="!bg-[#F3CD97] hover:!bg-[#e4be87] !text-[#151515] font-semibold transition-colors shadow-sm"
+            className="!bg-[#F3CD97] hover:!bg-[#e4be87] !text-[#080202] font-semibold transition-colors shadow-sm"
             onClick={() => navigate("/")}
           >
-            <ArrowLeft className="w-4 h-4 mr-2 !text-[#151515]" />
+            <ArrowLeft className="w-4 h-4 mr-2 !text-[#080202]" />
             {language === "en" ? "Back" : "Назад"}
           </Button>
         </div>
@@ -145,12 +145,12 @@ const DictionaryDetail = () => {
 
       <article
         id="dictionary-detail-article"
-        className="max-w-4xl mx-auto pb-16 bg-[#151515]"
+        className="max-w-4xl mx-auto pb-16 bg-[#080202]"
         style={{
           "--primary": "#F3CD97",
           "--accent": "#F3CD97",
           "--ring": "#F3CD97",
-          "--border": "#333333",
+          "--border": "#2a1d1d",
         } as React.CSSProperties}
       >
         {/* 1. TOP BAR: Back button */}
@@ -158,9 +158,9 @@ const DictionaryDetail = () => {
           <Button
             id="dictionary-back-button"
             onClick={() => navigate("/")}
-            className="h-10 px-4 rounded-xl text-sm font-semibold !bg-[#F3CD97] hover:!bg-[#e4be87] !text-[#151515] shadow-sm inline-flex items-center gap-2 border-0 transition-all cursor-pointer"
+            className="h-10 px-4 rounded-xl text-sm font-semibold bg-transparent text-[#94A3B8] hover:bg-[#F3CD97] hover:text-black [&:hover>svg]:text-black border-0 shadow-none inline-flex items-center gap-2 transition-all cursor-pointer"
           >
-            <ArrowLeft className="w-4.5 h-4.5 !text-[#151515]" size={18} />
+            <ArrowLeft className="w-4.5 h-4.5 text-[#94A3B8] transition-colors" size={18} />
             <span>{language === "en" ? "Back" : "Назад"}</span>
           </Button>
         </div>
@@ -168,15 +168,19 @@ const DictionaryDetail = () => {
         {/* 2. TAGS: Directly below top bar, horizontal row of tag pills */}
         {entry.tags && entry.tags.length > 0 && (
           <div id="dictionary-detail-tags" className="flex flex-wrap items-center gap-2 mb-6">
-            {entry.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold !bg-[#F3CD97]/10 !text-[#F3CD97] !border !border-[#F3CD97] transition-colors"
-              >
-                <Tag className="w-3 h-3 !text-[#F3CD97]" aria-hidden="true" />
-                {tag.startsWith("#") ? tag : `#${tag}`}
-              </span>
-            ))}
+            {entry.tags.map((tag) => {
+              const cleanTag = tag.replace(/^#+/, "").trim();
+              if (!cleanTag) return null;
+              return (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-transparent text-[#F3CD97] border border-[#F3CD97] transition-colors"
+                >
+                  <Tag className="w-3 h-3 text-[#F3CD97]" aria-hidden="true" />
+                  {cleanTag}
+                </span>
+              );
+            })}
           </div>
         )}
 

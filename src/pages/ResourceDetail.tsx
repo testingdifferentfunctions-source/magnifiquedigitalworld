@@ -90,13 +90,13 @@ const ResourceDetail = () => {
           </Button>
         </div>
 
-        {/* Header: Solid dark tag pills */}
+        {/* Header: Transparent tag pills with mode accent border & text */}
         {entry.tags.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 mb-4">
             {entry.tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-zinc-800 text-zinc-200 border border-zinc-700/60 px-3.5 py-1 text-xs font-medium"
+                className="rounded-full bg-transparent text-[#5DA7DB] border border-[#5DA7DB] px-3.5 py-1 text-xs font-medium"
               >
                 {tag}
               </span>

@@ -106,15 +106,20 @@ const ComponentDetail = () => {
 
           {entry.tags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 pt-2">
-              {entry.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Tag className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-                  {tag}
-                </span>
-              ))}
+              {entry.tags.map((tag) => {
+                const isTemplate = entry.type === "template";
+                const accentBorder = isTemplate ? "border-[#C562AF]" : "border-[#F1F5F9]";
+                const accentText = isTemplate ? "text-[#C562AF]" : "text-[#F1F5F9]";
+                return (
+                  <span
+                    key={tag}
+                    className={`inline-flex items-center gap-1.5 rounded-full border bg-transparent px-3 py-1 text-xs font-medium ${accentBorder} ${accentText} transition-colors`}
+                  >
+                    <Tag className={`w-3.5 h-3.5 ${accentText}`} aria-hidden="true" />
+                    {tag}
+                  </span>
+                );
+              })}
             </div>
           )}
 

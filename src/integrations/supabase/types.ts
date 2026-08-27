@@ -102,6 +102,8 @@ export type Database = {
           published: boolean
           reads: number
           share_count: number
+          show_test_button?: boolean | null
+          showTestButton?: boolean | null
           tags: string[]
           title: string
           title_en: string | null
@@ -125,6 +127,8 @@ export type Database = {
           published?: boolean
           reads?: number
           share_count?: number
+          show_test_button?: boolean | null
+          showTestButton?: boolean | null
           tags?: string[]
           title: string
           title_en?: string | null
@@ -148,6 +152,8 @@ export type Database = {
           published?: boolean
           reads?: number
           share_count?: number
+          show_test_button?: boolean | null
+          showTestButton?: boolean | null
           tags?: string[]
           title?: string
           title_en?: string | null

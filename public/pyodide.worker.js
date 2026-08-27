@@ -8,10 +8,18 @@ async function loadPyodideEngine() {
   if (pyodide) return pyodide;
   if (!pyodideLoadingPromise) {
     pyodideLoadingPromise = (async () => {
-      // Load Pyodide from official CDN
-      importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js");
+      let indexURL = "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/";
+      try {
+        importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js");
+      } catch (error) {
+        console.warn("jsDelivr failed, falling back to unpkg...", error);
+        indexURL = "https://unpkg.com/pyodide@0.26.2/";
+        importScripts("https://unpkg.com/pyodide@0.26.2/pyodide.js");
+      }
+
       // @ts-ignore
       const py = await self.loadPyodide({
+        indexURL,
         stdout: (text) => {
           self.postMessage({ type: "stdout", text: String(text) });
         },

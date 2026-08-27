@@ -194,10 +194,10 @@ export const DesignCard = ({
     <div
       id={`design-card-${item.id}`}
       onClick={onView}
-      className="cursor-pointer group flex flex-col md:flex-row items-stretch justify-between p-0 rounded-2xl bg-[#1A1B1E] border border-[#2D3139] hover:border-[#FFBCBC] transition-all duration-300 shadow-md hover:shadow-2xl hover:shadow-[#FFBCBC]/10 relative overflow-hidden min-h-[340px] md:min-h-[350px]"
+      className="cursor-pointer group flex flex-col md:flex-row items-stretch justify-between p-0 rounded-2xl bg-[#090040] border border-[#1b1458] hover:border-[#FFBCBC] transition-all duration-300 shadow-md hover:shadow-2xl hover:shadow-[#FFBCBC]/10 relative overflow-hidden min-h-[340px] md:min-h-[350px]"
     >
       {/* Left Content Section (Strict 50%) */}
-      <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between min-w-0 bg-[#1A1B1E]">
+      <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between min-w-0 bg-[#090040]">
         <div className="space-y-3.5">
           {/* Title */}
           <h3 className="text-xl md:text-2xl font-bold text-foreground group-hover:text-[#FFBCBC] transition-colors leading-snug">
@@ -208,44 +208,47 @@ export const DesignCard = ({
           <p className="text-sm text-neutral-300 leading-relaxed line-clamp-4">
             {item.description}
           </p>
+
+          {/* Moved Like and Share Buttons: Positioned directly underneath short description */}
+          <div className="flex items-center gap-2 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLikeClick}
+              className={`h-9 px-3 rounded-lg text-xs gap-1.5 transition-colors ${
+                isLiked
+                  ? "text-[#FFBCBC] bg-[#FFBCBC]/15 hover:bg-[#FFBCBC]/25"
+                  : "text-neutral-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10"
+              }`}
+              aria-label="Вподобати"
+            >
+              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+              <span>{(item.likes ?? 0) + (isLiked ? 1 : 0)}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShareClick}
+              className="h-9 px-3 rounded-lg text-xs gap-1.5 text-neutral-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10 transition-colors"
+              aria-label="Поділитися"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="flex items-center gap-2.5 pt-5 mt-6 border-t border-[#2D3139]">
+        {/* Action Bar (View button separated in its primary position at bottom) */}
+        <div className="flex items-center gap-2.5 pt-5 mt-6 border-t border-[#1b1458]">
           <Button
             onClick={(e) => {
               e.stopPropagation();
               onView();
             }}
-            className="h-11 px-4 rounded-xl text-sm font-semibold bg-[#FFBCBC] text-[#03001C] hover:bg-[#FFBCBC]/90 shadow-sm transition-all gap-1.5 border-0 cursor-pointer"
+            className="h-11 px-5 rounded-xl text-sm font-semibold bg-[#FFBCBC] text-[#030008] hover:bg-[#FFBCBC]/90 shadow-sm transition-all gap-1.5 border-0 cursor-pointer"
           >
             <span>Переглянути</span>
-            <ArrowUpRight className="w-4 h-4 text-[#03001C]" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLikeClick}
-            className={`h-11 px-3 rounded-xl text-xs gap-1.5 transition-colors ${
-              isLiked
-                ? "text-[#FFBCBC] bg-[#FFBCBC]/15 hover:bg-[#FFBCBC]/25"
-                : "text-neutral-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10"
-            }`}
-            aria-label="Вподобати"
-          >
-            <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-            <span>{(item.likes ?? 0) + (isLiked ? 1 : 0)}</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleShareClick}
-            className="h-11 px-3 rounded-xl text-xs gap-1.5 text-neutral-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10 transition-colors"
-            aria-label="Поділитися"
-          >
-            <Share2 className="w-4 h-4" />
+            <ArrowUpRight className="w-4 h-4 text-[#030008]" />
           </Button>
         </div>
       </div>

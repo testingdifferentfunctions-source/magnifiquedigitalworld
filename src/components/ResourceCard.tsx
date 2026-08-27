@@ -50,7 +50,7 @@ const ResourceCard = ({ item, index = 0, onDetails, onTry, onLike, onShare }: Re
           </Button>
           <Button
             variant="outline"
-            className="w-full bg-transparent border-[#5DA7DB] text-[#5DA7DB] hover:bg-[#5DA7DB] hover:text-black font-semibold shadow-none transition-colors"
+            className="w-full bg-transparent border-[#5DA7DB] text-[#5DA7DB] hover:bg-[#5DA7DB]/10 hover:text-[#5DA7DB] hover:border-[#5DA7DB] font-semibold shadow-none transition-colors"
             onClick={() => onTry?.(item)}
           >
             Спробувати

@@ -126,15 +126,19 @@ const PaletteDetail = () => {
           {/* Tags */}
           {entry.tags && entry.tags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              {entry.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[#2F2F2F] text-[#8ABEB9] border border-[#454545]"
-                >
-                  <Tag className="w-3 h-3 text-[#8ABEB9]" aria-hidden="true" />
-                  {tag}
-                </span>
-              ))}
+              {entry.tags.map((tag) => {
+                const cleanTag = tag.replace(/^#+/, "").trim();
+                if (!cleanTag) return null;
+                return (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-transparent text-[#8ABEB9] border border-[#8ABEB9]"
+                  >
+                    <Tag className="w-3 h-3 text-[#8ABEB9]" aria-hidden="true" />
+                    {cleanTag}
+                  </span>
+                );
+              })}
             </div>
           )}
 

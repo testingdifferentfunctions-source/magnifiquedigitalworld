@@ -57,7 +57,7 @@ const DictionaryCard = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
-      className="group w-full rounded-xl bg-[#1F1F1F] hover:bg-[#262626] border border-[#333333] hover:border-[#F3CD97]/60 shadow-md hover:shadow-lg transition-all duration-300 p-5 sm:p-6"
+      className="group w-full rounded-xl bg-[#140c0c] hover:bg-[#1a1010] border border-[#2a1d1d] hover:border-[#F3CD97]/60 shadow-md hover:shadow-lg transition-all duration-300 p-5 sm:p-6"
     >
       {/* Horizontal Flex Layout: Left Column (Content) and Right Column (Actions) on the exact same row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -82,7 +82,7 @@ const DictionaryCard = ({
             id={`dictionary-read-btn-${item.id}`}
             type="button"
             onClick={handleRead}
-            className="bg-[#F3CD97] hover:bg-[#e4be87] text-[#151515] font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm h-9"
+            className="bg-[#F3CD97] hover:bg-[#e4be87] text-[#080202] font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm h-9"
           >
             {language === "en" ? "Read" : "Прочитати"}
           </Button>
@@ -96,7 +96,7 @@ const DictionaryCard = ({
             onClick={handleLike}
             aria-label={language === "en" ? "Like" : "Вподобати"}
             aria-pressed={liked}
-            className="bg-[#2A2A2A] hover:bg-[#333333] text-neutral-200 hover:text-[#F3CD97] border border-[#3A3A3A] h-9 w-9 shrink-0 rounded-lg transition-colors"
+            className="bg-[#1f1414] hover:bg-[#2a1d1d] text-neutral-200 hover:text-[#F3CD97] border border-[#352525] h-9 w-9 shrink-0 rounded-lg transition-colors"
           >
             <Heart
               className={`w-4 h-4 transition-colors ${
@@ -114,7 +114,7 @@ const DictionaryCard = ({
             size="icon"
             onClick={onShare}
             aria-label={language === "en" ? "Share" : "Поділитися"}
-            className="bg-[#2A2A2A] hover:bg-[#333333] text-neutral-200 hover:text-[#F3CD97] border border-[#3A3A3A] h-9 w-9 shrink-0 rounded-lg transition-colors"
+            className="bg-[#1f1414] hover:bg-[#2a1d1d] text-neutral-200 hover:text-[#F3CD97] border border-[#352525] h-9 w-9 shrink-0 rounded-lg transition-colors"
           >
             <Share2 className="w-4 h-4" aria-hidden="true" />
           </Button>

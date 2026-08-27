@@ -1,14 +1,15 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import { useArticle, useTrackArticleView } from "@/hooks/useArticles";
 import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useMode } from "@/hooks/useMode";
 import { useCategoriesTranslations } from "@/hooks/useCategoryTranslation";
 import { localizeArticle } from "@/lib/localize";
 import PageLayout from "@/components/PageLayout";
 import SEO from "@/components/SEO";
 import LikeButton from "@/components/LikeButton";
-import { ArrowLeft, Eye, Calendar, Share2 } from "lucide-react";
+import { ArrowLeft, Eye, Calendar, Share2, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { shareArticle } from "@/lib/share";
@@ -17,6 +18,8 @@ import DOMPurify from "dompurify";
 
 const Article = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { setMode } = useMode();
   const { data: article, isLoading, error } = useArticle(id || "");
   const { data: categories } = useCategories();
   const { t, language } = useLanguage();
@@ -163,21 +166,36 @@ const Article = () => {
         }}
       />
       <article className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-4 mb-10">
-          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {t('article.back')}
-          </Link>
-
-          {category && (
-            <Link to={`/sections?category=${category.id}`}>
-              <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium hover:bg-primary/20 transition-colors">
-                {displayCategoryName}
-              </span>
-            </Link>
-          )}
+        {/* 1) Назад (Back) navigation button with hover fill in Articles accent color */}
+        <div className="mb-6">
+          <Button
+            onClick={() => navigate("/")}
+            className="h-10 px-4 rounded-xl text-sm font-semibold bg-transparent text-[#94A3B8] hover:bg-[#A07DFA] hover:text-black [&:hover>svg]:text-black border-0 shadow-none inline-flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <ArrowLeft className="w-4.5 h-4.5 text-[#94A3B8] transition-colors" />
+            <span>{t('article.back')}</span>
+          </Button>
         </div>
 
+        {/* 2) Article Tags (Articles Accent Outline, no solid bg, no '#' prefix, main category label removed) */}
+        {article.tags && article.tags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {article.tags.map((tag) => {
+              const cleanTag = tag.replace(/^#+/, "").trim();
+              if (!cleanTag) return null;
+              return (
+                <span
+                  key={tag}
+                  className="inline-block bg-transparent text-[#A07DFA] border border-[#A07DFA] px-3 py-0.5 rounded-full text-xs font-semibold"
+                >
+                  {cleanTag}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 3) Main Article Title */}
         <h1 className="text-3xl md:text-4xl font-bold mb-4">
           {displayTitle}
         </h1>
@@ -197,16 +215,9 @@ const Article = () => {
             <Share2 className="w-4 h-4" />
             <span>{(article as any).share_count ?? 0}</span>
           </div>
-          <LikeButton articleId={article.id} likes={article.likes} />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => shareArticle(article.id, displayTitle || article.title)}
-            className="ml-auto hover:text-primary-foreground hover:bg-primary hover:border-primary transition-colors duration-200"
-          >
-            <Share2 className="w-4 h-4 mr-2" />
-            {t('article.share') !== 'article.share' ? t('article.share') : 'Поділитися'}
-          </Button>
+          <div className="ml-auto">
+            <LikeButton articleId={article.id} likes={article.likes} />
+          </div>
         </div>
 
         <div className="aspect-video overflow-hidden rounded-xl mb-8">
@@ -252,6 +263,36 @@ const Article = () => {
           // і тепер ми просто виводимо готовий parsedContent з ID для скролу
           dangerouslySetInnerHTML={{ __html: parsedContent }}
         />
+
+        {/* --- НИЖНІ ДІЇ СТАТТІ (Bottom Actions: Share & Conditional Test Button) --- */}
+        <div className="mt-12 pt-8 border-t border-border flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button
+              id="article-bottom-share-btn"
+              variant="outline"
+              size="default"
+              onClick={() => shareArticle(article.id, displayTitle || article.title)}
+              className="gap-2 hover:text-primary-foreground hover:bg-primary hover:border-primary transition-colors duration-200 cursor-pointer"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>{t('article.share') !== 'article.share' ? t('article.share') : (language === 'en' ? 'Share' : 'Поділитися')}</span>
+            </Button>
+          </div>
+
+          {(Boolean(article.show_test_button ?? article.showTestButton)) && (
+            <Button
+              id="article-bottom-test-btn"
+              onClick={() => {
+                setMode('editor');
+                navigate('/editor');
+              }}
+              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-md transition-all cursor-pointer"
+            >
+              <Code2 className="w-4 h-4" />
+              <span>{language === 'en' ? 'Test' : 'Тестувати'}</span>
+            </Button>
+          )}
+        </div>
       </article>
     </PageLayout>
   );
