@@ -413,62 +413,57 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 2: Monaco Code Editor wrapper with flex-1 overflow-hidden relative min-h-[250px] */}
+        {/* Step 1 & 2: Monaco Code Editor wrapper with strict block CSS isolation */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
-          className="flex-1 overflow-hidden relative min-h-[250px] w-full bg-[#222831]"
+          className="relative block w-full h-full min-h-[300px] overflow-hidden text-left bg-[#222831]"
         >
-          {/* Step 3: Absolute Inset-0 inner container for Monaco Editor */}
-          <div className="absolute inset-0 h-full w-full overflow-hidden">
-            <Editor
-              height="100%"
-              width="100%"
-              className="h-full w-full"
-              defaultLanguage="python"
-              language="python"
-              value={code}
-              onChange={(val) => setCode(val || "")}
-              beforeMount={handleBeforeMount}
-              onMount={handleEditorDidMount}
-              theme="customSlateTheme"
-              loading={
-                <div className="flex items-center justify-center h-full text-neutral-400 text-sm font-mono py-12">
-                  {language === "en" ? "Loading Monaco Editor..." : "Завантаження редактора..."}
-                </div>
-              }
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-                fontLigatures: true,
-                padding: { top: 14, bottom: 14 },
-                lineNumbers: "on",
-                lineNumbersMinChars: 3,
-                renderLineHighlight: "all",
-                automaticLayout: true,
-                fixedOverflowWidgets: true,
-                tabSize: 4,
-                scrollBeyondLastLine: false,
-                wordWrap: "on",
-                wrappingIndent: "indent",
-                cursorBlinking: "smooth",
-                smoothScrolling: true,
-                scrollbar: {
-                  vertical: "visible",
-                  horizontal: "auto",
-                  verticalScrollbarSize: 8,
-                  horizontalScrollbarSize: 8,
-                  useShadows: false,
-                },
-                overviewRulerLanes: 0,
-                hideCursorInOverviewRuler: true,
-              }}
-            />
-          </div>
+          <Editor
+            height="100%"
+            width="100%"
+            defaultLanguage="python"
+            language="python"
+            value={code}
+            onChange={(val) => setCode(val || "")}
+            beforeMount={handleBeforeMount}
+            onMount={handleEditorDidMount}
+            theme="customSlateTheme"
+            loading={
+              <div className="flex items-center justify-center h-full text-neutral-400 text-sm font-mono py-12">
+                {language === "en" ? "Loading Monaco Editor..." : "Завантаження редактора..."}
+              </div>
+            }
+            options={{
+              minimap: { enabled: false },
+              automaticLayout: true,
+              wordWrap: "on",
+              scrollBeyondLastLine: false,
+              fontSize: 14,
+              fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+              fontLigatures: true,
+              padding: { top: 14, bottom: 14 },
+              lineNumbers: "on",
+              lineNumbersMinChars: 3,
+              renderLineHighlight: "all",
+              fixedOverflowWidgets: true,
+              tabSize: 4,
+              cursorBlinking: "smooth",
+              smoothScrolling: true,
+              scrollbar: {
+                vertical: "visible",
+                horizontal: "auto",
+                verticalScrollbarSize: 8,
+                horizontalScrollbarSize: 8,
+                useShadows: false,
+              },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+            }}
+          />
         </div>
 
-        {/* Step 3: Bottom Console container with fixed height and shrink-0 */}
+        {/* Step 4 & 5: Bottom Console container with fixed height and shrink-0 */}
         <div className="w-full bg-[#222831] flex flex-col h-60 sm:h-72 shrink-0 flex-shrink-0 overflow-hidden">
           {/* Terminal Title Bar */}
           <div className="px-3.5 sm:px-4 py-2.5 bg-[#1A1F26] border-b border-[#393E46] flex flex-wrap items-center justify-between gap-2 shrink-0">
