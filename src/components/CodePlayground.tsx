@@ -67,12 +67,21 @@ export const CodePlayground: React.FC = () => {
   const [engineReady, setEngineReady] = useState<boolean>(false);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [isReady, setIsReady] = useState<boolean>(false);
 
   const workerRef = useRef<Worker | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
   const editorContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Delayed mounting to ensure container DOM dimensions are stabilized on mobile
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 120);
+    return () => clearTimeout(timer);
+  }, []);
 
   // ResizeObserver to recalculate Monaco layout on container resize
   useEffect(() => {
@@ -413,59 +422,65 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 1 & 2: CSS Quarantine Wrapper around Monaco Editor */}
+        {/* Step 1 & 2: CSS Quarantine Wrapper with translate="no", notranslate, and system monospace */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
-          className="relative block w-full h-full min-h-[300px] text-left leading-normal isolate !p-0 !m-0 overflow-hidden bg-[#222831]"
+          translate="no"
+          className="notranslate relative block w-full h-full min-h-[300px] text-left leading-normal isolate !p-0 !m-0 overflow-hidden bg-transparent z-0 !outline-none"
           style={{ lineHeight: "normal", textAlign: "left" }}
         >
-          <Editor
-            height="100%"
-            width="100%"
-            defaultLanguage="python"
-            language="python"
-            value={code}
-            onChange={(val) => setCode(val || "")}
-            beforeMount={handleBeforeMount}
-            onMount={handleEditorDidMount}
-            theme="customSlateTheme"
-            loading={
-              <div className="flex items-center justify-center h-full text-neutral-400 text-sm font-mono py-12">
-                {language === "en" ? "Loading Monaco Editor..." : "Завантаження редактора..."}
-              </div>
-            }
-            options={{
-              minimap: { enabled: false },
-              hover: { enabled: false },
-              contextmenu: false,
-              folding: false,
-              renderValidationDecorations: "off",
-              automaticLayout: true,
-              wordWrap: "on",
-              scrollBeyondLastLine: false,
-              fontSize: 14,
-              fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-              fontLigatures: true,
-              padding: { top: 14, bottom: 14 },
-              lineNumbers: "on",
-              lineNumbersMinChars: 3,
-              renderLineHighlight: "all",
-              fixedOverflowWidgets: true,
-              tabSize: 4,
-              cursorBlinking: "smooth",
-              smoothScrolling: true,
-              scrollbar: {
-                vertical: "visible",
-                horizontal: "auto",
-                verticalScrollbarSize: 8,
-                horizontalScrollbarSize: 8,
-                useShadows: false,
-              },
-              overviewRulerLanes: 0,
-              hideCursorInOverviewRuler: true,
-            }}
-          />
+          {isReady ? (
+            <Editor
+              height="100%"
+              width="100%"
+              defaultLanguage="python"
+              language="python"
+              value={code}
+              onChange={(val) => setCode(val || "")}
+              beforeMount={handleBeforeMount}
+              onMount={handleEditorDidMount}
+              theme="customSlateTheme"
+              loading={
+                <div className="flex items-center justify-center h-full text-neutral-400 text-sm font-mono py-12">
+                  {language === "en" ? "Loading Monaco Editor..." : "Завантаження редактора..."}
+                </div>
+              }
+              options={{
+                minimap: { enabled: false },
+                hover: { enabled: false },
+                contextmenu: false,
+                folding: false,
+                renderValidationDecorations: "off",
+                automaticLayout: true,
+                wordWrap: "on",
+                scrollBeyondLastLine: false,
+                fontSize: 14,
+                fontFamily: "'Consolas', 'Courier New', monospace",
+                padding: { top: 14, bottom: 14 },
+                lineNumbers: "on",
+                lineNumbersMinChars: 3,
+                renderLineHighlight: "all",
+                fixedOverflowWidgets: true,
+                tabSize: 4,
+                cursorBlinking: "smooth",
+                smoothScrolling: true,
+                scrollbar: {
+                  vertical: "visible",
+                  horizontal: "auto",
+                  verticalScrollbarSize: 8,
+                  horizontalScrollbarSize: 8,
+                  useShadows: false,
+                },
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+              }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-neutral-400 text-sm font-mono py-12">
+              {language === "en" ? "Initializing Editor..." : "Ініціалізація редактора..."}
+            </div>
+          )}
         </div>
 
         {/* Step 3: Bottom Console container with fixed height and shrink-0 */}
