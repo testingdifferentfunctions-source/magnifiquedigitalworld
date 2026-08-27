@@ -413,11 +413,12 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 1 & 2: Monaco Code Editor wrapper with strict block CSS isolation */}
+        {/* Step 1 & 2: CSS Quarantine Wrapper around Monaco Editor */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
-          className="relative block w-full h-full min-h-[300px] overflow-hidden text-left bg-[#222831]"
+          className="relative block w-full h-full min-h-[300px] text-left leading-normal isolate !p-0 !m-0 overflow-hidden bg-[#222831]"
+          style={{ lineHeight: "normal", textAlign: "left" }}
         >
           <Editor
             height="100%"
@@ -436,6 +437,10 @@ export const CodePlayground: React.FC = () => {
             }
             options={{
               minimap: { enabled: false },
+              hover: { enabled: false },
+              contextmenu: false,
+              folding: false,
+              renderValidationDecorations: "off",
               automaticLayout: true,
               wordWrap: "on",
               scrollBeyondLastLine: false,
@@ -463,7 +468,7 @@ export const CodePlayground: React.FC = () => {
           />
         </div>
 
-        {/* Step 4 & 5: Bottom Console container with fixed height and shrink-0 */}
+        {/* Step 3: Bottom Console container with fixed height and shrink-0 */}
         <div className="w-full bg-[#222831] flex flex-col h-60 sm:h-72 shrink-0 flex-shrink-0 overflow-hidden">
           {/* Terminal Title Bar */}
           <div className="px-3.5 sm:px-4 py-2.5 bg-[#1A1F26] border-b border-[#393E46] flex flex-wrap items-center justify-between gap-2 shrink-0">
