@@ -342,6 +342,7 @@ export const CodePlayground: React.FC = () => {
     <div
       id="editor-mode-container"
       className="w-full h-[calc(100dvh-160px)] min-h-[560px] sm:h-[780px] md:h-[820px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden flex flex-col transition-all"
+      style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
     >
       {/* Task 1: Top Main Toolbar Container with #222831 & Touch-Friendly Controls */}
       <div className="p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-3 shrink-0">
@@ -428,7 +429,7 @@ export const CodePlayground: React.FC = () => {
           id="monaco-editor-outer-container"
           translate="no"
           className="notranslate relative block w-full h-full min-h-[300px] text-left leading-normal isolate !p-0 !m-0 overflow-hidden bg-transparent z-0 !outline-none"
-          style={{ lineHeight: "normal", textAlign: "left" }}
+          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "normal", textAlign: "left" }}
         >
           {isReady ? (
             <Editor

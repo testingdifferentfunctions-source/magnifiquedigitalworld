@@ -240,3 +240,29 @@
   scrollbar-width: thin;
   scrollbar-color: #382835 #181417;
 }
+
+/* ==========================================================================
+   Neutralize Mobile Browser Interventions for Monaco Editor
+   ========================================================================== */
+
+#monaco-editor-outer-container,
+.monaco-editor,
+.monaco-editor-wrapper {
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+}
+
+#monaco-editor-outer-container textarea,
+.monaco-editor textarea,
+.monaco-editor .inputarea {
+  background: transparent !important;
+  color: transparent !important;
+  caret-color: transparent !important;
+  outline: none !important;
+  border: none !important;
+  resize: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
