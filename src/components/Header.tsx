@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useMode } from "@/hooks/useMode";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.svg";
 import { LogOut, Settings, Globe } from "lucide-react";
@@ -9,6 +10,7 @@ const Header = () => {
   const location = useLocation();
   const { user, isAdmin, signOut } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const { mode } = useMode();
 
   const navItems = [
     { path: "/", label: t('nav.home') },
@@ -21,8 +23,14 @@ const Header = () => {
     setLanguage(language === 'uk' ? 'en' : 'uk');
   };
 
+  const isDesignMode = mode === "design";
+
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <header
+      className={`border-b border-border sticky top-0 z-50 transition-colors duration-200 ${
+        isDesignMode ? "bg-[#030008]" : "bg-card/50 backdrop-blur-sm"
+      }`}
+    >
       <div className="container mx-auto px-4 py-3 sm:py-3.5">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
