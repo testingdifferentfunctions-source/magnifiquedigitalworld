@@ -68,12 +68,24 @@ export const CodePlayground: React.FC = () => {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [isReady, setIsReady] = useState<boolean>(false);
+  const [fontsLoaded, setFontsLoaded] = useState<boolean>(false);
 
   const workerRef = useRef<Worker | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
   const editorContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Wait for document fonts to be ready before rendering editor
+  useEffect(() => {
+    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        setFontsLoaded(true);
+      });
+    } else {
+      setFontsLoaded(true);
+    }
+  }, []);
 
   // Delayed mounting to ensure container DOM dimensions are stabilized on mobile
   useEffect(() => {
@@ -323,11 +335,27 @@ export const CodePlayground: React.FC = () => {
     } catch (e) {
       console.warn("Theme apply error", e);
     }
+
+    try {
+      if (monaco && monaco.editor && typeof (monaco.editor as any).remeasureFonts === "function") {
+        (monaco.editor as any).remeasureFonts();
+      }
+    } catch (e) {
+      console.warn("Remeasure fonts error", e);
+    }
+
     // Force layout recalculations across microtasks and render frames
     requestAnimationFrame(() => {
       editor.layout();
     });
     setTimeout(() => {
+      try {
+        if (monaco && monaco.editor && typeof (monaco.editor as any).remeasureFonts === "function") {
+          (monaco.editor as any).remeasureFonts();
+        }
+      } catch {
+        // ignore
+      }
       editor.layout();
     }, 50);
     setTimeout(() => {
@@ -428,10 +456,10 @@ export const CodePlayground: React.FC = () => {
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
           translate="no"
-          className="notranslate flex-1 min-h-0 relative w-full overflow-hidden text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none"
+          className="notranslate flex-1 min-h-0 relative w-full overflow-hidden text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
           style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left" }}
         >
-          {isReady ? (
+          {isReady && fontsLoaded ? (
             <Editor
               height="100%"
               width="100%"
@@ -452,6 +480,11 @@ export const CodePlayground: React.FC = () => {
                 hover: { enabled: false },
                 contextmenu: false,
                 folding: false,
+                guides: { indentation: false },
+                overviewRulerBorder: false,
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+                renderLineHighlight: "none",
                 renderValidationDecorations: "off",
                 automaticLayout: true,
                 wordWrap: "on",
@@ -463,7 +496,6 @@ export const CodePlayground: React.FC = () => {
                 padding: { top: 14, bottom: 14 },
                 lineNumbers: "on",
                 lineNumbersMinChars: 3,
-                renderLineHighlight: "all",
                 fixedOverflowWidgets: true,
                 tabSize: 4,
                 cursorBlinking: "smooth",
@@ -475,8 +507,6 @@ export const CodePlayground: React.FC = () => {
                   horizontalScrollbarSize: 8,
                   useShadows: false,
                 },
-                overviewRulerLanes: 0,
-                hideCursorInOverviewRuler: true,
               }}
             />
           ) : (
