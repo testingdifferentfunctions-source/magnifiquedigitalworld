@@ -95,19 +95,37 @@ export const CodePlayground: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // ResizeObserver to recalculate Monaco layout on container resize
+  // ResizeObserver to recalculate Monaco layout with horizontal filter / debouncing against URL bar vertical resize
   useEffect(() => {
     if (!editorContainerRef.current) return;
-    const observer = new ResizeObserver(() => {
-      if (editorRef.current) {
-        editorRef.current.layout();
+    let lastWidth = editorContainerRef.current.clientWidth;
+    let lastHeight = editorContainerRef.current.clientHeight;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        // Trigger layout on horizontal change or significant vertical jump (orientation change)
+        if (Math.abs(width - lastWidth) > 4 || Math.abs(height - lastHeight) > 60) {
+          lastWidth = width;
+          lastHeight = height;
+          if (editorRef.current) {
+            editorRef.current.layout();
+          }
+        }
       }
     });
     observer.observe(editorContainerRef.current);
 
+    let lastWindowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
     const handleWindowResize = () => {
-      if (editorRef.current) {
-        editorRef.current.layout();
+      if (typeof window !== "undefined") {
+        const currentWidth = window.innerWidth;
+        if (Math.abs(currentWidth - lastWindowWidth) > 5) {
+          lastWindowWidth = currentWidth;
+          if (editorRef.current) {
+            editorRef.current.layout();
+          }
+        }
       }
     };
     window.addEventListener("resize", handleWindowResize);
@@ -451,13 +469,13 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 1 & 2: CSS Quarantine Wrapper with translate="no", notranslate, and flex-1 min-h-0 relative w-full overflow-hidden */}
+        {/* Step 1 & 4: CSS Quarantine Wrapper with touch-none, overflow-hidden, and translate="no" */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
           translate="no"
-          className="notranslate flex-1 min-h-0 relative w-full overflow-hidden text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
-          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left" }}
+          className="notranslate flex-1 min-h-0 relative w-full overflow-hidden touch-none text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
+          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left", touchAction: "none" }}
         >
           {isReady && fontsLoaded ? (
             <Editor
@@ -506,6 +524,8 @@ export const CodePlayground: React.FC = () => {
                   verticalScrollbarSize: 8,
                   horizontalScrollbarSize: 8,
                   useShadows: false,
+                  handleMouseWheel: true,
+                  alwaysConsumeMouseWheel: false,
                 },
               }}
             />
