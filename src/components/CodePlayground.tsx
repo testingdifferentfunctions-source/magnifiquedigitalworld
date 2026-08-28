@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import Editor, { OnMount, BeforeMount } from "@monaco-editor/react";
+import CodeMirror from "@uiw/react-codemirror";
+import { python } from "@codemirror/lang-python";
+import { EditorView } from "@codemirror/view";
+import { oneDark } from "@codemirror/theme-one-dark";
 import {
   Play,
   Square,
@@ -59,6 +62,69 @@ print("\\n✅ Виконання завершено успішно!")
 
 const EXECUTION_TIMEOUT_MS = 10000; // 10s strict timeout
 
+// Custom CodeMirror theme matching application slate dark palette
+const slateEditorTheme = EditorView.theme(
+  {
+    "&": {
+      color: "#EEEEEE",
+      backgroundColor: "#222831",
+      fontSize: "14px",
+      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      height: "100%",
+      width: "100%",
+    },
+    ".cm-content": {
+      caretColor: "#BDA6CE",
+      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      lineHeight: "21px",
+      padding: "14px 0",
+      WebkitTextSizeAdjust: "100%",
+      textSizeAdjust: "100%",
+    },
+    "&.cm-focused": {
+      outline: "none !important",
+    },
+    "&.cm-focused .cm-cursor": {
+      borderLeftColor: "#BDA6CE",
+      borderLeftWidth: "2px",
+    },
+    "&.cm-focused .cm-selectionBackground, ::selection, .cm-selectionBackground": {
+      backgroundColor: "rgba(189, 166, 206, 0.25) !important",
+    },
+    ".cm-gutters": {
+      backgroundColor: "#1B2027",
+      color: "#596877",
+      border: "none",
+      borderRight: "1px solid #2D3540",
+      paddingRight: "6px",
+      userSelect: "none",
+    },
+    ".cm-lineNumbers .cm-gutterElement": {
+      paddingLeft: "10px",
+      paddingRight: "6px",
+      minWidth: "28px",
+    },
+    ".cm-activeLineGutter": {
+      backgroundColor: "#272F3B",
+      color: "#BDA6CE",
+      fontWeight: "bold",
+    },
+    ".cm-activeLine": {
+      backgroundColor: "rgba(44, 52, 64, 0.4)",
+    },
+    ".cm-line": {
+      padding: "0 14px",
+      fontFeatureSettings: '"liga" 0, "calt" 0',
+    },
+    ".cm-scroller": {
+      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      overflow: "auto",
+      height: "100% !important",
+    },
+  },
+  { dark: true }
+);
+
 export const CodePlayground: React.FC = () => {
   const { t, language } = useLanguage();
   const [code, setCode] = useState<string>(DEFAULT_PYTHON_SNIPPET);
@@ -67,94 +133,10 @@ export const CodePlayground: React.FC = () => {
   const [engineReady, setEngineReady] = useState<boolean>(false);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
-  const [isReady, setIsReady] = useState<boolean>(false);
-  const [editorKey, setEditorKey] = useState<number>(() => Date.now());
-  const [isLayoutStable, setIsLayoutStable] = useState<boolean>(false);
 
   const workerRef = useRef<Worker | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
-  const editorRef = useRef<any>(null);
-  const editorContainerRef = useRef<HTMLDivElement | null>(null);
-  const prevDimensionsRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
-
-  // Step 3: Font-Loading Barrier (React State)
-  useEffect(() => {
-    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => {
-        setTimeout(() => setIsReady(true), 50);
-      });
-    } else {
-      setTimeout(() => setIsReady(true), 50);
-    }
-  }, []);
-
-  // Step 1 & 2: ResizeObserver with debounce triggering editorKey updates on major layout shifts (>10px)
-  useEffect(() => {
-    const container = editorContainerRef.current;
-    if (!container) return;
-
-    let resizeTimer: NodeJS.Timeout | null = null;
-
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        if (width === 0 || height === 0) continue;
-
-        const isFirst = prevDimensionsRef.current.width === 0 && prevDimensionsRef.current.height === 0;
-        const widthDiff = Math.abs(width - prevDimensionsRef.current.width);
-        const heightDiff = Math.abs(height - prevDimensionsRef.current.height);
-
-        if (isFirst || widthDiff > 10 || heightDiff > 10) {
-          prevDimensionsRef.current = { width, height };
-
-          if (resizeTimer) clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(() => {
-            setEditorKey(Date.now());
-            setIsLayoutStable(true);
-          }, 300);
-        }
-      }
-    });
-
-    observer.observe(container);
-
-    return () => {
-      if (resizeTimer) clearTimeout(resizeTimer);
-      observer.disconnect();
-    };
-  }, []);
-
-  // Debounced Window Resize fallback
-  useEffect(() => {
-    let resizeTimeout: NodeJS.Timeout | null = null;
-
-    const handleResize = () => {
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
-      }
-      resizeTimeout = setTimeout(() => {
-        if (editorRef.current) {
-          requestAnimationFrame(() => {
-            if (editorRef.current) {
-              editorRef.current.layout();
-            }
-          });
-        }
-      }, 200);
-    };
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleResize);
-
-    return () => {
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
-      }
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", handleResize);
-    };
-  }, []);
 
   const formatTimestamp = () => {
     const d = new Date();
@@ -173,7 +155,7 @@ export const CodePlayground: React.FC = () => {
     ]);
   }, []);
 
-  // Initialize Web Worker
+  // Initialize Web Worker for Pyodide execution
   const initWorker = useCallback(() => {
     if (workerRef.current) {
       workerRef.current.terminate();
@@ -339,73 +321,6 @@ export const CodePlayground: React.FC = () => {
     }
   };
 
-  const handleBeforeMount: BeforeMount = (monaco) => {
-    // Task 2: Define custom slate dark theme with #222831 inner editor background and #BDA6CE accent
-    monaco.editor.defineTheme("customSlateTheme", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [
-        { token: "comment", foreground: "798797", fontStyle: "italic" },
-        { token: "keyword", foreground: "BDA6CE", fontStyle: "bold" },
-        { token: "string", foreground: "98C379" },
-        { token: "number", foreground: "61AFEF" },
-        { token: "type", foreground: "C678DD" },
-        { token: "function", foreground: "E5C07B" },
-        { token: "operator", foreground: "E0E0E0" },
-      ],
-      colors: {
-        "editor.background": "#222831",
-        "editor.foreground": "#EEEEEE",
-        "editorCursor.foreground": "#BDA6CE",
-        "editor.lineHighlightBackground": "#2C3440",
-        "editorLineNumber.foreground": "#596877",
-        "editorLineNumber.activeForeground": "#BDA6CE",
-        "editor.selectionBackground": "#BDA6CE33",
-        "editor.inactiveSelectionBackground": "#BDA6CE1a",
-      },
-    });
-  };
-
-  const handleEditorDidMount: OnMount = (editor, monaco) => {
-    editorRef.current = editor;
-    try {
-      monaco.editor.setTheme("customSlateTheme");
-    } catch (e) {
-      console.warn("Theme apply error", e);
-    }
-
-    try {
-      if (monaco && monaco.editor && typeof (monaco.editor as any).remeasureFonts === "function") {
-        (monaco.editor as any).remeasureFonts();
-      }
-    } catch (e) {
-      console.warn("Remeasure fonts error", e);
-    }
-
-    // Force layout recalculations across microtasks and render frames
-    requestAnimationFrame(() => {
-      editor.layout();
-    });
-
-    // Step 4: The Remeasure API (300ms gives the mobile DOM time to settle)
-    setTimeout(() => {
-      try {
-        if (typeof window !== "undefined" && (window as any).monaco?.editor?.remeasureFonts) {
-          (window as any).monaco.editor.remeasureFonts();
-        } else if (monaco?.editor?.remeasureFonts) {
-          monaco.editor.remeasureFonts();
-        }
-      } catch (e) {
-        console.warn("Delayed remeasure fonts error", e);
-      }
-      if (editorRef.current) {
-        editorRef.current.layout();
-      } else {
-        editor.layout();
-      }
-    }, 300);
-  };
-
   return (
     <div
       id="editor-mode-container"
@@ -490,78 +405,50 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 2 & 4: Strict Quarantine Container */}
+        {/* Step 2 & Step 5: CodeMirror 6 Mobile-Compatible Quarantine Container */}
         <div
-          ref={editorContainerRef}
-          id="monaco-editor-outer-container"
+          id="codemirror-outer-container"
           translate="no"
-          className="notranslate relative w-full h-full flex-1 min-h-0 overflow-hidden text-left isolate bg-transparent !outline-none"
-          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", touchAction: "none" }}
+          className="notranslate relative flex-1 min-h-0 w-full h-full overflow-hidden text-left isolate bg-[#222831] !outline-none"
+          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
         >
-          {/* Step 3: Dynamic Key Remount Pattern */}
-          {isReady && isLayoutStable ? (
-            <Editor
-              key={editorKey}
-              height="100%"
-              width="100%"
-              defaultLanguage="python"
-              language="python"
-              value={code}
-              onChange={(val) => setCode(val || "")}
-              beforeMount={handleBeforeMount}
-              onMount={handleEditorDidMount}
-              theme="customSlateTheme"
-              loading={
-                <div className="flex items-center justify-center h-full text-neutral-400 text-sm font-mono py-12">
-                  {language === "en" ? "Loading Monaco Editor..." : "Завантаження редактора..."}
-                </div>
-              }
-              options={{
-                minimap: { enabled: false },
-                hover: { enabled: false },
-                contextmenu: false,
-                folding: false,
-                guides: { indentation: false },
-                overviewRulerBorder: false,
-                overviewRulerLanes: 0,
-                hideCursorInOverviewRuler: true,
-                renderLineHighlight: "none",
-                renderValidationDecorations: "off",
-                automaticLayout: false,
-                wordWrap: "on",
-                scrollBeyondLastLine: false,
-                accessibilitySupport: "off",
-                fontSize: 14,
-                lineHeight: 21,
-                letterSpacing: 0,
-                fontLigatures: false,
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                padding: { top: 14, bottom: 14 },
-                lineNumbers: "on",
-                lineNumbersMinChars: 3,
-                fixedOverflowWidgets: true,
-                tabSize: 4,
-                cursorBlinking: "smooth",
-                smoothScrolling: true,
-                scrollbar: {
-                  vertical: "visible",
-                  horizontal: "auto",
-                  verticalScrollbarSize: 8,
-                  horizontalScrollbarSize: 8,
-                  useShadows: false,
-                  handleMouseWheel: true,
-                  alwaysConsumeMouseWheel: false,
-                },
-              }}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-neutral-400 text-sm font-mono py-12">
-              {language === "en" ? "Initializing Editor..." : "Ініціалізація редактора..."}
-            </div>
-          )}
+          <CodeMirror
+            value={code}
+            height="100%"
+            className="h-full w-full text-left"
+            theme="dark"
+            extensions={[python(), EditorView.lineWrapping, oneDark, slateEditorTheme]}
+            onChange={(val) => setCode(val)}
+            basicSetup={{
+              lineNumbers: true,
+              highlightActiveLineGutter: true,
+              highlightSpecialChars: true,
+              history: true,
+              foldGutter: false,
+              drawSelection: true,
+              dropCursor: true,
+              allowMultipleSelections: false,
+              indentOnInput: true,
+              syntaxHighlighting: true,
+              bracketMatching: true,
+              closeBrackets: true,
+              autocompletion: true,
+              rectangularSelection: false,
+              crosshairCursor: false,
+              highlightActiveLine: true,
+              highlightSelectionMatches: false,
+              closeBracketsKeymap: true,
+              defaultKeymap: true,
+              searchKeymap: true,
+              historyKeymap: true,
+              foldKeymap: false,
+              completionKeymap: true,
+              lintKeymap: false,
+            }}
+          />
         </div>
 
-        {/* Step 3: Bottom Console container with fixed height and shrink-0 */}
+        {/* Step 3: Bottom Console container */}
         <div className="w-full bg-[#222831] flex flex-col h-56 sm:h-64 md:h-72 shrink-0 flex-shrink-0 overflow-hidden">
           {/* Terminal Title Bar */}
           <div className="px-3.5 sm:px-4 py-2.5 bg-[#1A1F26] border-b border-[#393E46] flex flex-wrap items-center justify-between gap-2 shrink-0">
