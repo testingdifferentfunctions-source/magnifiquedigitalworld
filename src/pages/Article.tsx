@@ -202,6 +202,7 @@ const Article = () => {
 
         <p className="text-xl text-muted-foreground mb-6">{displayDescription}</p>
 
+        {/* 4) Meta Information */}
         <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground mb-8 pb-8 border-b border-border">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
@@ -214,9 +215,6 @@ const Article = () => {
           <div className="flex items-center gap-2">
             <Share2 className="w-4 h-4" />
             <span>{(article as any).share_count ?? 0}</span>
-          </div>
-          <div className="ml-auto">
-            <LikeButton articleId={article.id} likes={article.likes} />
           </div>
         </div>
 
@@ -264,15 +262,20 @@ const Article = () => {
           dangerouslySetInnerHTML={{ __html: parsedContent }}
         />
 
-        {/* --- НИЖНІ ДІЇ СТАТТІ (Bottom Actions: Share & Conditional Test Button) --- */}
+        {/* --- НИЖНІ ДІЇ СТАТТІ (Bottom Actions: Like, Share & Conditional Test Button) --- */}
         <div className="mt-12 pt-8 border-t border-border flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            <LikeButton
+              articleId={article.id}
+              likes={article.likes}
+              className="h-10 px-4 rounded-xl border border-input bg-background hover:bg-primary hover:text-primary-foreground hover:border-primary text-foreground gap-2 transition-colors cursor-pointer"
+            />
             <Button
               id="article-bottom-share-btn"
               variant="outline"
               size="default"
               onClick={() => shareArticle(article.id, displayTitle || article.title)}
-              className="gap-2 hover:text-primary-foreground hover:bg-primary hover:border-primary transition-colors duration-200 cursor-pointer"
+              className="h-10 px-4 rounded-xl gap-2 hover:text-primary-foreground hover:bg-primary hover:border-primary transition-colors duration-200 cursor-pointer"
             >
               <Share2 className="w-4 h-4" />
               <span>{t('article.share') !== 'article.share' ? t('article.share') : (language === 'en' ? 'Share' : 'Поділитися')}</span>

@@ -95,44 +95,34 @@ export const CodePlayground: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // ResizeObserver to recalculate Monaco layout with horizontal filter / debouncing against URL bar vertical resize
+  // Step 3: Manual Debounced Layout to prevent URL bar resize thrashing
   useEffect(() => {
-    if (!editorContainerRef.current) return;
-    let lastWidth = editorContainerRef.current.clientWidth;
-    let lastHeight = editorContainerRef.current.clientHeight;
+    let resizeTimeout: NodeJS.Timeout | null = null;
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        // Trigger layout on horizontal change or significant vertical jump (orientation change)
-        if (Math.abs(width - lastWidth) > 4 || Math.abs(height - lastHeight) > 60) {
-          lastWidth = width;
-          lastHeight = height;
-          if (editorRef.current) {
-            editorRef.current.layout();
-          }
-        }
+    const handleResize = () => {
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
       }
-    });
-    observer.observe(editorContainerRef.current);
-
-    let lastWindowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
-    const handleWindowResize = () => {
-      if (typeof window !== "undefined") {
-        const currentWidth = window.innerWidth;
-        if (Math.abs(currentWidth - lastWindowWidth) > 5) {
-          lastWindowWidth = currentWidth;
-          if (editorRef.current) {
-            editorRef.current.layout();
-          }
+      resizeTimeout = setTimeout(() => {
+        if (editorRef.current) {
+          requestAnimationFrame(() => {
+            if (editorRef.current) {
+              editorRef.current.layout();
+            }
+          });
         }
-      }
+      }, 300);
     };
-    window.addEventListener("resize", handleWindowResize);
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
 
     return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", handleWindowResize);
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
     };
   }, []);
 
@@ -387,7 +377,7 @@ export const CodePlayground: React.FC = () => {
   return (
     <div
       id="editor-mode-container"
-      className="flex flex-col h-[calc(100dvh-5rem)] min-h-[520px] w-full rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl overflow-hidden transition-all"
+      className="fixed inset-0 sm:relative sm:inset-auto z-40 sm:z-0 flex flex-col overflow-hidden bg-background overscroll-none sm:rounded-2xl sm:border sm:border-[#393E46] sm:shadow-2xl sm:h-[calc(100dvh-5rem)] sm:min-h-[520px] transition-all"
       style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
     >
       {/* Task 1: Top Main Toolbar Container with horizontal scroll on mobile */}
@@ -469,13 +459,13 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 1 & 4: CSS Quarantine Wrapper with touch-none, overflow-hidden, and translate="no" */}
+        {/* Step 1 & 4: CSS Quarantine Wrapper with flex-1 w-full h-full relative, overflow-hidden, and translate="no" */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
           translate="no"
-          className="notranslate flex-1 min-h-0 relative w-full overflow-hidden touch-none text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
-          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left", touchAction: "none" }}
+          className="notranslate flex-1 w-full h-full relative overflow-hidden text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
+          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left" }}
         >
           {isReady && fontsLoaded ? (
             <Editor
@@ -504,7 +494,7 @@ export const CodePlayground: React.FC = () => {
                 hideCursorInOverviewRuler: true,
                 renderLineHighlight: "none",
                 renderValidationDecorations: "off",
-                automaticLayout: true,
+                automaticLayout: false,
                 wordWrap: "on",
                 scrollBeyondLastLine: false,
                 fontSize: 14,
