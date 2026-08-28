@@ -68,7 +68,6 @@ export const CodePlayground: React.FC = () => {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [isReady, setIsReady] = useState<boolean>(false);
-  const [fontsLoaded, setFontsLoaded] = useState<boolean>(false);
 
   const workerRef = useRef<Worker | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -76,26 +75,18 @@ export const CodePlayground: React.FC = () => {
   const editorRef = useRef<any>(null);
   const editorContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Wait for document fonts to be ready before rendering editor
+  // Step 3: Font-Loading Barrier (React State)
   useEffect(() => {
     if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => {
-        setFontsLoaded(true);
+        setTimeout(() => setIsReady(true), 50);
       });
     } else {
-      setFontsLoaded(true);
+      setTimeout(() => setIsReady(true), 50);
     }
   }, []);
 
-  // Delayed mounting to ensure container DOM dimensions are stabilized on mobile
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsReady(true);
-    }, 120);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Step 3: Manual Debounced Layout to prevent URL bar resize thrashing
+  // Step 4: Debounced Resize (Fix Disappearing Text)
   useEffect(() => {
     let resizeTimeout: NodeJS.Timeout | null = null;
 
@@ -111,7 +102,7 @@ export const CodePlayground: React.FC = () => {
             }
           });
         }
-      }, 300);
+      }, 200);
     };
 
     window.addEventListener("resize", handleResize);
@@ -379,11 +370,10 @@ export const CodePlayground: React.FC = () => {
   return (
     <div
       id="editor-mode-container"
-      className="flex flex-col w-full overflow-hidden h-[calc(100dvh-4rem)] min-h-[520px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl transition-all"
-      style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
+      className="flex flex-col h-[calc(100dvh-4rem)] w-full overflow-hidden rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl transition-all"
     >
-      {/* Step 2: Top Main Toolbar Container with guaranteed visibility */}
-      <div className="shrink-0 flex-none z-10 p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-row overflow-x-auto whitespace-nowrap w-full items-center gap-2 sm:gap-3 no-scrollbar touch-pan-x">
+      {/* Step 1: Stable Top Toolbar with horizontal scroll */}
+      <div className="flex flex-row overflow-x-auto whitespace-nowrap shrink-0 flex-none z-10 w-full p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] items-center gap-2 sm:gap-3 no-scrollbar touch-pan-x">
         {/* Global Mode Switcher in Editor mode toolbar */}
         <div className="shrink-0">
           <ModeSwitcher className="bg-[#1A1F26] border-[#393E46] text-white hover:border-[#BDA6CE] transition-colors h-10 px-3 text-sm rounded-xl" />
@@ -461,15 +451,15 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 3: Editor Space */}
+        {/* Step 2: The Quarantine Wrapper */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
           translate="no"
-          className="notranslate flex-1 relative min-h-0 overflow-hidden w-full text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
-          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "21px", textAlign: "left" }}
+          className="notranslate relative flex-1 min-h-0 w-full h-full overflow-hidden text-left isolate bg-transparent !outline-none"
+          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", touchAction: "none" }}
         >
-          {isReady && fontsLoaded ? (
+          {isReady ? (
             <Editor
               height="100%"
               width="100%"
@@ -499,11 +489,12 @@ export const CodePlayground: React.FC = () => {
                 automaticLayout: false,
                 wordWrap: "on",
                 scrollBeyondLastLine: false,
+                accessibilitySupport: "off",
                 fontSize: 14,
                 lineHeight: 21,
                 letterSpacing: 0,
                 fontLigatures: false,
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                 padding: { top: 14, bottom: 14 },
                 lineNumbers: "on",
                 lineNumbersMinChars: 3,
