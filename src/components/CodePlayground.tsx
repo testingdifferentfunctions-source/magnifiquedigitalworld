@@ -377,11 +377,11 @@ export const CodePlayground: React.FC = () => {
   return (
     <div
       id="editor-mode-container"
-      className="fixed inset-0 sm:relative sm:inset-auto z-40 sm:z-0 flex flex-col overflow-hidden bg-background overscroll-none sm:rounded-2xl sm:border sm:border-[#393E46] sm:shadow-2xl sm:h-[calc(100dvh-5rem)] sm:min-h-[520px] transition-all"
+      className="flex flex-col w-full overflow-hidden h-[calc(100dvh-4rem)] min-h-[520px] rounded-2xl bg-[#222831] border border-[#393E46] shadow-2xl transition-all"
       style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" }}
     >
-      {/* Task 1: Top Main Toolbar Container with horizontal scroll on mobile */}
-      <div className="p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-row overflow-x-auto whitespace-nowrap shrink-0 w-full items-center gap-2 sm:gap-3 no-scrollbar touch-pan-x">
+      {/* Step 2: Top Main Toolbar Container with guaranteed visibility */}
+      <div className="shrink-0 flex-none z-10 p-2.5 sm:p-4 border-b border-[#393E46] bg-[#222831] flex flex-row overflow-x-auto whitespace-nowrap w-full items-center gap-2 sm:gap-3 no-scrollbar touch-pan-x">
         {/* Global Mode Switcher in Editor mode toolbar */}
         <div className="shrink-0">
           <ModeSwitcher className="bg-[#1A1F26] border-[#393E46] text-white hover:border-[#BDA6CE] transition-colors h-10 px-3 text-sm rounded-xl" />
@@ -459,12 +459,12 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 1 & 4: CSS Quarantine Wrapper with flex-1 w-full h-full relative, overflow-hidden, and translate="no" */}
+        {/* Step 3: Editor Space */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
           translate="no"
-          className="notranslate flex-1 w-full h-full relative overflow-hidden text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
+          className="notranslate flex-1 relative min-h-0 overflow-hidden w-full text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
           style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left" }}
         >
           {isReady && fontsLoaded ? (
