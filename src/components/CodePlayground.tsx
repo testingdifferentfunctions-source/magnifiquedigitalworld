@@ -356,22 +356,24 @@ export const CodePlayground: React.FC = () => {
     requestAnimationFrame(() => {
       editor.layout();
     });
+
+    // Step 4: The Remeasure API (300ms gives the mobile DOM time to settle)
     setTimeout(() => {
       try {
-        if (monaco && monaco.editor && typeof (monaco.editor as any).remeasureFonts === "function") {
-          (monaco.editor as any).remeasureFonts();
+        if (typeof window !== "undefined" && (window as any).monaco?.editor?.remeasureFonts) {
+          (window as any).monaco.editor.remeasureFonts();
+        } else if (monaco?.editor?.remeasureFonts) {
+          monaco.editor.remeasureFonts();
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        console.warn("Delayed remeasure fonts error", e);
       }
-      editor.layout();
-    }, 50);
-    setTimeout(() => {
-      editor.layout();
-    }, 200);
-    setTimeout(() => {
-      editor.layout();
-    }, 600);
+      if (editorRef.current) {
+        editorRef.current.layout();
+      } else {
+        editor.layout();
+      }
+    }, 300);
   };
 
   return (
@@ -465,7 +467,7 @@ export const CodePlayground: React.FC = () => {
           id="monaco-editor-outer-container"
           translate="no"
           className="notranslate flex-1 relative min-h-0 overflow-hidden w-full text-left leading-normal isolate !p-0 !m-0 bg-transparent z-0 !outline-none outline-none ring-0 focus:outline-none focus:ring-0"
-          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "22px", textAlign: "left" }}
+          style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", lineHeight: "21px", textAlign: "left" }}
         >
           {isReady && fontsLoaded ? (
             <Editor
@@ -498,9 +500,10 @@ export const CodePlayground: React.FC = () => {
                 wordWrap: "on",
                 scrollBeyondLastLine: false,
                 fontSize: 14,
-                lineHeight: 22,
+                lineHeight: 21,
                 letterSpacing: 0,
-                fontFamily: "'Consolas', 'Courier New', monospace",
+                fontLigatures: false,
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
                 padding: { top: 14, bottom: 14 },
                 lineNumbers: "on",
                 lineNumbersMinChars: 3,
