@@ -68,12 +68,15 @@ export const CodePlayground: React.FC = () => {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [isReady, setIsReady] = useState<boolean>(false);
+  const [editorKey, setEditorKey] = useState<number>(() => Date.now());
+  const [isLayoutStable, setIsLayoutStable] = useState<boolean>(false);
 
   const workerRef = useRef<Worker | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
   const editorContainerRef = useRef<HTMLDivElement | null>(null);
+  const prevDimensionsRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
 
   // Step 3: Font-Loading Barrier (React State)
   useEffect(() => {
@@ -86,7 +89,43 @@ export const CodePlayground: React.FC = () => {
     }
   }, []);
 
-  // Step 4: Debounced Resize (Fix Disappearing Text)
+  // Step 1 & 2: ResizeObserver with debounce triggering editorKey updates on major layout shifts (>10px)
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!container) return;
+
+    let resizeTimer: NodeJS.Timeout | null = null;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width === 0 || height === 0) continue;
+
+        const isFirst = prevDimensionsRef.current.width === 0 && prevDimensionsRef.current.height === 0;
+        const widthDiff = Math.abs(width - prevDimensionsRef.current.width);
+        const heightDiff = Math.abs(height - prevDimensionsRef.current.height);
+
+        if (isFirst || widthDiff > 10 || heightDiff > 10) {
+          prevDimensionsRef.current = { width, height };
+
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            setEditorKey(Date.now());
+            setIsLayoutStable(true);
+          }, 300);
+        }
+      }
+    });
+
+    observer.observe(container);
+
+    return () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      observer.disconnect();
+    };
+  }, []);
+
+  // Debounced Window Resize fallback
   useEffect(() => {
     let resizeTimeout: NodeJS.Timeout | null = null;
 
@@ -451,16 +490,18 @@ export const CodePlayground: React.FC = () => {
 
       {/* Main Responsive Split Layout */}
       <div className="flex flex-col flex-1 min-h-0 divide-y divide-[#393E46] w-full">
-        {/* Step 2: The Quarantine Wrapper */}
+        {/* Step 2 & 4: Strict Quarantine Container */}
         <div
           ref={editorContainerRef}
           id="monaco-editor-outer-container"
           translate="no"
-          className="notranslate relative flex-1 min-h-0 w-full h-full overflow-hidden text-left isolate bg-transparent !outline-none"
+          className="notranslate relative w-full h-full flex-1 min-h-0 overflow-hidden text-left isolate bg-transparent !outline-none"
           style={{ WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%", touchAction: "none" }}
         >
-          {isReady ? (
+          {/* Step 3: Dynamic Key Remount Pattern */}
+          {isReady && isLayoutStable ? (
             <Editor
+              key={editorKey}
               height="100%"
               width="100%"
               defaultLanguage="python"
