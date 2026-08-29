@@ -7,7 +7,13 @@ import type { AppMode } from "@/hooks/useMode";
 import type { Article } from "@/hooks/useArticles";
 import { generateEntryEmbedding } from "@/lib/semanticSearch";
 
-export type ModeEntryType = "news" | "resource" | "component" | "template" | "palette" | "dictionary" | "design";
+export type ModeEntryType = "news" | "resource" | "component" | "template" | "palette" | "dictionary" | "design" | "research";
+
+export interface SourceItem {
+  id?: string;
+  title: string;
+  url: string;
+}
 
 export interface ModeEntry {
   id: string;
@@ -23,6 +29,7 @@ export interface ModeEntry {
   image_url: string | null;
   image_source_url: string | null;
   external_url: string | null;
+  sources?: SourceItem[] | null;
   likes: number;
   share_count: number;
   published: boolean;
@@ -38,12 +45,26 @@ export type ModeEntryInput = Omit<
   "id" | "created_at" | "updated_at" | "likes" | "share_count"
 >;
 
-const mapRow = (row: any): ModeEntry => ({
-  ...row,
-  blocks_uk: parseBlocks(row.blocks_uk),
-  blocks_en: parseBlocks(row.blocks_en),
-  tags: row.tags ?? [],
-});
+const mapRow = (row: any): ModeEntry => {
+  let parsedSources: SourceItem[] = [];
+  if (Array.isArray(row.sources)) {
+    parsedSources = row.sources;
+  } else if (typeof row.sources === "string" && row.sources.trim().length > 0) {
+    try {
+      parsedSources = JSON.parse(row.sources);
+    } catch {
+      parsedSources = [];
+    }
+  }
+
+  return {
+    ...row,
+    blocks_uk: parseBlocks(row.blocks_uk),
+    blocks_en: parseBlocks(row.blocks_en),
+    tags: row.tags ?? [],
+    sources: parsedSources,
+  };
+};
 
 /** Localized view of an entry, falling back to Ukrainian. */
 export const localizeEntry = (entry: ModeEntry, language: Lang) => {
@@ -52,10 +73,18 @@ export const localizeEntry = (entry: ModeEntry, language: Lang) => {
   const blocks =
     language === "en" && entry.blocks_en && entry.blocks_en.length > 0 ? entry.blocks_en : entry.blocks_uk;
 
+  const resolvedSources =
+    entry.sources && entry.sources.length > 0
+      ? entry.sources
+      : entry.external_url
+      ? [{ title: language === "en" ? "Primary Source" : "Офіційне джерело", url: entry.external_url }]
+      : [];
+
   return {
     title: pick(entry.title_en, entry.title_uk),
     description: pick(entry.description_en, entry.description_uk),
     blocks: blocks || [],
+    sources: resolvedSources,
   };
 };
 
@@ -98,6 +127,7 @@ export const useAllModeEntries = (publishedOnly = false) =>
         ...getFallbackEntries("resource"),
         ...getFallbackEntries("component"),
         ...getFallbackEntries("template"),
+        ...getFallbackEntries("research"),
         ...getFallbackEntries("palette"),
         ...getFallbackEntries("dictionary"),
         ...getFallbackEntries("design"),
@@ -268,6 +298,8 @@ export const usePopularEntriesByMode = (mode: AppMode | string, limit = 10) => {
         normalized === "snippet"
       )
         type = "template";
+      else if (normalized === "research" || normalized === "researches" || normalized === "дослідження")
+        type = "research";
       else if (normalized === "palettes" || normalized === "palette") type = "palette";
       else if (normalized === "dictionary" || normalized === "terms") type = "dictionary";
       else if (normalized === "design" || normalized === "дизайн") type = "design";
@@ -334,6 +366,8 @@ export const useLikedEntriesByMode = (mode: AppMode | string, limit = 10) => {
         normalized === "snippet"
       )
         type = "template";
+      else if (normalized === "research" || normalized === "researches" || normalized === "дослідження")
+        type = "research";
       else if (normalized === "palettes" || normalized === "palette") type = "palette";
       else if (normalized === "dictionary" || normalized === "terms") type = "dictionary";
       else if (normalized === "design" || normalized === "дизайн") type = "design";

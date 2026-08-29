@@ -169,7 +169,7 @@ export const categorySchema = z.object({
     .nullable()
     .or(z.literal('')),
   mode: z
-    .enum(['articles', 'news', 'resources', 'components', 'templates', 'palettes', 'resource', 'component', 'template', 'palette', 'dictionary', 'design', 'designs', 'editor'])
+    .enum(['articles', 'news', 'resources', 'components', 'templates', 'research', 'palettes', 'resource', 'component', 'template', 'palette', 'dictionary', 'design', 'designs', 'editor'])
     .default('articles'),
   slug: z
     .string()

@@ -46,6 +46,7 @@ import {
   Tag,
   Search,
   Sparkles,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,6 +93,13 @@ const MODE_CONFIG: {
     subLabel: "Шаблони та функції коду",
     icon: Code,
     accent: "#C562AF",
+  },
+  {
+    id: "research",
+    label: "Дослідження",
+    subLabel: "Аналітика та IT-звіти",
+    icon: BarChart3,
+    accent: "#F78D60",
   },
   {
     id: "palettes",

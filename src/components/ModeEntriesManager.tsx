@@ -21,10 +21,11 @@ import {
 
 const TYPES: { type: ModeEntryType; label: string }[] = [
   { type: "news", label: "Новини" },
-  { type: "palette", label: "Палітри" },
-  { type: "resource", label: "Ресурси" },
   { type: "component", label: "Компоненти" },
+  { type: "resource", label: "Ресурси" },
   { type: "template", label: "Сніпети" },
+  { type: "research", label: "Дослідження" },
+  { type: "palette", label: "Палітри" },
   { type: "dictionary", label: "Словник" },
   { type: "design", label: "Дизайн" },
 ];

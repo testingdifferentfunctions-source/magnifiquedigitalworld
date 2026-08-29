@@ -35,6 +35,10 @@ const Favorites = () => {
         return language === "uk"
           ? "Топ-10 сніпетів та шаблонів коду за кількістю вподобань"
           : "Top 10 snippets and code templates by number of likes";
+      case "research":
+        return language === "uk"
+          ? "Топ-10 IT досліджень та аналітики за кількістю вподобань"
+          : "Top 10 IT research and analytics by number of likes";
       case "palettes":
         return language === "uk"
           ? "Топ-10 колірних палітр за кількістю вподобань"
@@ -92,7 +96,7 @@ const Favorites = () => {
               ? "grid grid-cols-1 gap-4 w-full"
               : effectiveMode === "news"
               ? "flex flex-col max-w-5xl mx-auto w-full space-y-8"
-              : effectiveMode === "templates" || effectiveMode === "palettes"
+              : effectiveMode === "templates" || effectiveMode === "palettes" || effectiveMode === "research"
               ? "grid grid-cols-1 md:grid-cols-2 gap-6"
               : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           }

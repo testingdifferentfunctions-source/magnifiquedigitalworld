@@ -22,6 +22,7 @@ import { useMode } from "@/hooks/useMode";
 import { localizeEntry, useModeEntry, useToggleModeEntryLike } from "@/hooks/useModeEntries";
 import { blocksToPlainText } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
+import { ItemTagsList } from "@/components/ItemTagBadge";
 
 type CodeTab = "html" | "css" | "scss" | "tailwind";
 
@@ -360,19 +361,8 @@ export const DesignDetail = () => {
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div className="space-y-3 flex-1">
               {entry.tags && entry.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 items-center">
-                  {entry.tags.map((tag) => {
-                    const cleanTag = tag.replace(/^#+/, "").trim();
-                    if (!cleanTag) return null;
-                    return (
-                      <span
-                        key={tag}
-                        className="text-xs font-semibold px-3 py-0.5 rounded-full bg-transparent text-[#FFBCBC] border border-[#FFBCBC]"
-                      >
-                        {cleanTag}
-                      </span>
-                    );
-                  })}
+                <div className="mb-2">
+                  <ItemTagsList tags={entry.tags} mode="design" />
                 </div>
               )}
               <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">

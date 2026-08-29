@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { shareArticle } from "@/lib/share";
 import { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
+import { ItemTagsList } from "@/components/ItemTagBadge";
 
 const Article = () => {
   const { id } = useParams<{ id: string }>();
@@ -177,21 +178,10 @@ const Article = () => {
           </Button>
         </div>
 
-        {/* 2) Article Tags (Articles Accent Outline, no solid bg, no '#' prefix, main category label removed) */}
+        {/* 2) Article Tags (Dynamic Articles Accent subcategory-styled pills, no '#' prefix) */}
         {article.tags && article.tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            {article.tags.map((tag) => {
-              const cleanTag = tag.replace(/^#+/, "").trim();
-              if (!cleanTag) return null;
-              return (
-                <span
-                  key={tag}
-                  className="inline-block bg-transparent text-[#A07DFA] border border-[#A07DFA] px-3 py-0.5 rounded-full text-xs font-semibold"
-                >
-                  {cleanTag}
-                </span>
-              );
-            })}
+          <div className="mb-4">
+            <ItemTagsList tags={article.tags} mode="articles" />
           </div>
         )}
 

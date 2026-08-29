@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import SEO from "@/components/SEO";
 import ArticleCard from "@/components/ArticleCard";
@@ -10,6 +10,7 @@ import PaletteCard from "@/components/PaletteCard";
 import SnippetCard from "@/components/SnippetCard";
 import DictionaryCard from "@/components/DictionaryCard";
 import DesignCard from "@/components/DesignCard";
+import ResearchCard from "@/components/ResearchCard";
 import CodePlayground from "@/components/CodePlayground";
 import SearchBar from "@/components/SearchBar";
 import ArticleFilters, { SortOption, FilterCategoryOption } from "@/components/ArticleFilters";
@@ -155,8 +156,17 @@ const getFilteredModeEntries = (
 
 const Index = () => {
   const navigate = useNavigate();
-  const { mode } = useMode();
+  const location = useLocation();
+  const { mode, setMode } = useMode();
   const { t, language } = useLanguage();
+
+  useEffect(() => {
+    if (location.pathname === "/research") {
+      if (mode !== "research") {
+        setMode("research");
+      }
+    }
+  }, [location.pathname]);
 
   // Articles data
   const { data: articles = [], isLoading: articlesLoading } = useArticles();
@@ -169,6 +179,7 @@ const Index = () => {
   const { data: resources = [], isLoading: resourcesLoading } = useModeEntries("resource");
   const { data: components = [], isLoading: componentsLoading } = useModeEntries("component");
   const { data: templates = [], isLoading: templatesLoading } = useModeEntries("template");
+  const { data: research = [], isLoading: researchLoading } = useModeEntries("research");
   const { data: palettes = [], isLoading: palettesLoading } = useModeEntries("palette");
   const { data: dictionary = [], isLoading: dictionaryLoading } = useModeEntries("dictionary");
   const { data: design = [], isLoading: designLoading } = useModeEntries("design");
@@ -255,6 +266,8 @@ const Index = () => {
         const currentEntries =
           mode === "news"
             ? news
+            : mode === "research"
+            ? research
             : mode === "palettes"
             ? palettes
             : mode === "resources"
@@ -263,6 +276,8 @@ const Index = () => {
             ? components
             : mode === "templates"
             ? templates
+            : mode === "design"
+            ? design
             : dictionary;
         currentEntries.forEach((entry) => (entry.tags || []).forEach((t) => pillsSet.add(t)));
       }
@@ -299,6 +314,8 @@ const Index = () => {
         const currentEntries =
           mode === "news"
             ? news
+            : mode === "research"
+            ? research
             : mode === "palettes"
             ? palettes
             : mode === "resources"
@@ -307,12 +324,14 @@ const Index = () => {
             ? components
             : mode === "templates"
             ? templates
+            : mode === "design"
+            ? design
             : dictionary;
         currentEntries.forEach((e) => (e.tags || []).forEach((t) => tagsSet.add(t)));
       }
       return [allPill, ...Array.from(tagsSet).slice(0, 15).map((t) => ({ id: t, label: t }))];
     }
-  }, [mode, categoryId, modeCategories, articles, news, palettes, resources, components, templates, dictionary, language]);
+  }, [mode, categoryId, modeCategories, articles, news, research, palettes, resources, components, templates, dictionary, design, language]);
 
   // Localized articles
   const localizedArticles = useMemo(
@@ -426,6 +445,14 @@ const Index = () => {
     [mode, templates, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
   );
 
+  const filteredResearch = useMemo(
+    () =>
+      mode === "research"
+        ? getFilteredModeEntries(research, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores)
+        : [],
+    [mode, research, searchQuery, categoryId, activePill, sortBy, language, modeCategories, rpcScores]
+  );
+
   const filteredPalettes = useMemo(
     () =>
       mode === "palettes"
@@ -467,6 +494,9 @@ const Index = () => {
     if (mode === "templates") {
       return templates.map((t) => localizeEntry(t, language).title);
     }
+    if (mode === "research") {
+      return research.map((r) => localizeEntry(r, language).title);
+    }
     if (mode === "dictionary") {
       return dictionary.map((d) => localizeEntry(d, language).title);
     }
@@ -474,7 +504,7 @@ const Index = () => {
       return design.map((d) => localizeEntry(d, language).title);
     }
     return palettes.map((p) => localizeEntry(p, language).title);
-  }, [mode, news, localizedArticles, resources, components, templates, palettes, dictionary, design, language]);
+  }, [mode, news, localizedArticles, resources, components, templates, research, palettes, dictionary, design, language]);
 
   const isLoading =
     mode === "news"
@@ -487,6 +517,8 @@ const Index = () => {
       ? componentsLoading
       : mode === "templates"
       ? templatesLoading
+      : mode === "research"
+      ? researchLoading
       : mode === "dictionary"
       ? dictionaryLoading
       : mode === "design"
@@ -745,6 +777,40 @@ const Index = () => {
                 />
               );
             })}
+          </div>
+        )
+      ) : mode === "research" ? (
+        filteredResearch.length === 0 ? (
+          <div className="flex justify-center py-16">
+            <p className="text-muted-foreground">
+              {getModeEmptyMessage("research", Boolean(searchQuery || categoryId !== "all" || activePill !== "all"), language)}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+            {filteredResearch.map(({ entry, loc }, index) => (
+              <ResearchCard
+                key={entry.id}
+                item={{
+                  id: entry.id,
+                  title: loc.title,
+                  description: loc.description,
+                  image: entry.image_url,
+                  likes: entry.likes,
+                  url: entry.external_url,
+                  tags: entry.tags,
+                }}
+                index={index}
+                isLiked={getLikedEntries().includes(entry.id)}
+                onRead={() => navigate(`/research/${entry.id}`)}
+                onLike={() => {
+                  const currentlyLiked = getLikedEntries().includes(entry.id);
+                  setEntryLiked(entry.id, !currentlyLiked);
+                  toggleLike.mutate({ entryId: entry.id, isLiking: !currentlyLiked });
+                }}
+                onShare={() => shareEntry(entry.id, loc.title, `/research/${entry.id}`)}
+              />
+            ))}
           </div>
         )
       ) : mode === "palettes" ? (

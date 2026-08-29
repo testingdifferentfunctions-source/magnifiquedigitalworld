@@ -32,7 +32,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Trash2, Upload, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Upload, ExternalLink, Image as ImageIcon, Plus, X, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeUrl } from "@/lib/validation";
@@ -40,18 +40,19 @@ import type { ContentBlock } from "@/lib/blocks";
 
 const TYPE_OPTIONS: { value: ModeEntryType; label: string }[] = [
   { value: "news", label: "Новини (News)" },
-  { value: "palette", label: "Палітри (Palettes)" },
-  { value: "resource", label: "Ресурси (Resources)" },
   { value: "component", label: "Компоненти (Components)" },
+  { value: "resource", label: "Ресурси (Resources)" },
   { value: "template", label: "Сніпети (Snippets)" },
+  { value: "research", label: "Дослідження (Research)" },
+  { value: "palette", label: "Палітри (Palettes)" },
   { value: "dictionary", label: "Словник (Dictionary)" },
   { value: "design", label: "Дизайн (Design)" },
 ];
 
-const VALID_TYPES: ModeEntryType[] = ["news", "palette", "resource", "component", "template", "dictionary", "design"];
+const VALID_TYPES: ModeEntryType[] = ["news", "palette", "resource", "component", "template", "research", "dictionary", "design"];
 
 const modeEntrySchema = z.object({
-  type: z.enum(["news", "palette", "resource", "component", "template", "dictionary", "design"]),
+  type: z.enum(["news", "palette", "resource", "component", "template", "research", "dictionary", "design"]),
   slug: z.string().trim().optional().nullable().or(z.literal("")),
   title_uk: z
     .string()
@@ -68,6 +69,14 @@ const modeEntrySchema = z.object({
   image_url: z.string().trim().optional().nullable().or(z.literal("")),
   image_source_url: z.string().trim().optional().nullable().or(z.literal("")),
   external_url: z.string().trim().optional().nullable().or(z.literal("")),
+  sources: z
+    .array(
+      z.object({
+        title: z.string().trim().default(""),
+        url: z.string().trim().default(""),
+      })
+    )
+    .default([]),
   tags: z.array(z.string()).default([]),
   published: z.boolean().default(true),
   canonical_url_uk: z.string().trim().optional().nullable().or(z.literal("")),
@@ -117,6 +126,7 @@ const ModeEntryEditor = () => {
       image_url: "",
       image_source_url: "",
       external_url: "",
+      sources: [],
       tags: [],
       published: true,
       canonical_url_uk: "",
@@ -151,6 +161,7 @@ const ModeEntryEditor = () => {
         image_url: existingEntry.image_url ?? "",
         image_source_url: existingEntry.image_source_url ?? "",
         external_url: existingEntry.external_url ?? "",
+        sources: (existingEntry.sources as any[]) || [],
         tags: existingEntry.tags ?? [],
         published: existingEntry.published,
         canonical_url_uk: existingEntry.canonical_url_uk ?? "",
@@ -211,6 +222,13 @@ const ModeEntryEditor = () => {
         values.type === "component" ||
         values.type === "template" ||
         values.type === "dictionary";
+      const sanitizedSources = (values.sources || [])
+        .filter((s) => s && (s.url?.trim() || s.title?.trim()))
+        .map((s) => ({
+          title: s.title?.trim() || s.url?.trim() || "Джерело",
+          url: sanitizeUrl(s.url?.trim() || "") || s.url?.trim() || "#",
+        }));
+
       const payload = {
         type: values.type,
         slug: values.slug?.trim() || null,
@@ -221,6 +239,7 @@ const ModeEntryEditor = () => {
         image_url: isCodeOnly ? null : (sanitizeUrl(values.image_url || "") || null),
         image_source_url: isCodeOnly ? null : (sanitizeUrl(values.image_source_url || "") || null),
         external_url: sanitizeUrl(values.external_url || "") || null,
+        sources: sanitizedSources,
         tags: values.tags || [],
         published: values.published,
         canonical_url_uk: sanitizeUrl(values.canonical_url_uk || "") || null,
@@ -552,6 +571,106 @@ const ModeEntryEditor = () => {
                   )}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Used Sources Section */}
+          <Card className={`border-border ${watchedType === "research" ? "border-[#F78D60]/40 bg-[#F78D60]/5" : "bg-card"}`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen className={`w-5 h-5 ${watchedType === "research" ? "text-[#F78D60]" : "text-primary"}`} />
+                  <CardTitle className="text-base font-semibold">
+                    Використані джерела (Used Sources / References)
+                  </CardTitle>
+                </div>
+                {watchedType === "research" && (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#F78D60]/20 text-[#F78D60] font-mono font-semibold">
+                    Режим дослідження
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Додайте перелік першоджерел, посилань та матеріалів для випадаючого меню &quot;Використані джерела&quot; на сторінці матеріалу.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Controller
+                control={control}
+                name="sources"
+                render={({ field }) => {
+                  const sourcesList = field.value || [];
+                  return (
+                    <div className="space-y-3">
+                      {sourcesList.map((source, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 rounded-lg bg-card/80 border border-border"
+                        >
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs text-muted-foreground">
+                              Назва джерела (Title)
+                            </Label>
+                            <Input
+                              value={source.title ?? ""}
+                              onChange={(e) => {
+                                const updated = [...sourcesList];
+                                updated[index] = { ...updated[index], title: e.target.value };
+                                field.onChange(updated);
+                              }}
+                              placeholder="Наприклад: Official Docs, ArXiv Report, GitHub Repo..."
+                              className="bg-background border-border text-sm"
+                            />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs text-muted-foreground">
+                              URL-посилання (Link)
+                            </Label>
+                            <Input
+                              type="url"
+                              value={source.url ?? ""}
+                              onChange={(e) => {
+                                const updated = [...sourcesList];
+                                updated[index] = { ...updated[index], url: e.target.value };
+                                field.onChange(updated);
+                              }}
+                              placeholder="https://..."
+                              className="bg-background border-border text-sm font-mono"
+                            />
+                          </div>
+                          <div className="sm:self-end pt-2 sm:pt-0">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-10 w-10"
+                              onClick={() => {
+                                const updated = sourcesList.filter((_, i) => i !== index);
+                                field.onChange(updated);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 border-dashed border-border hover:border-primary hover:bg-primary/5"
+                        onClick={() => {
+                          field.onChange([...sourcesList, { title: "", url: "" }]);
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Додати джерело
+                      </Button>
+                    </div>
+                  );
+                }}
+              />
             </CardContent>
           </Card>
 

@@ -7,6 +7,7 @@ import PaletteCard from "@/components/PaletteCard";
 import SnippetCard from "@/components/SnippetCard";
 import DictionaryCard from "@/components/DictionaryCard";
 import DesignCard from "@/components/DesignCard";
+import ResearchCard from "@/components/ResearchCard";
 import { localizeArticle } from "@/lib/localize";
 import { localizeEntry, useToggleModeEntryLike } from "@/hooks/useModeEntries";
 import { shareEntry, getLikedEntries, setEntryLiked } from "@/lib/shareEntry";
@@ -172,6 +173,38 @@ export const ModeCardRenderer = ({
           onRead={() => navigate(`/news/${item.id}`)}
           onLike={() => toggleLike.mutate({ entryId: item.id, isLiking: true })}
           onShare={() => shareEntry(item.id, loc.title, `/news/${item.id}`)}
+        />
+      );
+    }
+
+    case "research":
+    case "researches":
+    case "studies": {
+      const loc = item.blocks_uk
+        ? localizeEntry(item, language)
+        : { title: item.title || "", description: item.description || "" };
+      const currentlyLiked = getLikedEntries().includes(item.id);
+      return (
+        <ResearchCard
+          key={item.id}
+          item={{
+            id: item.id,
+            title: loc.title,
+            description: loc.description,
+            image: item.image_url,
+            likes: item.likes || 0,
+            url: item.external_url,
+            tags: item.tags || [],
+          }}
+          index={index}
+          isLiked={currentlyLiked}
+          onRead={() => navigate(`/research/${item.id}`)}
+          onLike={() => {
+            const nextLiked = !currentlyLiked;
+            setEntryLiked(item.id, nextLiked);
+            toggleLike.mutate({ entryId: item.id, isLiking: nextLiked });
+          }}
+          onShare={() => shareEntry(item.id, loc.title, `/research/${item.id}`)}
         />
       );
     }

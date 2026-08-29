@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 
-export type AppMode = "news" | "articles" | "resources" | "components" | "templates" | "palettes" | "design" | "dictionary" | "editor";
+export type AppMode = "news" | "articles" | "resources" | "components" | "templates" | "research" | "palettes" | "design" | "dictionary" | "editor";
 
 export type Language = "uk" | "en";
 
@@ -114,6 +114,26 @@ export const MODE_METADATA: Record<AppMode, ModeInfo> = {
       en: "No snippets yet",
     },
   },
+  research: {
+    label: { uk: "Дослідження", en: "Research" },
+    title: { uk: "IT-Дослідження та Аналітика", en: "IT Research & Analysis" },
+    subtitle: {
+      uk: "Візуалізовані дослідження, аналітичні звіти та технологічні інсайти в IT-індустрії.",
+      en: "Visualized research articles, analytical reports, and technological insights in IT.",
+    },
+    searchPlaceholder: {
+      uk: "Пошук досліджень та звітів...",
+      en: "Search research articles & reports...",
+    },
+    emptySearch: {
+      uk: "Досліджень не знайдено за вашим запитом",
+      en: "No research found matching your query",
+    },
+    emptyDefault: {
+      uk: "Ще немає опублікованих досліджень",
+      en: "No research articles yet",
+    },
+  },
   palettes: {
     label: { uk: "Палітри", en: "Palettes" },
     title: { uk: "Палітри", en: "Color Palettes" },
@@ -202,6 +222,7 @@ export const MODE_LABELS: Record<AppMode, string> = {
   resources: "Ресурси",
   components: "Компоненти",
   templates: "Сніпети",
+  research: "Дослідження",
   palettes: "Палітри",
   design: "Дизайн",
   dictionary: "Словник",
@@ -242,6 +263,7 @@ export const MODE_ACCENTS: Record<AppMode, string> = {
   resources: "#5DA7DB",
   components: "#F1F5F9",
   templates: "#C562AF",
+  research: "#F78D60",
   dictionary: "#F3CD97",
   editor: "#BDA6CE",
 };
@@ -310,6 +332,20 @@ const MODE_THEMES: Record<AppMode, ModeTheme> = {
     "--accent": "313 47% 58%",
     "--accent-foreground": "0 0% 100%",
     "--ring": "313 47% 58%",
+  },
+  research: {
+    "--background": "0 0% 5.9%", // #0F0F0F pure IT research dark background
+    "--card": "0 0% 8.6%", // #161616 card surface
+    "--popover": "0 0% 8.6%",
+    "--muted": "0 0% 14%",
+    "--muted-foreground": "0 0% 70%",
+    "--border": "0 0% 18%", // #2e2e2e
+    "--input": "0 0% 18%",
+    "--primary": "18 90% 67%", // #F78D60 accent
+    "--primary-foreground": "0 0% 6%",
+    "--accent": "18 90% 67%", // #F78D60
+    "--accent-foreground": "0 0% 6%",
+    "--ring": "18 90% 67%",
   },
   palettes: {
     "--background": "0 4% 6%", // #0F0E0E base layout

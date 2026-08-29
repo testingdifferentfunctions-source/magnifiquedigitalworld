@@ -9,6 +9,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { localizeEntry, useModeEntry, useToggleModeEntryLike } from "@/hooks/useModeEntries";
 import { blocksToPlainText } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
+import { ItemTagsList } from "@/components/ItemTagBadge";
 
 const ResourceDetail = () => {
   const { id = "" } = useParams();
@@ -92,15 +93,8 @@ const ResourceDetail = () => {
 
         {/* Header: Transparent tag pills with mode accent border & text */}
         {entry.tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            {entry.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-transparent text-[#5DA7DB] border border-[#5DA7DB] px-3.5 py-1 text-xs font-medium"
-              >
-                {tag}
-              </span>
-            ))}
+          <div className="mb-4">
+            <ItemTagsList tags={entry.tags} mode="resources" />
           </div>
         )}
 

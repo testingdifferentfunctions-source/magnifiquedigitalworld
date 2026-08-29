@@ -9,6 +9,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { localizeEntry, useModeEntry, useToggleModeEntryLike } from "@/hooks/useModeEntries";
 import { blocksToPlainText, extractHeadings } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
+import { ItemTagsList } from "@/components/ItemTagBadge";
 
 const NewsDetail = () => {
   const { id = "" } = useParams();
@@ -107,16 +108,8 @@ const NewsDetail = () => {
 
         {/* 2. TAGS: Directly below the back button, a horizontal row of tag pills */}
         {entry.tags && entry.tags.length > 0 && (
-          <div id="news-detail-tags" className="flex flex-wrap items-center gap-2 mb-6">
-            {entry.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[#122220] text-[#A4B885] border border-[#1E3834] transition-colors"
-              >
-                <Tag className="w-3 h-3 text-[#A4B885]" aria-hidden="true" />
-                {tag}
-              </span>
-            ))}
+          <div id="news-detail-tags" className="mb-6">
+            <ItemTagsList tags={entry.tags} mode="news" />
           </div>
         )}
 

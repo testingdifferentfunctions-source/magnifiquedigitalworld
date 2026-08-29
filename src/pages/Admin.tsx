@@ -37,6 +37,7 @@ import { Sparkles } from 'lucide-react';
 import SocialLinksManager from '@/components/SocialLinksManager';
 import ModeEntriesManager from '@/components/ModeEntriesManager';
 import CategoryManager from '@/components/CategoryManager';
+import TwoFactorAuthSettings from '@/components/TwoFactorAuthSettings';
 
 const Admin = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -121,6 +122,12 @@ const Admin = () => {
                 <Link to="/admin/entry/template" className="flex items-center gap-2 cursor-pointer">
                   <Code className="w-4 h-4 text-[#C562AF]" />
                   <span>Сніпет коду (Сніпети)</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/admin/entry/research" className="flex items-center gap-2 cursor-pointer">
+                  <BarChart3 className="w-4 h-4 text-[#F78D60]" />
+                  <span>Дослідження (Research)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
@@ -319,6 +326,7 @@ const Admin = () => {
 
         {/* Tab 4: Site Settings */}
         <TabsContent value="settings" className="space-y-6">
+          <TwoFactorAuthSettings />
           <SocialLinksManager />
         </TabsContent>
       </Tabs>

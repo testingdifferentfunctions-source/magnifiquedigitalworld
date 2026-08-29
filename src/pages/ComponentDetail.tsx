@@ -8,6 +8,8 @@ import { ArrowLeft, ExternalLink, Tag } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { localizeEntry, useModeEntry } from "@/hooks/useModeEntries";
 import { blocksToPlainText, extractHeadings } from "@/lib/blocks";
+import { ItemTagsList } from "@/components/ItemTagBadge";
+import { AppMode } from "@/hooks/useMode";
 
 const ComponentDetail = () => {
   const { id = "" } = useParams();
@@ -105,21 +107,11 @@ const ComponentDetail = () => {
           )}
 
           {entry.tags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 pt-2">
-              {entry.tags.map((tag) => {
-                const isTemplate = entry.type === "template";
-                const accentBorder = isTemplate ? "border-[#C562AF]" : "border-[#F1F5F9]";
-                const accentText = isTemplate ? "text-[#C562AF]" : "text-[#F1F5F9]";
-                return (
-                  <span
-                    key={tag}
-                    className={`inline-flex items-center gap-1.5 rounded-full border bg-transparent px-3 py-1 text-xs font-medium ${accentBorder} ${accentText} transition-colors`}
-                  >
-                    <Tag className={`w-3.5 h-3.5 ${accentText}`} aria-hidden="true" />
-                    {tag}
-                  </span>
-                );
-              })}
+            <div className="pt-2">
+              <ItemTagsList
+                tags={entry.tags}
+                mode={(entry.type === "template" ? "templates" : entry.type === "dictionary" ? "dictionary" : "components") as AppMode}
+              />
             </div>
           )}
 

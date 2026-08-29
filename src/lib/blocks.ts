@@ -2,12 +2,17 @@
  * Block-structured content used by the "Ресурси" / "Компоненти" / "Шаблони коду"
  * modes. Stored in Postgres as a jsonb array (mode_entries.blocks_uk / blocks_en).
  */
-export type BlockType = "header" | "paragraph" | "list" | "code";
+export type BlockType = "header" | "paragraph" | "list" | "code" | "image" | "quote" | "callout" | "sources";
+
+export interface SourceLinkItem {
+  title: string;
+  url: string;
+}
 
 export interface ContentBlock {
   id: string;
   type: BlockType;
-  /** header + paragraph */
+  /** header + paragraph + quote + callout */
   text?: string;
   /** header only: 2 | 3 | 4 */
   level?: 2 | 3 | 4;
@@ -16,6 +21,12 @@ export interface ContentBlock {
   /** code only */
   code?: string;
   language?: string;
+  /** image only */
+  image_url?: string;
+  caption?: string;
+  alt?: string;
+  /** sources only */
+  sources?: SourceLinkItem[];
 }
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
@@ -23,6 +34,10 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   paragraph: "Абзац",
   list: "Список",
   code: "Код",
+  image: "Зображення / Графік",
+  quote: "Цитата",
+  callout: "Виділений блок",
+  sources: "Використані джерела",
 };
 
 export const createBlock = (type: BlockType): ContentBlock => {
@@ -38,6 +53,14 @@ export const createBlock = (type: BlockType): ContentBlock => {
       return { id, type, items: [""] };
     case "code":
       return { id, type, code: "", language: "python" };
+    case "image":
+      return { id, type, image_url: "", caption: "", alt: "" };
+    case "quote":
+      return { id, type, text: "", caption: "" };
+    case "callout":
+      return { id, type, text: "" };
+    case "sources":
+      return { id, type, sources: [{ title: "", url: "" }] };
     default:
       return { id, type: "paragraph", text: "" };
   }
@@ -50,7 +73,15 @@ export const parseBlocks = (value: unknown): ContentBlock[] => {
     if (!raw || typeof raw !== "object") return [];
     const b = raw as Record<string, unknown>;
     const type = b.type;
-    if (type !== "header" && type !== "paragraph" && type !== "list" && type !== "code") {
+    if (
+      type !== "header" &&
+      type !== "paragraph" &&
+      type !== "list" &&
+      type !== "code" &&
+      type !== "image" &&
+      type !== "quote" &&
+      type !== "callout"
+    ) {
       return [];
     }
     const block: ContentBlock = {
@@ -62,6 +93,9 @@ export const parseBlocks = (value: unknown): ContentBlock[] => {
     if (Array.isArray(b.items)) block.items = b.items.filter((i): i is string => typeof i === "string");
     if (typeof b.code === "string") block.code = b.code;
     if (typeof b.language === "string") block.language = b.language;
+    if (typeof b.image_url === "string") block.image_url = b.image_url;
+    if (typeof b.caption === "string") block.caption = b.caption;
+    if (typeof b.alt === "string") block.alt = b.alt;
     return [block];
   });
 };
@@ -72,6 +106,7 @@ export const blocksToPlainText = (blocks: ContentBlock[]): string =>
     .map((b) => {
       if (b.type === "list") return (b.items ?? []).join(", ");
       if (b.type === "code") return b.code ?? "";
+      if (b.type === "image") return b.caption || b.alt || "";
       return b.text ?? "";
     })
     .filter(Boolean)

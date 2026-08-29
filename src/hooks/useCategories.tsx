@@ -7,6 +7,7 @@ export type CategoryMode =
   | "resources"
   | "components"
   | "templates"
+  | "research"
   | "palettes"
   | "dictionary"
   | "design"
@@ -46,6 +47,7 @@ export const normalizeCategoryMode = (mode?: string): CategoryMode => {
   if (m === "resource" || m === "resources") return "resources";
   if (m === "component" || m === "components") return "components";
   if (m === "template" || m === "templates" || m === "snippets") return "templates";
+  if (m === "research" || m === "researches" || m === "studies") return "research";
   if (m === "palette" || m === "palettes") return "palettes";
   if (m === "dictionary" || m === "terms" || m === "vocab") return "dictionary";
   if (m === "design" || m === "designs") return "design";
@@ -265,6 +267,40 @@ export const DEFAULT_SEED_CATEGORIES: Record<
       slug: "data",
       image_url: "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&fit=crop",
       subcategories: ["CSV/JSON Export", "Regex Patterns", "Hash Utilities", "Cache Wrapper", "File Processors"],
+    },
+  ],
+  research: [
+    {
+      id: "res-ai-llm",
+      name: "ШІ & LLM Моделі",
+      name_en: "AI & LLM Models",
+      slug: "ai-llm",
+      image_url: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&fit=crop",
+      subcategories: ["Бенчмарки точності", "Швидкість інференсу", "Контекстні вікна", "Мультимодальність", "RAG Системи", "Quantization"],
+    },
+    {
+      id: "res-benchmarks",
+      name: "Продуктивність & Бенчмарки",
+      name_en: "Performance & Benchmarks",
+      slug: "benchmarks",
+      image_url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&fit=crop",
+      subcategories: ["Web Frameworks RPS", "Бази даних Latency", "Node vs Bun vs Deno", "V8 Engine JIT", "Wasm Швидкодія"],
+    },
+    {
+      id: "res-architecture",
+      name: "Архітектура & Масштабування",
+      name_en: "Architecture & Scale",
+      slug: "architecture",
+      image_url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&fit=crop",
+      subcategories: ["Мікросервіси vs Моноліт", "Event-driven", "Розподілений кеш", "Edge Computing", "High Load"],
+    },
+    {
+      id: "res-analytics",
+      name: "Індустрія & Зарплати",
+      name_en: "Industry & Tech Salaries",
+      slug: "analytics",
+      image_url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&fit=crop",
+      subcategories: ["Тренди мов програмування", "Аналітика ринку праці", "Стек 2026", "Open Source активність"],
     },
   ],
   palettes: [

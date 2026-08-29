@@ -35,6 +35,10 @@ const Popular = () => {
         return language === "uk"
           ? "Топ-10 готових сніпетів та шаблонів коду за популярністю"
           : "Top 10 code snippets and templates by popularity";
+      case "research":
+        return language === "uk"
+          ? "Топ-10 IT досліджень та аналітики за популярністю"
+          : "Top 10 IT research and analytics by popularity";
       case "palettes":
         return language === "uk"
           ? "Топ-10 колірних палітр за популярністю"
@@ -92,7 +96,7 @@ const Popular = () => {
               ? "grid grid-cols-1 gap-4 w-full"
               : effectiveMode === "news"
               ? "flex flex-col max-w-5xl mx-auto w-full space-y-8"
-              : effectiveMode === "templates" || effectiveMode === "palettes"
+              : effectiveMode === "templates" || effectiveMode === "palettes" || effectiveMode === "research"
               ? "grid grid-cols-1 md:grid-cols-2 gap-6"
               : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           }

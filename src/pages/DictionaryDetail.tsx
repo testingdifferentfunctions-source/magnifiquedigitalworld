@@ -22,6 +22,7 @@ import {
 } from "@/hooks/useModeEntries";
 import { blocksToPlainText, extractHeadings } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
+import { ItemTagsList } from "@/components/ItemTagBadge";
 
 const DictionaryDetail = () => {
   const { id = "" } = useParams();
@@ -167,20 +168,8 @@ const DictionaryDetail = () => {
 
         {/* 2. TAGS: Directly below top bar, horizontal row of tag pills */}
         {entry.tags && entry.tags.length > 0 && (
-          <div id="dictionary-detail-tags" className="flex flex-wrap items-center gap-2 mb-6">
-            {entry.tags.map((tag) => {
-              const cleanTag = tag.replace(/^#+/, "").trim();
-              if (!cleanTag) return null;
-              return (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-transparent text-[#F3CD97] border border-[#F3CD97] transition-colors"
-                >
-                  <Tag className="w-3 h-3 text-[#F3CD97]" aria-hidden="true" />
-                  {cleanTag}
-                </span>
-              );
-            })}
+          <div id="dictionary-detail-tags" className="mb-6">
+            <ItemTagsList tags={entry.tags} mode="dictionary" />
           </div>
         )}
 
