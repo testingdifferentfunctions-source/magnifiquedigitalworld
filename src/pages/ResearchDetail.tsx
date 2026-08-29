@@ -20,7 +20,7 @@ import { ItemTagsList } from "@/components/ItemTagBadge";
 const ResearchDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: entry, isLoading } = useModeEntry(id);
   const toggleLike = useToggleModeEntryLike();
 
@@ -63,7 +63,7 @@ const ResearchDetail = () => {
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 rounded-full border-2 border-[#F78D60] border-t-transparent animate-spin" />
-            <p className="text-muted-foreground text-sm font-mono">Завантаження дослідження...</p>
+            <p className="text-muted-foreground text-sm font-mono">{language === "en" ? "Loading research..." : "Завантаження дослідження..."}</p>
           </div>
         </div>
       </PageLayout>
@@ -83,7 +83,7 @@ const ResearchDetail = () => {
             onClick={() => navigate("/research")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {language === "en" ? "Back to Research" : "До списку досліджень"}
+            {t('detail.back_to_research')}
           </Button>
         </div>
       </PageLayout>
@@ -119,7 +119,7 @@ const ResearchDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Дослідження`}
+        title={`${loc.title} — ${language === "en" ? "Research" : "Дослідження"}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/research/${entry.id}`}
         image={entry.image_url ?? undefined}
@@ -137,7 +137,7 @@ const ResearchDetail = () => {
             onClick={() => navigate("/research")}
           >
             <ArrowLeft className="w-4 h-4 mr-2 text-[#94A3B8] transition-colors" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
 
           {/* Tags relocated immediately below the back button */}
@@ -185,7 +185,7 @@ const ResearchDetail = () => {
                   rel="noopener noreferrer"
                   className="text-xs text-neutral-400 hover:text-[#F78D60] inline-flex items-center gap-1"
                 >
-                  <span>Джерело зображення</span>
+                  <span>{t('detail.image_source')}</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -197,12 +197,12 @@ const ResearchDetail = () => {
         {headings.length > 1 && (
           <nav
             id="research-table-of-contents"
-            aria-label="Зміст"
+            aria-label={t('detail.toc')}
             className="mb-10 p-5 rounded-xl bg-[#141718] border border-[#222B2C]"
           >
             <h2 className="text-sm font-bold uppercase tracking-wider text-[#F78D60] mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
-              <span>Зміст</span>
+              <span>{t('detail.toc')}</span>
             </h2>
             <ul className="space-y-2 text-sm text-neutral-300">
               {headings.map((h, i) => (
@@ -241,7 +241,7 @@ const ResearchDetail = () => {
                   className="bg-[#F78D60] hover:bg-[#e67c4e] text-[#0F0F0F] font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
                 >
                   <BookOpen className="w-4 h-4 text-[#0F0F0F]" />
-                  <span>{language === "en" ? "Used Sources" : "Використані джерела"}</span>
+                  <span>{t('detail.sources')}</span>
                   <ChevronDown className="w-4 h-4 text-[#0F0F0F]" />
                 </Button>
               </DropdownMenuTrigger>
@@ -250,7 +250,7 @@ const ResearchDetail = () => {
                 className="w-72 sm:w-80 bg-[#141718] border border-[#222B2C] text-neutral-100 p-2 shadow-2xl z-50 rounded-xl"
               >
                 <div className="px-2 py-1.5 text-xs font-semibold text-neutral-400 border-b border-[#222B2C] mb-1">
-                  {language === "en" ? "References & Materials" : "Першоджерела та матеріали"}
+                  {t('detail.sources_desc')}
                 </div>
                 {loc.sources.map((source, idx) => (
                   <DropdownMenuItem
@@ -278,6 +278,7 @@ const ResearchDetail = () => {
             id="research-like-button"
             variant="secondary"
             onClick={handleLike}
+            aria-label={t('detail.like')}
             className={`bg-[#192224] hover:bg-[#202E31] text-neutral-200 border border-[#253538] ${
               liked ? "text-[#F78D60]" : ""
             }`}
@@ -291,10 +292,11 @@ const ResearchDetail = () => {
             id="research-share-button"
             variant="secondary"
             onClick={() => shareEntry(entry.id, loc.title, `/research/${entry.id}`)}
+            aria-label={t('detail.share')}
             className="bg-[#192224] hover:bg-[#202E31] text-neutral-200 border border-[#253538]"
           >
             <Share2 className="w-4 h-4 mr-2" />
-            <span>{language === "en" ? "Share" : "Поділитися"}</span>
+            <span>{t('detail.share')}</span>
           </Button>
         </footer>
       </article>

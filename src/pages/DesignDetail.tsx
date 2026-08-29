@@ -29,7 +29,7 @@ type CodeTab = "html" | "css" | "scss" | "tailwind";
 export const DesignDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { setMode } = useMode();
   const { data: entry, isLoading } = useModeEntry(id);
   const toggleLike = useToggleModeEntryLike();
@@ -105,14 +105,14 @@ export const DesignDetail = () => {
     const codeToCopy = designData.snippets[activeTab] || "";
     navigator.clipboard.writeText(codeToCopy);
     setCopiedCode(true);
-    toast.success(`Код (${activeTab.toUpperCase()}) скопійовано!`);
+    toast.success(language === "en" ? `Code (${activeTab.toUpperCase()}) copied!` : `Код (${activeTab.toUpperCase()}) скопійовано!`);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(designData.prompt);
     setCopiedPrompt(true);
-    toast.success("Промпт дизайну скопійовано в буфер!");
+    toast.success(language === "en" ? "Design prompt copied to clipboard!" : "Промпт дизайну скопійовано в буфер!");
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
@@ -134,7 +134,7 @@ export const DesignDetail = () => {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <p className="text-muted-foreground">Завантаження дизайну...</p>
+          <p className="text-muted-foreground">{language === "en" ? "Loading design..." : "Завантаження дизайну..."}</p>
         </div>
       </PageLayout>
     );
@@ -144,10 +144,10 @@ export const DesignDetail = () => {
     return (
       <PageLayout>
         <div className="py-16 text-center space-y-4">
-          <h1 className="text-2xl font-bold">Дизайн не знайдено</h1>
+          <h1 className="text-2xl font-bold">{language === "en" ? "Design not found" : "Дизайн не знайдено"}</h1>
           <Button variant="outline" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад до галереї дизайнів
+            {t('detail.back')}
           </Button>
         </div>
       </PageLayout>
@@ -295,13 +295,13 @@ export const DesignDetail = () => {
         <div className="relative w-full h-[280px] sm:h-[340px] rounded-2xl overflow-hidden bg-[#161922] p-8 flex flex-col items-center justify-center border border-[#3A3F53] shadow-2xl gap-4">
           <div className="inline-flex bg-[#1E212D] border border-[#3A3F53] p-1.5 rounded-full gap-1.5 shadow-2xl shadow-black/60">
             <button className="px-6 py-2.5 rounded-full text-xs font-bold bg-[#FFBCBC] text-[#1E212D] shadow-lg shadow-[#FFBCBC]/25">
-              Дизайн
+              {language === "en" ? "Design" : "Дизайн"}
             </button>
             <button className="px-6 py-2.5 rounded-full text-xs font-semibold text-[#A8ADC0] hover:text-white transition-colors">
-              Код
+              {language === "en" ? "Code" : "Код"}
             </button>
             <button className="px-6 py-2.5 rounded-full text-xs font-semibold text-[#A8ADC0] hover:text-white transition-colors">
-              Стилі
+              {language === "en" ? "Styles" : "Стилі"}
             </button>
           </div>
           <span className="text-xs text-slate-400 font-mono">Interactive Segmented Pill Component</span>
@@ -337,7 +337,7 @@ export const DesignDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Дизайн та UI-Елементи — Magnifique numérique`}
+        title={`${loc.title} — ${language === "en" ? "Design" : "Дизайн та UI-Елементи"}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/design/${entry.id}`}
         image={entry.image_url ?? undefined}
@@ -352,7 +352,7 @@ export const DesignDetail = () => {
             className="h-10 px-4 rounded-xl text-sm font-semibold bg-transparent text-[#94A3B8] hover:bg-[#FFBCBC] hover:text-black [&:hover>svg]:text-black border-0 shadow-none inline-flex items-center gap-2 transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4.5 h-4.5 text-[#94A3B8] transition-colors" />
-            <span>{language === "en" ? "Back" : "Назад"}</span>
+            <span>{t('detail.back')}</span>
           </Button>
         </div>
 
@@ -379,6 +379,7 @@ export const DesignDetail = () => {
                 variant="outline"
                 size="default"
                 onClick={handleLike}
+                aria-label={t('detail.like')}
                 className={`gap-2 border-[#FFBCBC]/30 transition-all ${
                   liked
                     ? "bg-[#FFBCBC] text-[#030008] hover:bg-[#FFBCBC]/90 font-bold border-[#FFBCBC]"
@@ -393,10 +394,11 @@ export const DesignDetail = () => {
                 variant="outline"
                 size="default"
                 onClick={handleShare}
+                aria-label={t('detail.share')}
                 className="gap-2 border-[#FFBCBC]/30 bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#030008] transition-all"
               >
                 <Share2 className="w-4 h-4" />
-                <span>Поділитися</span>
+                <span>{t('detail.share')}</span>
               </Button>
             </div>
           </div>
@@ -414,7 +416,7 @@ export const DesignDetail = () => {
             <div className="flex items-center justify-between pb-4 border-b border-border/70">
               <div className="flex items-center gap-2 text-foreground font-bold text-lg">
                 <Sparkles className="w-5 h-5 text-[#FFBCBC]" />
-                <h3>Промпт та Інструкції</h3>
+                <h3>{language === "en" ? "Prompt & Instructions" : "Промпт та Інструкції"}</h3>
               </div>
               <Button
                 variant="outline"
@@ -423,7 +425,7 @@ export const DesignDetail = () => {
                 className="h-8 px-3 text-xs gap-1.5 border-[#FFBCBC]/30 bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#030008] transition-all font-semibold"
               >
                 {copiedPrompt ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedPrompt ? "Скопійовано" : "Скопіювати промпт"}</span>
+                <span>{copiedPrompt ? (language === "en" ? "Copied" : "Скопійовано") : (language === "en" ? "Copy Prompt" : "Скопіювати промпт")}</span>
               </Button>
             </div>
 
@@ -437,11 +439,11 @@ export const DesignDetail = () => {
             {/* Design Spec Details */}
             <div className="space-y-3 pt-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Параметри та Кольорові Токени
+                {language === "en" ? "Parameters & Color Tokens" : "Параметри та Кольорові Токени"}
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-[#161922] border border-[#3A3F53]/60 space-y-1">
-                  <span className="text-muted-foreground block text-[11px]">Основний фон</span>
+                  <span className="text-muted-foreground block text-[11px]">{language === "en" ? "Background" : "Основний фон"}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#030008] border border-white/20" />
                     <span className="font-mono text-white font-bold">#030008</span>
@@ -449,7 +451,7 @@ export const DesignDetail = () => {
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#161922] border border-[#3A3F53]/60 space-y-1">
-                  <span className="text-muted-foreground block text-[11px]">Акцентний колір</span>
+                  <span className="text-muted-foreground block text-[11px]">{language === "en" ? "Accent Color" : "Акцентний колір"}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#FFBCBC]" />
                     <span className="font-mono text-[#FFBCBC] font-bold">#FFBCBC</span>
@@ -457,7 +459,7 @@ export const DesignDetail = () => {
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#161922] border border-[#3A3F53]/60 space-y-1">
-                  <span className="text-muted-foreground block text-[11px]">Колір бордерів</span>
+                  <span className="text-muted-foreground block text-[11px]">{language === "en" ? "Border Color" : "Колір бордерів"}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#3A3F53]" />
                     <span className="font-mono text-white font-bold">#3A3F53</span>
@@ -472,7 +474,7 @@ export const DesignDetail = () => {
             <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border/70">
               <div className="flex items-center gap-2 text-foreground font-bold text-lg">
                 <Code2 className="w-5 h-5 text-[#FFBCBC]" />
-                <h3>Вихідний Код</h3>
+                <h3>{language === "en" ? "Source Code" : "Вихідний Код"}</h3>
               </div>
 
               <Button
@@ -482,7 +484,7 @@ export const DesignDetail = () => {
                 className="h-8 px-3 text-xs gap-1.5 border-[#FFBCBC]/30 bg-[#FFBCBC]/10 text-[#FFBCBC] hover:bg-[#FFBCBC] hover:text-[#03001C] transition-all font-semibold"
               >
                 {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedCode ? "Скопійовано" : `Скопіювати ${activeTab.toUpperCase()}`}</span>
+                <span>{copiedCode ? (language === "en" ? "Copied" : "Скопійовано") : `${language === "en" ? "Copy" : "Скопіювати"} ${activeTab.toUpperCase()}`}</span>
               </Button>
             </div>
 

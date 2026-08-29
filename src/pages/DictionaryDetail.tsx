@@ -27,7 +27,7 @@ import { ItemTagsList } from "@/components/ItemTagBadge";
 const DictionaryDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { setMode } = useMode();
   const { data: entry, isLoading } = useModeEntry(id);
   const toggleLike = useToggleModeEntryLike();
@@ -94,7 +94,7 @@ const DictionaryDetail = () => {
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2 !text-[#080202]" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
         </div>
       </PageLayout>
@@ -135,7 +135,7 @@ const DictionaryDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Словник — Magnifique numérique`}
+        title={`${loc.title} — ${language === "en" ? "Dictionary" : "Словник"}`}
         description={
           loc.description || blocksToPlainText(loc.blocks).slice(0, 155)
         }
@@ -162,7 +162,7 @@ const DictionaryDetail = () => {
             className="h-10 px-4 rounded-xl text-sm font-semibold bg-transparent text-[#94A3B8] hover:bg-[#F3CD97] hover:text-black [&:hover>svg]:text-black border-0 shadow-none inline-flex items-center gap-2 transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4.5 h-4.5 text-[#94A3B8] transition-colors" size={18} />
-            <span>{language === "en" ? "Back" : "Назад"}</span>
+            <span>{t('detail.back')}</span>
           </Button>
         </div>
 
@@ -206,7 +206,7 @@ const DictionaryDetail = () => {
                   className="!bg-[#F3CD97] hover:!bg-[#e4be87] !text-[#151515] font-semibold text-xs h-9 px-4 gap-1.5 shadow-sm transition-colors"
                 >
                   <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
-                    {language === "en" ? "Source" : "Джерело"}
+                    {t('detail.used_sources')}
                     <ExternalLink className="w-3.5 h-3.5 !text-[#151515]" aria-hidden="true" />
                   </a>
                 </Button>
@@ -218,7 +218,7 @@ const DictionaryDetail = () => {
                 size="sm"
                 onClick={handleLike}
                 aria-pressed={liked}
-                aria-label={language === "en" ? "Like" : "Вподобати"}
+                aria-label={t('detail.like')}
                 className="!border !border-[#F3CD97] !bg-[#F3CD97]/10 hover:!bg-[#F3CD97]/20 !text-[#F3CD97] h-9 px-3 text-xs font-medium transition-colors"
               >
                 <Heart
@@ -235,11 +235,11 @@ const DictionaryDetail = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => shareEntry(entry.id, loc.title, `/dictionary/${entry.id}`)}
-                aria-label={language === "en" ? "Share" : "Поділитися"}
+                aria-label={t('detail.share')}
                 className="!border !border-[#F3CD97] !bg-[#F3CD97]/10 hover:!bg-[#F3CD97]/20 !text-[#F3CD97] h-9 px-3 text-xs font-medium transition-colors"
               >
                 <Share2 className="w-3.5 h-3.5 mr-1.5 !text-[#F3CD97]" aria-hidden="true" />
-                {language === "en" ? "Share" : "Поділитися"}
+                {t('detail.share')}
               </Button>
             </div>
           </div>
@@ -250,11 +250,11 @@ const DictionaryDetail = () => {
           <nav
             id="dictionary-detail-toc"
             className="mb-10 p-6 rounded-xl bg-[#1C1C1C] border border-[#2D2D2D] shadow-sm"
-            aria-label="Зміст статті"
+            aria-label={t('detail.table_of_contents')}
           >
             <h2 className="text-lg font-bold text-neutral-100 mb-4 flex items-center gap-2">
               <span className="w-1.5 h-5 !bg-[#F3CD97] rounded-full inline-block" />
-              {language === "en" ? "Table of Contents" : "Зміст"}
+              {t('detail.table_of_contents')}
             </h2>
             <ul className="space-y-2.5">
               {headings.map((item) => (

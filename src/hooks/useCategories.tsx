@@ -18,7 +18,9 @@ export interface Subcategory {
   category_id: string;
   mode: CategoryMode;
   name: string; // Ukrainian (base)
+  title?: string;
   name_en?: string | null;
+  title_en?: string | null;
   slug?: string | null;
   sort_order?: number;
   created_at?: string;
@@ -38,6 +40,125 @@ export interface Category {
   created_at?: string;
   updated_at?: string;
 }
+
+export const SEED_SUBCATEGORY_TRANSLATIONS: Record<string, string> = {
+  // Articles
+  "Синтаксис": "Syntax",
+  "Змінні": "Variables",
+  "Типи даних": "Data Types",
+  "Умови": "Conditions",
+  "Цикли": "Loops",
+  "Функції": "Functions",
+  "Списки": "Lists",
+  "Класи": "Classes",
+  "Наслідування": "Inheritance",
+  "Поліморфізм": "Polymorphism",
+  "Інкапсуляція": "Encapsulation",
+  "Магічні методи": "Magic Methods",
+  "Датакласи": "Dataclasses",
+  "Асинхронність": "Asynchrony",
+  "Міграції": "Migrations",
+  "Бази даних та ORM": "Databases & ORM",
+  // News
+  "ШІ-агенти": "AI Agents",
+  "Безпека": "Security",
+  "Нові версії": "New Releases",
+  "Патчі": "Patches",
+  "Анонси": "Announcements",
+  "Депрекації": "Deprecations",
+  // Resources
+  "Шрифти": "Fonts",
+  "Іконки": "Icons",
+  "3D Асети": "3D Assets",
+  "Ілюстрації": "Illustrations",
+  "Кольори": "Colors",
+  "VS Code розширення": "VS Code Extensions",
+  "Термінал & CLI": "Terminal & CLI",
+  "Тестування API": "API Testing",
+  "BaaS сервіси": "BaaS Services",
+  "Redis кеш": "Redis Cache",
+  "Auth провайдери": "Auth Providers",
+  "Prompt генератори": "Prompt Generators",
+  "Генерація зображень": "Image Generation",
+  // Components
+  "Кнопки & Бейджі": "Buttons & Badges",
+  "Модальні вікна": "Modals",
+  "Картки": "Cards",
+  "Dropdown меню": "Dropdown Menus",
+  "Hero секції": "Hero Sections",
+  "Лінійні графіки": "Line Charts",
+  "3D Візуалізація": "3D Visualization",
+  "Input поля": "Input Fields",
+  "Zod схеми": "Zod Schemas",
+  "Hover ефекти": "Hover Effects",
+  "Скрол-анімації": "Scroll Animations",
+  "Glow ефекти": "Glow Effects",
+  // Templates
+  "Парсери": "Parsers",
+  "Автоматизація": "Automation",
+  "Скрипти": "Scripts",
+  // Research
+  "Бенчмарки точності": "Accuracy Benchmarks",
+  "Швидкість інференсу": "Inference Speed",
+  "Контекстні вікна": "Context Windows",
+  "Мультимодальність": "Multimodality",
+  "RAG Системи": "RAG Systems",
+  "Бази даних Latency": "Database Latency",
+  "Wasm Швидкодія": "Wasm Performance",
+  "Мікросервіси vs Моноліт": "Microservices vs Monolith",
+  "Розподілений кеш": "Distributed Cache",
+  "Тренди мов програмування": "Language Trends",
+  "Аналітика ринку праці": "Job Market Analytics",
+  "Стек 2026": "Stack 2026",
+  "Open Source активність": "Open Source Activity",
+  // Palettes
+  "Світлі теми (Light)": "Light Themes",
+  "Темні теми (Dark)": "Dark Themes",
+  // Dictionary
+  "Архітектура & Патерни": "Architecture & Patterns",
+  "Алгоритми": "Algorithms",
+  "Структури даних": "Data Structures",
+  "Складність O(n)": "Complexity O(n)",
+  "Конкурентність": "Concurrency",
+  "Мемоізація": "Memoization",
+  "Веб & Мережі": "Web & Networking",
+  "Бази даних & Storage": "Databases & Storage",
+  "Індексація": "Indexing",
+  "CAP теорема": "CAP Theorem",
+  // Editor
+  "Основи & Синтаксис": "Basics & Syntax",
+  "Змінні & Типи": "Variables & Types",
+  "Списки & Словники": "Lists & Dictionaries",
+  "OOP Класи": "OOP Classes",
+  "Фібоначчі": "Fibonacci",
+  "Швидке сортування": "Quicksort",
+  "Бінарний пошук": "Binary Search",
+  "Динамічне програмування": "Dynamic Programming",
+  "Графи BFS/DFS": "Graphs BFS/DFS",
+  "Математика & Data": "Math & Data",
+  "Генератор чисел": "Number Generator",
+  "Статистика": "Statistics",
+  "Матриці": "Matrices",
+  "JSON Парсер": "JSON Parser",
+  "Регулярні вирази": "Regular Expressions",
+  "ASCII Арт": "ASCII Art",
+  "Таймер & Бенчмарк": "Timer & Benchmark",
+  "Шифрування": "Encryption",
+  "Обробка тексту": "Text Processing",
+  // Design
+  "Glow кнопки": "Glow Buttons",
+  "Карточки": "Cards",
+  "Анімації": "Animations",
+  "3D Сфери": "3D Spheres",
+  "SaaS Дашборди": "SaaS Dashboards",
+  "Навігаційні бари": "Navigation Bars",
+  "Footer блоки": "Footer Blocks",
+};
+
+export const getSubcategoryTranslation = (name: string, fallbackEn?: string | null): string => {
+  if (fallbackEn && fallbackEn.trim()) return fallbackEn.trim();
+  return SEED_SUBCATEGORY_TRANSLATIONS[name] || name;
+};
 
 // Normalizer helper so "resource" and "resources" or "template" and "templates" work symmetrically
 export const normalizeCategoryMode = (mode?: string): CategoryMode => {
@@ -452,15 +573,21 @@ const getFallbackCategoriesForMode = (mode: CategoryMode): Category[] => {
     image_url: s.image_url || null,
     sort_order: idx,
     sub_topics: s.subcategories,
-    subcategories: s.subcategories.map((subName, subIdx) => ({
-      id: `${s.id}-sub-${subIdx}`,
-      category_id: s.id,
-      mode,
-      name: subName,
-      sort_order: subIdx,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })),
+    subcategories: s.subcategories.map((subName, subIdx) => {
+      const transEn = getSubcategoryTranslation(subName);
+      return {
+        id: `${s.id}-sub-${subIdx}`,
+        category_id: s.id,
+        mode,
+        name: subName,
+        title: subName,
+        title_en: transEn,
+        name_en: transEn,
+        sort_order: subIdx,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }));
@@ -532,14 +659,36 @@ export const useCategories = (rawMode?: string) => {
             // Otherwise generate subcategory objects from legacy sub_topics array
             const resolvedSubcategories: Subcategory[] =
               linkedSubcategories.length > 0
-                ? linkedSubcategories
-                : legacySubTopics.map((st, idx) => ({
-                    id: `${c.id}-sub-${idx}`,
-                    category_id: c.id,
-                    mode: normalizeCategoryMode(c.mode || normalizedMode || "articles"),
-                    name: st,
-                    sort_order: idx,
-                  }));
+                ? linkedSubcategories.map((sc: any) => {
+                    const rawName = sc.name || sc.title || "";
+                    const rawEn = sc.title_en || sc.name_en || getSubcategoryTranslation(rawName);
+                    return {
+                      id: sc.id,
+                      category_id: sc.category_id,
+                      mode: normalizeCategoryMode(sc.mode || c.mode || normalizedMode || "articles"),
+                      name: rawName,
+                      title: rawName,
+                      title_en: rawEn,
+                      name_en: rawEn,
+                      slug: sc.slug || null,
+                      sort_order: sc.sort_order ?? 0,
+                      created_at: sc.created_at,
+                      updated_at: sc.updated_at,
+                    };
+                  })
+                : legacySubTopics.map((st, idx) => {
+                    const transEn = getSubcategoryTranslation(st);
+                    return {
+                      id: `${c.id}-sub-${idx}`,
+                      category_id: c.id,
+                      mode: normalizeCategoryMode(c.mode || normalizedMode || "articles"),
+                      name: st,
+                      title: st,
+                      title_en: transEn,
+                      name_en: transEn,
+                      sort_order: idx,
+                    };
+                  });
 
             const resolvedSubTopics =
               resolvedSubcategories.length > 0
@@ -683,16 +832,23 @@ export const useCreateSubcategory = () => {
   return useMutation({
     mutationFn: async (sub: {
       category_id: string;
-      name: string;
+      name?: string;
+      title?: string;
       name_en?: string | null;
+      title_en?: string | null;
       mode?: string;
       slug?: string | null;
       sort_order?: number;
     }) => {
+      const subName = (sub.name || sub.title || "").trim();
+      const subEn = (sub.title_en || sub.name_en || "").trim() || null;
+
       const payload: any = {
         category_id: sub.category_id,
-        name: sub.name.trim(),
-        name_en: sub.name_en?.trim() || null,
+        name: subName,
+        title: subName,
+        name_en: subEn,
+        title_en: subEn,
         mode: normalizeCategoryMode(sub.mode),
         slug: sub.slug?.trim() || null,
         sort_order: sub.sort_order ?? 0,
@@ -723,10 +879,10 @@ export const useCreateSubcategory = () => {
           .maybeSingle();
 
         const currentList = Array.isArray(cat?.sub_topics) ? cat.sub_topics : [];
-        if (!currentList.includes(sub.name.trim())) {
+        if (!currentList.includes(subName)) {
           await supabase
             .from("categories")
-            .update({ sub_topics: [...currentList, sub.name.trim()] } as any)
+            .update({ sub_topics: [...currentList, subName] } as any)
             .eq("id", sub.category_id);
         }
       } catch (err) {
@@ -755,19 +911,26 @@ export const useUpdateSubcategory = () => {
     }: {
       id: string;
       category_id: string;
-      name: string;
+      name?: string;
+      title?: string;
       previousName?: string;
       name_en?: string | null;
+      title_en?: string | null;
       slug?: string | null;
       sort_order?: number;
     }) => {
+      const subName = (sub.name || sub.title || "").trim();
+      const subEn = (sub.title_en || sub.name_en || "").trim() || null;
+
       // 1. Update in subcategories table
       try {
         await supabase
           .from("subcategories")
           .update({
-            name: sub.name.trim(),
-            name_en: sub.name_en?.trim() || null,
+            name: subName,
+            title: subName,
+            name_en: subEn,
+            title_en: subEn,
             slug: sub.slug?.trim() || null,
             sort_order: sub.sort_order ?? 0,
           } as any)
@@ -787,7 +950,7 @@ export const useUpdateSubcategory = () => {
 
           const currentList = Array.isArray(cat?.sub_topics) ? cat.sub_topics : [];
           const updatedList = currentList.map((item) =>
-            item === previousName ? sub.name.trim() : item
+            item === previousName ? subName : item
           );
           await supabase
             .from("categories")

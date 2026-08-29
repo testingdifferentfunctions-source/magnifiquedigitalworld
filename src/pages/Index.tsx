@@ -16,7 +16,7 @@ import SearchBar from "@/components/SearchBar";
 import ArticleFilters, { SortOption, FilterCategoryOption } from "@/components/ArticleFilters";
 import CategoryPills, { PillItem } from "@/components/CategoryPills";
 import { useArticles, useIncrementImpressions } from "@/hooks/useArticles";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories, getSubcategoryTranslation } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
 import { localizeArticle } from "@/lib/localize";
 import {
@@ -132,11 +132,29 @@ const getFilteredModeEntries = (
   // 3. Secondary Filter (Pill Selection)
   if (activePill !== "all") {
     const pillLower = activePill.toLowerCase();
+    const pillEnTranslation = getSubcategoryTranslation(activePill).toLowerCase();
+
     list = list.filter(({ entry, loc }) => {
-      const matchTag = entry.tags.some((tag) => tag.toLowerCase() === pillLower);
+      const matchTag = entry.tags.some((tag) => {
+        const tLower = tag.toLowerCase();
+        return (
+          tLower === pillLower ||
+          (pillEnTranslation && tLower === pillEnTranslation) ||
+          pillLower.includes(tLower) ||
+          tLower.includes(pillLower)
+        );
+      });
       const matchText =
         loc.title.toLowerCase().includes(pillLower) ||
-        loc.description.toLowerCase().includes(pillLower);
+        loc.description.toLowerCase().includes(pillLower) ||
+        entry.title.toLowerCase().includes(pillLower) ||
+        entry.description.toLowerCase().includes(pillLower) ||
+        (pillEnTranslation &&
+          (loc.title.toLowerCase().includes(pillEnTranslation) ||
+            loc.description.toLowerCase().includes(pillEnTranslation) ||
+            entry.title.toLowerCase().includes(pillEnTranslation) ||
+            entry.description.toLowerCase().includes(pillEnTranslation)));
+
       return matchTag || matchText;
     });
   }
@@ -252,16 +270,45 @@ const Index = () => {
     const allPill: PillItem = { id: "all", label: language === "en" ? "All" : "Всі" };
 
     if (categoryId === "all") {
-      const pillsSet = new Set<string>();
+      const pillsMap = new Map<string, PillItem>();
       modeCategories.forEach((cat) => {
         (cat.subcategories || []).forEach((sc) => {
-          pillsSet.add(language === "en" && sc.name_en ? sc.name_en : sc.name);
+          const ukName = sc.name || sc.title || "";
+          const enName = sc.title_en || sc.name_en || getSubcategoryTranslation(ukName);
+          if (ukName && !pillsMap.has(ukName)) {
+            pillsMap.set(ukName, {
+              id: ukName,
+              label: language === "en" ? (enName || ukName) : ukName,
+              name_en: enName,
+              title_en: enName,
+            });
+          }
         });
-        (cat.sub_topics || []).forEach((st) => pillsSet.add(st));
+        (cat.sub_topics || []).forEach((st) => {
+          if (st && !pillsMap.has(st)) {
+            const enName = getSubcategoryTranslation(st);
+            pillsMap.set(st, {
+              id: st,
+              label: language === "en" ? (enName || st) : st,
+              name_en: enName,
+              title_en: enName,
+            });
+          }
+        });
       });
 
       if (mode === "articles") {
-        articles.forEach((art) => (art.tags || []).forEach((t) => pillsSet.add(t)));
+        articles.forEach((art) => (art.tags || []).forEach((t) => {
+          if (t && !pillsMap.has(t)) {
+            const enName = getSubcategoryTranslation(t);
+            pillsMap.set(t, {
+              id: t,
+              label: language === "en" ? (enName || t) : t,
+              name_en: enName,
+              title_en: enName,
+            });
+          }
+        }));
       } else {
         const currentEntries =
           mode === "news"
@@ -279,37 +326,71 @@ const Index = () => {
             : mode === "design"
             ? design
             : dictionary;
-        currentEntries.forEach((entry) => (entry.tags || []).forEach((t) => pillsSet.add(t)));
+        currentEntries.forEach((entry) => (entry.tags || []).forEach((t) => {
+          if (t && !pillsMap.has(t)) {
+            const enName = getSubcategoryTranslation(t);
+            pillsMap.set(t, {
+              id: t,
+              label: language === "en" ? (enName || t) : t,
+              name_en: enName,
+              title_en: enName,
+            });
+          }
+        }));
       }
 
-      const pills = Array.from(pillsSet)
-        .filter(Boolean)
-        .slice(0, 15)
-        .map((p) => ({ id: p, label: p }));
+      const pills = Array.from(pillsMap.values()).slice(0, 15);
       return [allPill, ...pills];
     } else {
       const currentCategory = modeCategories.find((c) => c.id === categoryId);
       if (currentCategory) {
-        const categoryPills: string[] = [];
+        const pillsMap = new Map<string, PillItem>();
         (currentCategory.subcategories || []).forEach((sc) => {
-          categoryPills.push(language === "en" && sc.name_en ? sc.name_en : sc.name);
+          const ukName = sc.name || sc.title || "";
+          const enName = sc.title_en || sc.name_en || getSubcategoryTranslation(ukName);
+          if (ukName && !pillsMap.has(ukName)) {
+            pillsMap.set(ukName, {
+              id: ukName,
+              label: language === "en" ? (enName || ukName) : ukName,
+              name_en: enName,
+              title_en: enName,
+            });
+          }
         });
         (currentCategory.sub_topics || []).forEach((st) => {
-          if (!categoryPills.includes(st)) categoryPills.push(st);
+          if (st && !pillsMap.has(st)) {
+            const enName = getSubcategoryTranslation(st);
+            pillsMap.set(st, {
+              id: st,
+              label: language === "en" ? (enName || st) : st,
+              name_en: enName,
+              title_en: enName,
+            });
+          }
         });
 
-        if (categoryPills.length > 0) {
-          return [allPill, ...categoryPills.map((st) => ({ id: st, label: st }))];
+        if (pillsMap.size > 0) {
+          return [allPill, ...Array.from(pillsMap.values())];
         }
       }
 
       // Fallback: collect tags from items matching category
-      const tagsSet = new Set<string>();
+      const tagsMap = new Map<string, PillItem>();
       if (mode === "articles") {
         articles
           .filter((a) => a.category_id === categoryId)
           .flatMap((a) => a.tags || [])
-          .forEach((t) => tagsSet.add(t));
+          .forEach((t) => {
+            if (t && !tagsMap.has(t)) {
+              const enName = getSubcategoryTranslation(t);
+              tagsMap.set(t, {
+                id: t,
+                label: language === "en" ? (enName || t) : t,
+                name_en: enName,
+                title_en: enName,
+              });
+            }
+          });
       } else {
         const currentEntries =
           mode === "news"
@@ -327,9 +408,19 @@ const Index = () => {
             : mode === "design"
             ? design
             : dictionary;
-        currentEntries.forEach((e) => (e.tags || []).forEach((t) => tagsSet.add(t)));
+        currentEntries.forEach((e) => (e.tags || []).forEach((t) => {
+          if (t && !tagsMap.has(t)) {
+            const enName = getSubcategoryTranslation(t);
+            tagsMap.set(t, {
+              id: t,
+              label: language === "en" ? (enName || t) : t,
+              name_en: enName,
+              title_en: enName,
+            });
+          }
+        }));
       }
-      return [allPill, ...Array.from(tagsSet).slice(0, 15).map((t) => ({ id: t, label: t }))];
+      return [allPill, ...Array.from(tagsMap.values()).slice(0, 15)];
     }
   }, [mode, categoryId, modeCategories, articles, news, research, palettes, resources, components, templates, dictionary, design, language]);
 
@@ -641,7 +732,7 @@ const Index = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {filteredArticles.map(({ article, loc }, index: number) => (
               <ArticleCard
                 key={article.id}
@@ -667,7 +758,7 @@ const Index = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {filteredResources.map(({ entry, loc }, index) => {
               const resItem: ResourceItem = {
                 id: entry.id,
@@ -710,7 +801,7 @@ const Index = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {filteredComponents.map(({ entry, loc }, index) => {
               const compItem: ComponentItem = {
                 id: entry.id,
@@ -746,7 +837,7 @@ const Index = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 items-stretch">
             {filteredTemplates.map(({ entry, loc }, index) => {
               const codeBlock = loc.blocks.find((b) => b.type === "code") as
                 | { code: string; language?: string }
@@ -821,7 +912,7 @@ const Index = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-7">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-7 items-stretch">
             {filteredPalettes.map(({ entry, loc }, index) => (
               <PaletteCard
                 key={entry.id}

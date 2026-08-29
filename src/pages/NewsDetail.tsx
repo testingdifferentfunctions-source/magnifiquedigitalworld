@@ -14,7 +14,7 @@ import { ItemTagsList } from "@/components/ItemTagBadge";
 const NewsDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: entry, isLoading } = useModeEntry(id);
   const toggleLike = useToggleModeEntryLike();
 
@@ -33,7 +33,7 @@ const NewsDetail = () => {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <p className="text-muted-foreground">Завантаження...</p>
+          <p className="text-muted-foreground">{language === "en" ? "Loading..." : "Завантаження..."}</p>
         </div>
       </PageLayout>
     );
@@ -48,7 +48,7 @@ const NewsDetail = () => {
           </h1>
           <Button variant="outline" className="hover:text-black" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
         </div>
       </PageLayout>
@@ -84,7 +84,7 @@ const NewsDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Новини`}
+        title={`${loc.title} — ${language === "en" ? "News" : "Новини"}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/news/${entry.id}`}
         image={entry.image_url ?? undefined}
@@ -102,7 +102,7 @@ const NewsDetail = () => {
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
         </div>
 
@@ -143,7 +143,7 @@ const NewsDetail = () => {
                   className="bg-[#A4B885] hover:bg-[#93a774] text-[#091413] font-semibold text-xs h-9 px-4 gap-1.5 shadow-sm"
                 >
                   <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
-                    Джерело
+                    {t('detail.source')}
                     <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                   </a>
                 </Button>
@@ -154,7 +154,7 @@ const NewsDetail = () => {
                 size="sm"
                 onClick={handleLike}
                 aria-pressed={liked}
-                aria-label="Вподобати"
+                aria-label={t('detail.like')}
                 className="bg-[#122220] hover:bg-[#1A302D] text-neutral-200 hover:text-[#A4B885] border border-[#1E3834] h-9 px-3 text-xs font-medium"
               >
                 <Heart
@@ -170,11 +170,11 @@ const NewsDetail = () => {
                 variant="secondary"
                 size="sm"
                 onClick={() => shareEntry(entry.id, loc.title, `/news/${entry.id}`)}
-                aria-label="Поділитися"
+                aria-label={t('detail.share')}
                 className="bg-[#122220] hover:bg-[#1A302D] text-neutral-200 hover:text-[#A4B885] border border-[#1E3834] h-9 px-3 text-xs font-medium"
               >
                 <Share2 className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
-                Поділитися
+                {t('detail.share')}
               </Button>
             </div>
           </div>
@@ -204,7 +204,7 @@ const NewsDetail = () => {
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground underline hover:text-[#A4B885] transition-colors"
               >
-                Джерело зображення
+                {t('detail.image_source')}
               </a>
             </figcaption>
           )}
@@ -215,11 +215,11 @@ const NewsDetail = () => {
           <nav
             id="news-detail-toc"
             className="mb-10 p-6 rounded-xl bg-[#091413] border border-[#182B28] shadow-sm"
-            aria-label="Зміст статті"
+            aria-label={t('detail.toc_article')}
           >
             <h2 className="text-lg font-bold text-neutral-100 mb-4 flex items-center gap-2">
               <span className="w-1.5 h-5 bg-[#A4B885] rounded-full inline-block" />
-              Зміст
+              {t('detail.toc')}
             </h2>
             <ul className="space-y-2.5">
               {headings.map((item) => (

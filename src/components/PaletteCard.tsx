@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Heart, Share2, ImageIcon } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 import type { ColorSwatch } from "@/lib/colors";
 
 export interface PaletteCardItem {
@@ -36,6 +37,7 @@ const PaletteCard = ({
   isLiked: initialLiked = false,
 }: PaletteCardProps) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [liked, setLiked] = useState(initialLiked);
   const [likesCount, setLikesCount] = useState(item.likes ?? 0);
 
@@ -70,12 +72,12 @@ const PaletteCard = ({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: Math.min(index * 0.08, 0.4) }}
-      className="group w-full rounded-xl overflow-hidden bg-[#181717] border border-[#292626] shadow-md hover:border-[#8ABEB9]/60 hover:shadow-xl transition-all duration-300 flex flex-col"
+      className="group w-full rounded-xl overflow-hidden bg-[#181717] border border-[#292626] shadow-md hover:border-[#8ABEB9]/60 hover:shadow-xl transition-all duration-300 flex flex-col h-full"
     >
       {/* Top: Website preview image (clean without badge overlay) */}
       <div
         id={`palette-image-container-${item.id}`}
-        className="relative w-full h-48 sm:h-56 bg-[#121111] overflow-hidden cursor-pointer"
+        className="relative w-full h-48 sm:h-56 bg-[#121111] overflow-hidden cursor-pointer shrink-0"
         onClick={handleColors}
       >
         {item.image ? (
@@ -95,7 +97,7 @@ const PaletteCard = ({
 
       {/* Body: Title and short description */}
       <div id={`palette-body-${item.id}`} className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
-        <div>
+        <div className="flex-1 flex flex-col">
           <div className="flex items-start justify-between gap-2 mb-2">
             <h2
               onClick={handleColors}
@@ -108,65 +110,65 @@ const PaletteCard = ({
           <p className="mt-2 text-sm sm:text-base text-neutral-300 leading-relaxed line-clamp-3">
             {item.description}
           </p>
+        </div>
 
-          {/* Action Buttons: Horizontal flex row directly below the short description */}
-          <div
-            id={`palette-actions-${item.id}`}
-            className="mt-5 flex flex-row items-center gap-2"
+        {/* Action Buttons: Horizontal flex row pinned to the bottom */}
+        <div
+          id={`palette-actions-${item.id}`}
+          className="mt-auto pt-5 flex flex-row items-center gap-2"
+        >
+          {/* Button 1: "Кольори" (Colors) - text only */}
+          <Button
+            id={`palette-colors-btn-${item.id}`}
+            type="button"
+            onClick={handleColors}
+            className="bg-[#8ABEB9] hover:bg-[#78aca7] text-[#0F0E0E] font-semibold px-3.5 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm text-xs sm:text-sm"
           >
-            {/* Button 1: "Кольори" (Colors) - text only */}
-            <Button
-              id={`palette-colors-btn-${item.id}`}
-              type="button"
-              onClick={handleColors}
-              className="bg-[#8ABEB9] hover:bg-[#78aca7] text-[#0F0E0E] font-semibold px-3.5 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm text-xs sm:text-sm"
-            >
-              Кольори
-            </Button>
+            {t('card.colors')}
+          </Button>
 
-            {/* Button 2: "Переглянути" (View) */}
-            <Button
-              id={`palette-view-btn-${item.id}`}
-              type="button"
-              variant="outline"
-              onClick={handleView}
-              className="bg-transparent hover:bg-[#8ABEB9]/10 text-[#8ABEB9] border-[#8ABEB9] hover:text-[#8ABEB9] font-medium px-3.5 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm text-xs sm:text-sm"
-            >
-              Переглянути
-            </Button>
+          {/* Button 2: "Переглянути" (View) */}
+          <Button
+            id={`palette-view-btn-${item.id}`}
+            type="button"
+            variant="outline"
+            onClick={handleView}
+            className="bg-transparent hover:bg-[#8ABEB9]/10 text-[#8ABEB9] border-[#8ABEB9] hover:text-[#8ABEB9] font-medium px-3.5 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm text-xs sm:text-sm"
+          >
+            {t('card.view')}
+          </Button>
 
-            {/* Button 3: "Like" */}
-            <Button
-              id={`palette-like-btn-${item.id}`}
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={handleLike}
-              aria-label="Вподобати"
-              aria-pressed={liked}
-              className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 w-10 shrink-0 rounded-lg transition-colors ml-auto sm:ml-0"
-            >
-              <Heart
-                className={`w-4 h-4 transition-colors ${
-                  liked ? "fill-[#8ABEB9] text-[#8ABEB9]" : ""
-                }`}
-                aria-hidden="true"
-              />
-            </Button>
+          {/* Button 3: "Like" */}
+          <Button
+            id={`palette-like-btn-${item.id}`}
+            type="button"
+            variant="secondary"
+            size="icon"
+            onClick={handleLike}
+            aria-label={t('card.like')}
+            aria-pressed={liked}
+            className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 w-10 shrink-0 rounded-lg transition-colors ml-auto sm:ml-0"
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${
+                liked ? "fill-[#8ABEB9] text-[#8ABEB9]" : ""
+              }`}
+              aria-hidden="true"
+            />
+          </Button>
 
-            {/* Button 4: "Share" */}
-            <Button
-              id={`palette-share-btn-${item.id}`}
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={onShare}
-              aria-label="Поділитися"
-              className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 w-10 shrink-0 rounded-lg transition-colors"
-            >
-              <Share2 className="w-4 h-4" aria-hidden="true" />
-            </Button>
-          </div>
+          {/* Button 4: "Share" */}
+          <Button
+            id={`palette-share-btn-${item.id}`}
+            type="button"
+            variant="secondary"
+            size="icon"
+            onClick={onShare}
+            aria-label={t('card.share')}
+            className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 w-10 shrink-0 rounded-lg transition-colors"
+          >
+            <Share2 className="w-4 h-4" aria-hidden="true" />
+          </Button>
         </div>
       </div>
     </motion.article>

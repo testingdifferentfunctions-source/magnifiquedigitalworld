@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Heart, Share2, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export interface ComponentItem {
   id: string;
@@ -31,6 +32,7 @@ const ComponentCard = ({
   isLiked: initialLiked = false,
 }: ComponentCardProps) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [liked, setLiked] = useState(initialLiked);
   const [, setLikesCount] = useState(item.likes ?? 0);
 
@@ -67,9 +69,9 @@ const ComponentCard = ({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: Math.min(index * 0.08, 0.4) }}
-      className="group w-full rounded-xl overflow-hidden bg-[#181818] border border-[#2B2B2B] shadow-md hover:border-neutral-400/60 hover:shadow-xl transition-all duration-300 flex flex-col p-5 sm:p-6 justify-between"
+      className="group w-full rounded-xl overflow-hidden bg-[#181818] border border-[#2B2B2B] shadow-md hover:border-neutral-400/60 hover:shadow-xl transition-all duration-300 flex flex-col h-full p-5 sm:p-6 justify-between"
     >
-      <div>
+      <div className="flex-1 flex flex-col">
         {/* Title */}
         <div className="flex items-start justify-between gap-3 mb-2">
           <h2
@@ -94,7 +96,7 @@ const ComponentCard = ({
       {/* Action Buttons Footer: Single horizontal row with View, Like, and Share */}
       <footer
         id={`component-footer-${item.id}`}
-        className="mt-5 pt-4 border-t border-[#2B2B2B] flex flex-row items-center gap-2"
+        className="mt-auto pt-4 border-t border-[#2B2B2B] flex flex-row items-center gap-2"
       >
         {/* Button 1: "Переглянути" (View) */}
         <Button
@@ -103,7 +105,7 @@ const ComponentCard = ({
           onClick={handleView}
           className="bg-white hover:bg-neutral-200 text-black font-semibold px-4 py-2 rounded-lg transition-colors flex-1 sm:flex-none h-10 shadow-sm text-xs sm:text-sm"
         >
-          Переглянути
+          {t('card.view')}
         </Button>
 
         {/* Button 2: "Like" - strictly icon only */}
@@ -113,7 +115,7 @@ const ComponentCard = ({
           variant="secondary"
           size="icon"
           onClick={handleLike}
-          aria-label="Вподобати"
+          aria-label={t('card.like')}
           aria-pressed={liked}
           className="bg-[#242424] hover:bg-[#303030] text-neutral-200 hover:text-white border border-[#383838] h-10 w-10 shrink-0 rounded-lg transition-colors ml-auto sm:ml-0"
         >
@@ -132,7 +134,7 @@ const ComponentCard = ({
           variant="secondary"
           size="icon"
           onClick={handleShare}
-          aria-label="Поділитися"
+          aria-label={t('card.share')}
           className="bg-[#242424] hover:bg-[#303030] text-neutral-200 hover:text-white border border-[#383838] h-10 w-10 shrink-0 rounded-lg transition-colors"
         >
           <Share2 className="w-4 h-4" aria-hidden="true" />

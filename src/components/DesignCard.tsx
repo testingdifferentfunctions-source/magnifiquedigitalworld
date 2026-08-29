@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Heart, Share2, ArrowUpRight, Sparkles, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export interface DesignItem {
   id: string;
@@ -31,6 +32,7 @@ export const DesignCard = ({
   onLike,
   onShare,
 }: DesignCardProps) => {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   // Render dynamic visual preview matching the design type - flush with container edges
@@ -197,8 +199,8 @@ export const DesignCard = ({
       className="cursor-pointer group flex flex-col md:flex-row items-stretch justify-between p-0 rounded-2xl bg-[#090040] border border-[#1b1458] hover:border-[#FFBCBC] transition-all duration-300 shadow-md hover:shadow-2xl hover:shadow-[#FFBCBC]/10 relative overflow-hidden min-h-[340px] md:min-h-[350px]"
     >
       {/* Left Content Section (Strict 50%) */}
-      <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between min-w-0 bg-[#090040]">
-        <div className="space-y-3.5">
+      <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between min-w-0 bg-[#090040] h-full">
+        <div className="space-y-3.5 flex-1 flex flex-col">
           {/* Title */}
           <h3 className="text-xl md:text-2xl font-bold text-foreground group-hover:text-[#FFBCBC] transition-colors leading-snug">
             {item.title}
@@ -210,7 +212,7 @@ export const DesignCard = ({
           </p>
 
           {/* Moved Like and Share Buttons: Positioned directly underneath short description */}
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 pt-2 mt-auto">
             <Button
               variant="ghost"
               size="sm"
@@ -220,7 +222,7 @@ export const DesignCard = ({
                   ? "text-[#FFBCBC] bg-[#FFBCBC]/15 hover:bg-[#FFBCBC]/25"
                   : "text-neutral-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10"
               }`}
-              aria-label="Вподобати"
+              aria-label={t('card.like')}
             >
               <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
               <span>{(item.likes ?? 0) + (isLiked ? 1 : 0)}</span>
@@ -231,7 +233,7 @@ export const DesignCard = ({
               size="sm"
               onClick={handleShareClick}
               className="h-9 px-3 rounded-lg text-xs gap-1.5 text-neutral-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10 transition-colors"
-              aria-label="Поділитися"
+              aria-label={t('card.share')}
             >
               <Share2 className="w-4 h-4" />
             </Button>
@@ -247,7 +249,7 @@ export const DesignCard = ({
             }}
             className="h-11 px-5 rounded-xl text-sm font-semibold bg-[#FFBCBC] text-[#030008] hover:bg-[#FFBCBC]/90 shadow-sm transition-all gap-1.5 border-0 cursor-pointer"
           >
-            <span>Переглянути</span>
+            <span>{t('card.view')}</span>
             <ArrowUpRight className="w-4 h-4 text-[#030008]" />
           </Button>
         </div>

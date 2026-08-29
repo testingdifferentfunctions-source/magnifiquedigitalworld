@@ -174,7 +174,7 @@ const Article = () => {
             className="h-10 px-4 rounded-xl text-sm font-semibold bg-transparent text-[#94A3B8] hover:bg-[#A07DFA] hover:text-black [&:hover>svg]:text-black border-0 shadow-none inline-flex items-center gap-2 transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4.5 h-4.5 text-[#94A3B8] transition-colors" />
-            <span>{t('article.back')}</span>
+            <span>{t('detail.back')}</span>
           </Button>
         </div>
 
@@ -219,7 +219,7 @@ const Article = () => {
         {/* --- БЛОК ЗМІСТУ (Table of Contents) --- */}
         {toc.length > 0 && (
           <div className="mb-8 p-6 bg-muted/30 rounded-lg border border-border">
-            <h3 className="text-xl font-bold mb-4">Зміст статті</h3>
+            <h3 className="text-xl font-bold mb-4">{t('detail.toc_article')}</h3>
             <ul className="space-y-3">
               {toc.map((item) => (
                 <li
@@ -268,7 +268,7 @@ const Article = () => {
               className="h-10 px-4 rounded-xl gap-2 hover:text-primary-foreground hover:bg-primary hover:border-primary transition-colors duration-200 cursor-pointer"
             >
               <Share2 className="w-4 h-4" />
-              <span>{t('article.share') !== 'article.share' ? t('article.share') : (language === 'en' ? 'Share' : 'Поділитися')}</span>
+              <span>{t('detail.share')}</span>
             </Button>
           </div>
 
@@ -282,7 +282,7 @@ const Article = () => {
               className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-md transition-all cursor-pointer"
             >
               <Code2 className="w-4 h-4" />
-              <span>{language === 'en' ? 'Test' : 'Тестувати'}</span>
+              <span>{t('detail.test')}</span>
             </Button>
           )}
         </div>

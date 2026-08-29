@@ -14,7 +14,7 @@ import { AppMode } from "@/hooks/useMode";
 const ComponentDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: entry, isLoading } = useModeEntry(id);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -47,7 +47,7 @@ const ComponentDetail = () => {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <p className="text-muted-foreground">Завантаження...</p>
+          <p className="text-muted-foreground">{language === "en" ? "Loading..." : "Завантаження..."}</p>
         </div>
       </PageLayout>
     );
@@ -57,10 +57,10 @@ const ComponentDetail = () => {
     return (
       <PageLayout>
         <div className="py-16 text-center space-y-4">
-          <h1 className="text-2xl font-bold">Матеріал не знайдено</h1>
+          <h1 className="text-2xl font-bold">{language === "en" ? "Item not found" : "Матеріал не знайдено"}</h1>
           <Button variant="outline" className="hover:text-black" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад
+            {t('detail.back')}
           </Button>
         </div>
       </PageLayout>
@@ -74,7 +74,7 @@ const ComponentDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Компоненти — Magnifique numérique`}
+        title={`${loc.title} — ${language === "en" ? "Components" : "Компоненти"}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/component/${entry.id}`}
         image={entry.image_url ?? undefined}
@@ -91,7 +91,7 @@ const ComponentDetail = () => {
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
         </div>
 
@@ -120,7 +120,7 @@ const ComponentDetail = () => {
               <Button asChild variant="outline" size="sm" className="gap-2">
                 <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-4 h-4" />
-                  Офіційний сайт / документація
+                  {t('detail.official_site')}
                 </a>
               </Button>
             </div>
@@ -131,9 +131,9 @@ const ComponentDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
           {/* Left Sidebar: Sticky Table of Contents */}
           <aside className="hidden lg:block">
-            <nav className="sticky top-28 space-y-3" aria-label="Зміст">
+            <nav className="sticky top-28 space-y-3" aria-label={t('detail.toc')}>
               <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase pl-1">
-                ЗМІСТ
+                {t('detail.toc')}
               </p>
               <ul className="space-y-1 border-l border-border relative">
                 {headings.map((h) => {
@@ -162,7 +162,7 @@ const ComponentDetail = () => {
                   );
                 })}
                 {headings.length === 0 && (
-                  <li className="pl-4 py-1.5 text-sm text-muted-foreground">Немає розділів</li>
+                  <li className="pl-4 py-1.5 text-sm text-muted-foreground">{language === "en" ? "No sections" : "Немає розділів"}</li>
                 )}
               </ul>
             </nav>

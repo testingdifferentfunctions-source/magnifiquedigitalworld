@@ -259,6 +259,56 @@ export type Database = {
         }
         Relationships: []
       }
+      subcategories: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          mode: string
+          name: string
+          name_en: string | null
+          slug: string | null
+          sort_order: number
+          title: string | null
+          title_en: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          mode?: string
+          name: string
+          name_en?: string | null
+          slug?: string | null
+          sort_order?: number
+          title?: string | null
+          title_en?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          mode?: string
+          name?: string
+          name_en?: string | null
+          slug?: string | null
+          sort_order?: number
+          title?: string | null
+          title_en?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_article_likes: {
         Row: {
           article_id: string

@@ -91,14 +91,14 @@ const Favorites = () => {
         <div
           className={
             effectiveMode === "design" || effectiveMode === "дизайн"
-              ? "grid grid-cols-1 gap-6 w-full"
+              ? "grid grid-cols-1 gap-6 w-full items-stretch"
               : effectiveMode === "dictionary" || effectiveMode === "Словник"
-              ? "grid grid-cols-1 gap-4 w-full"
+              ? "grid grid-cols-1 gap-4 w-full items-stretch"
               : effectiveMode === "news"
               ? "flex flex-col max-w-5xl mx-auto w-full space-y-8"
               : effectiveMode === "templates" || effectiveMode === "palettes" || effectiveMode === "research"
-              ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              ? "grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch"
+              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch"
           }
         >
           {likedData.map((item: any, index: number) => (

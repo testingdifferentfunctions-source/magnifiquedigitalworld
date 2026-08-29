@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { AppMode, MODE_ACCENTS } from "@/hooks/useMode";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import {
   Category,
   useCreateSubcategory,
   useUpdateSubcategory,
   useDeleteSubcategory,
+  getSubcategoryTranslation,
 } from "@/hooks/useCategories";
 import {
   Dialog,
@@ -30,6 +32,8 @@ import { subcategorySchema } from "@/lib/validation";
 export interface PillItem {
   id: string;
   label: string;
+  name_en?: string;
+  title_en?: string;
   count?: number;
 }
 
@@ -55,6 +59,7 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
   selectedCategory,
 }) => {
   const { isAdmin } = useAuth();
+  const { language } = useLanguage();
   const resolvedAccent =
     accentColor || (mode ? MODE_ACCENTS[mode] : "#A07DFA") || "#A07DFA";
 
@@ -64,7 +69,7 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
 
   // Inline Subcategory Modal state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSub, setEditingSub] = useState<{ id?: string; name: string; name_en?: string; slug?: string; sort_order?: number } | null>(null);
+  const [editingSub, setEditingSub] = useState<{ id?: string; name: string; name_en?: string; title_en?: string; slug?: string; sort_order?: number } | null>(null);
   const [nameUk, setNameUk] = useState("");
   const [nameEn, setNameEn] = useState("");
   const [slug, setSlug] = useState("");
@@ -102,24 +107,26 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
   const handleOpenEditDialog = (pill: PillItem) => {
     if (!selectedCategory) return;
     const existing = (selectedCategory.subcategories || []).find(
-      (s) => s.name === pill.id || s.name === pill.label || s.id === pill.id
+      (s) => s.name === pill.id || s.name === pill.label || s.id === pill.id || s.name_en === pill.id || s.title_en === pill.id
     );
 
     setEditingSub(existing ? {
       id: existing.id,
-      name: existing.name,
-      name_en: existing.name_en || "",
+      name: existing.name || existing.title || "",
+      name_en: existing.name_en || existing.title_en || "",
+      title_en: existing.title_en || existing.name_en || "",
       slug: existing.slug || "",
       sort_order: existing.sort_order || 0,
     } : {
       name: pill.label,
-      name_en: "",
+      name_en: pill.name_en || pill.title_en || "",
+      title_en: pill.title_en || pill.name_en || "",
       slug: "",
       sort_order: 0,
     });
 
-    setNameUk(existing ? existing.name : pill.label);
-    setNameEn(existing?.name_en || "");
+    setNameUk(existing ? (existing.name || existing.title || "") : pill.label);
+    setNameEn(existing?.title_en || existing?.name_en || pill.name_en || pill.title_en || "");
     setSlug(existing?.slug || "");
     setSortOrder(existing?.sort_order || 0);
     setErrors({});
@@ -135,6 +142,7 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
     const validation = subcategorySchema.safeParse({
       name: nameUk.trim(),
       name_en: nameEn.trim() || undefined,
+      title_en: nameEn.trim() || undefined,
       category_id: selectedCategory.id,
       mode: selectedCategory.mode || mode,
       slug: slug.trim() || undefined,
@@ -156,8 +164,10 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
           id: editingSub.id,
           category_id: selectedCategory.id,
           name: nameUk.trim(),
+          title: nameUk.trim(),
           previousName: editingSub.name,
           name_en: nameEn.trim() || null,
+          title_en: nameEn.trim() || null,
           slug: slug.trim() || null,
           sort_order: sortOrder,
         });
@@ -166,7 +176,9 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
         await createSubcategory.mutateAsync({
           category_id: selectedCategory.id,
           name: nameUk.trim(),
+          title: nameUk.trim(),
           name_en: nameEn.trim() || null,
+          title_en: nameEn.trim() || null,
           slug: slug.trim() || null,
           sort_order: sortOrder,
           mode: selectedCategory.mode || mode,
@@ -185,7 +197,7 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
     if (!confirm(`Видалити підкатегорію "${pill.label}"?`)) return;
 
     const existing = (selectedCategory.subcategories || []).find(
-      (s) => s.name === pill.id || s.name === pill.label || s.id === pill.id
+      (s) => s.name === pill.id || s.name === pill.label || s.id === pill.id || s.name_en === pill.id || s.title_en === pill.id
     );
 
     try {
@@ -217,6 +229,7 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
       await createSubcategory.mutateAsync({
         category_id: selectedCategory.id,
         name: val,
+        title: val,
         mode: selectedCategory.mode || mode,
         sort_order: (selectedCategory.subcategories || []).length,
       });
@@ -249,6 +262,29 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
             const isActive = activePillId === pill.id;
             const isAll = pill.id === "all";
             const isResearch = mode === "research" || resolvedAccent.toLowerCase() === "#f78d60";
+            const isEn = language === "en";
+
+            // Find matching subcategory in selectedCategory to read dual-language names
+            const matchedSub = selectedCategory?.subcategories?.find(
+              (s) =>
+                s.name === pill.id ||
+                s.name === pill.label ||
+                s.id === pill.id ||
+                s.name_en === pill.id ||
+                s.title_en === pill.id
+            );
+
+            const displayLabel = isAll
+              ? isEn
+                ? "All"
+                : "Всі"
+              : isEn
+              ? matchedSub?.title_en ||
+                matchedSub?.name_en ||
+                pill.title_en ||
+                pill.name_en ||
+                getSubcategoryTranslation(matchedSub?.name || pill.label)
+              : matchedSub?.name || matchedSub?.title || pill.label;
 
             return (
               <div key={pill.id} className="relative inline-flex items-center group">
@@ -271,9 +307,9 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
                       ? "bg-[#141718]/80 text-neutral-300 border-[#F78D60]/50 hover:bg-[#F78D60]/15 hover:text-[#F78D60] hover:border-[#F78D60] active:scale-95 transition-colors duration-200"
                       : "text-white hover:bg-white/10 active:scale-95 opacity-90 hover:opacity-100 transition-colors duration-200"
                   }`}
-                  title={pill.label}
+                  title={displayLabel}
                 >
-                  <span>{pill.label}</span>
+                  <span>{displayLabel}</span>
                   {typeof pill.count === "number" && (
                     <span
                       style={{
@@ -401,7 +437,7 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="inline-sub-name-en">Назва англійською (EN, необов'язково)</Label>
+                <Label htmlFor="inline-sub-name-en">Назва англійською (EN, title_en)</Label>
                 <Input
                   id="inline-sub-name-en"
                   placeholder="напр. AsyncIO, Tailwind CSS"

@@ -304,8 +304,8 @@ const CategoryManager: React.FC = () => {
     setParentCatForSub(parentCat);
     if (sub) {
       setEditingSubcategory(sub);
-      setSubNameUk(sub.name);
-      setSubNameEn(sub.name_en || "");
+      setSubNameUk(sub.name || sub.title || "");
+      setSubNameEn(sub.title_en || sub.name_en || "");
       setSubSlug(sub.slug || "");
       setSubSortOrder(sub.sort_order || 0);
     } else {
@@ -325,6 +325,7 @@ const CategoryManager: React.FC = () => {
     const validation = subcategorySchema.safeParse({
       name: subNameUk.trim(),
       name_en: subNameEn.trim() || undefined,
+      title_en: subNameEn.trim() || undefined,
       category_id: parentCatForSub.id,
       mode: selectedMode,
       slug: subSlug.trim() || undefined,
@@ -346,8 +347,10 @@ const CategoryManager: React.FC = () => {
           id: editingSubcategory.id,
           category_id: parentCatForSub.id,
           name: subNameUk.trim(),
+          title: subNameUk.trim(),
           previousName: editingSubcategory.name,
           name_en: subNameEn.trim() || null,
+          title_en: subNameEn.trim() || null,
           slug: subSlug.trim() || null,
           sort_order: subSortOrder,
         });
@@ -356,7 +359,9 @@ const CategoryManager: React.FC = () => {
         await createSubcategory.mutateAsync({
           category_id: parentCatForSub.id,
           name: subNameUk.trim(),
+          title: subNameUk.trim(),
           name_en: subNameEn.trim() || null,
+          title_en: subNameEn.trim() || null,
           slug: subSlug.trim() || null,
           sort_order: subSortOrder,
           mode: selectedMode,
@@ -613,10 +618,10 @@ const CategoryManager: React.FC = () => {
                           }}
                           className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full text-xs font-semibold border transition-all hover:scale-105 group select-none shadow-xs"
                         >
-                          <span className="text-foreground">{sub.name}</span>
-                          {sub.name_en && (
+                          <span className="text-foreground">{sub.name || sub.title}</span>
+                          {(sub.title_en || sub.name_en) && (
                             <span className="text-[10px] text-muted-foreground font-mono">
-                              ({sub.name_en})
+                              ({sub.title_en || sub.name_en})
                             </span>
                           )}
 

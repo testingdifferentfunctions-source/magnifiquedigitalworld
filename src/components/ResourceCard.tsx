@@ -1,5 +1,6 @@
 import { Heart, Share2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export interface ResourceItem {
   id: string;
@@ -20,12 +21,14 @@ interface ResourceCardProps {
 }
 
 const ResourceCard = ({ item, index = 0, onDetails, onTry, onLike, onShare }: ResourceCardProps) => {
+  const { t } = useLanguage();
+
   return (
     <article
-      className="group bg-card border border-border rounded-xl overflow-hidden flex flex-col animate-fade-in transition-all duration-300 hover:border-[#5DA7DB]/60 hover:shadow-[0_0_20px_rgba(93,167,219,0.25)]"
+      className="group bg-card border border-border rounded-xl overflow-hidden flex flex-col h-full animate-fade-in transition-all duration-300 hover:border-[#5DA7DB]/60 hover:shadow-[0_0_20px_rgba(93,167,219,0.25)]"
       style={{ animationDelay: `${index * 80}ms` }}
     >
-      <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden relative">
+      <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden relative shrink-0">
         {item.image ? (
           <img
             src={item.image}
@@ -39,21 +42,21 @@ const ResourceCard = ({ item, index = 0, onDetails, onTry, onLike, onShare }: Re
       </div>
 
       <div className="p-5 flex flex-col gap-3 flex-1">
-        <div>
+        <div className="flex-1 flex flex-col">
           <h3 className="text-lg font-semibold mb-1 group-hover:text-[#5DA7DB] transition-colors">{item.title}</h3>
           <p className="text-sm text-muted-foreground line-clamp-3">{item.description}</p>
         </div>
 
         <div className="mt-auto flex flex-col gap-2 pt-2">
           <Button className="w-full font-medium" onClick={() => onDetails?.(item)}>
-            Деталі
+            {t('card.details')}
           </Button>
           <Button
             variant="outline"
             className="w-full bg-transparent border-[#5DA7DB] text-[#5DA7DB] hover:bg-[#5DA7DB]/10 hover:text-[#5DA7DB] hover:border-[#5DA7DB] font-semibold shadow-none transition-colors"
             onClick={() => onTry?.(item)}
           >
-            Спробувати
+            {t('card.try')}
           </Button>
         </div>
       </div>
@@ -62,7 +65,7 @@ const ResourceCard = ({ item, index = 0, onDetails, onTry, onLike, onShare }: Re
         <button
           type="button"
           onClick={() => onLike?.(item)}
-          aria-label="Вподобати"
+          aria-label={t('card.like')}
           className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground transition-colors hover:text-primary"
         >
           <Heart className="w-4 h-4" aria-hidden="true" />
@@ -71,11 +74,11 @@ const ResourceCard = ({ item, index = 0, onDetails, onTry, onLike, onShare }: Re
         <button
           type="button"
           onClick={() => onShare?.(item)}
-          aria-label="Поділитися"
+          aria-label={t('card.share')}
           className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground border-l border-border transition-colors hover:text-primary"
         >
           <Share2 className="w-4 h-4" aria-hidden="true" />
-          <span className="font-medium">Поділитися</span>
+          <span className="font-medium">{t('card.share')}</span>
         </button>
       </div>
     </article>

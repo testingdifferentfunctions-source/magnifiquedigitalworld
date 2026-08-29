@@ -14,7 +14,7 @@ import { ItemTagsList } from "@/components/ItemTagBadge";
 const ResourceDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: entry, isLoading } = useModeEntry(id);
   const toggleLike = useToggleModeEntryLike();
 
@@ -30,7 +30,7 @@ const ResourceDetail = () => {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <p className="text-muted-foreground">Завантаження...</p>
+          <p className="text-muted-foreground">{language === "en" ? "Loading..." : "Завантаження..."}</p>
         </div>
       </PageLayout>
     );
@@ -45,7 +45,7 @@ const ResourceDetail = () => {
           </h1>
           <Button variant="outline" className="hover:text-black" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
         </div>
       </PageLayout>
@@ -70,7 +70,7 @@ const ResourceDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Ресурси — Magnifique numérique`}
+        title={`${loc.title} — ${language === "en" ? "Resources" : "Ресурси"}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/resource/${entry.id}`}
         image={entry.image_url ?? undefined}
@@ -87,7 +87,7 @@ const ResourceDetail = () => {
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
         </div>
 
@@ -118,7 +118,7 @@ const ResourceDetail = () => {
               className="bg-[#5DA7DB] hover:bg-[#4b96cb] text-black font-semibold shadow-sm transition-colors"
             >
               <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
-                Спробувати
+                {t('detail.try_it')}
               </a>
             </Button>
           )}
@@ -127,7 +127,7 @@ const ResourceDetail = () => {
             variant="secondary"
             onClick={handleLike}
             aria-pressed={liked}
-            aria-label="Вподобати"
+            aria-label={t('detail.like')}
             className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60 font-medium"
           >
             <Heart
@@ -142,10 +142,11 @@ const ResourceDetail = () => {
           <Button
             variant="secondary"
             onClick={() => shareEntry(entry.id, loc.title, `/resource/${entry.id}`)}
+            aria-label={t('detail.share')}
             className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60 font-medium"
           >
             <Share2 className="w-4 h-4 mr-2" aria-hidden="true" />
-            Поділитися
+            {t('detail.share')}
           </Button>
         </div>
 
@@ -171,7 +172,7 @@ const ResourceDetail = () => {
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground underline hover:text-foreground transition-colors"
               >
-                Джерело зображення
+                {t('detail.image_source')}
               </a>
             </figcaption>
           )}

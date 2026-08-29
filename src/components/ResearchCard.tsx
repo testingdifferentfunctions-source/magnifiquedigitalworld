@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Heart, Share2, ImageIcon, Sparkles } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export interface ResearchCardItem {
   id: string;
@@ -33,6 +34,7 @@ const ResearchCard = ({
   isLiked: initialLiked = false,
 }: ResearchCardProps) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [liked, setLiked] = useState(initialLiked);
   const [likesCount, setLikesCount] = useState(item.likes ?? 0);
 
@@ -88,7 +90,7 @@ const ResearchCard = ({
 
       {/* Body: Title and short description */}
       <div id={`research-body-${item.id}`} className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
-        <div>
+        <div className="flex-1 flex flex-col">
           <h2
             onClick={handleRead}
             className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-100 group-hover:text-[#F78D60] transition-colors duration-200 cursor-pointer leading-snug"
@@ -103,7 +105,7 @@ const ResearchCard = ({
         {/* Footer: Read button on the left, Like and Share grouped together on the right */}
         <footer
           id={`research-footer-${item.id}`}
-          className="mt-6 pt-4 border-t border-[#222B2C] flex items-center justify-between gap-3"
+          className="mt-auto pt-4 border-t border-[#222B2C] flex items-center justify-between gap-3"
         >
           {/* Left: "Прочитати" (Read) button with #F78D60 accent */}
           <Button
@@ -112,7 +114,7 @@ const ResearchCard = ({
             onClick={handleRead}
             className="bg-[#F78D60] hover:bg-[#e67c4e] active:bg-[#d56d40] text-[#0F0F0F] font-bold px-5 py-2 rounded-lg transition-colors h-10 shadow-sm flex items-center gap-2 border border-[#F78D60]/50"
           >
-            Прочитати
+            {t('card.read')}
           </Button>
 
           {/* Right: Grouped Like and Share buttons */}
@@ -124,7 +126,7 @@ const ResearchCard = ({
               variant="secondary"
               size="icon"
               onClick={handleLike}
-              aria-label="Вподобати"
+              aria-label={t('card.like')}
               aria-pressed={liked}
               className={`bg-[#192224] hover:bg-[#222F33] text-neutral-200 hover:text-[#F78D60] border border-[#253538] hover:border-[#F78D60]/40 h-10 w-10 shrink-0 rounded-lg transition-colors ${
                 liked ? "text-[#F78D60] border-[#F78D60]/50" : ""
@@ -145,7 +147,7 @@ const ResearchCard = ({
               variant="secondary"
               size="icon"
               onClick={handleShare}
-              aria-label="Поділитися"
+              aria-label={t('card.share')}
               className="bg-[#192224] hover:bg-[#222F33] text-neutral-200 hover:text-[#F78D60] border border-[#253538] hover:border-[#F78D60]/40 h-10 w-10 shrink-0 rounded-lg transition-colors"
             >
               <Share2 className="w-4 h-4" aria-hidden="true" />

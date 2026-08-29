@@ -29,7 +29,7 @@ import { ItemTagsList } from "@/components/ItemTagBadge";
 const PaletteDetail = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: entry, isLoading } = useModeEntry(id);
   const toggleLike = useToggleModeEntryLike();
 
@@ -53,7 +53,7 @@ const PaletteDetail = () => {
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopiedValue(text);
-    toast.success(`Скопійовано ${label}: ${text}`);
+    toast.success(`${language === "en" ? "Copied" : "Скопійовано"} ${label}: ${text}`);
     setTimeout(() => setCopiedValue(null), 2000);
   };
 
@@ -61,7 +61,7 @@ const PaletteDetail = () => {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <p className="text-muted-foreground">Завантаження палітри...</p>
+          <p className="text-muted-foreground">{language === "en" ? "Loading palette..." : "Завантаження палітри..."}</p>
         </div>
       </PageLayout>
     );
@@ -76,7 +76,7 @@ const PaletteDetail = () => {
           </h1>
           <Button variant="outline" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
         </div>
       </PageLayout>
@@ -100,7 +100,7 @@ const PaletteDetail = () => {
   return (
     <PageLayout>
       <SEO
-        title={`${loc.title} — Палітра кольорів`}
+        title={`${loc.title} — ${t('detail.color_palette')}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/palette/${entry.id}`}
         image={entry.image_url ?? undefined}
@@ -118,7 +118,7 @@ const PaletteDetail = () => {
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {language === "en" ? "Back" : "Назад"}
+            {t('detail.back')}
           </Button>
         </div>
 
@@ -154,7 +154,7 @@ const PaletteDetail = () => {
                 className="bg-[#8ABEB9] hover:bg-[#78aca7] text-[#141414] font-semibold h-10 px-5 gap-2 shrink-0 shadow-md"
               >
                 <a href={entry.external_url} target="_blank" rel="noopener noreferrer">
-                  Переглянути сайт
+                  {t('detail.view_site')}
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 </a>
               </Button>
@@ -164,7 +164,7 @@ const PaletteDetail = () => {
               variant="secondary"
               onClick={handleLike}
               aria-pressed={liked}
-              aria-label="Вподобати"
+              aria-label={t('detail.like')}
               className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 px-4 text-xs sm:text-sm font-medium rounded-lg transition-colors"
             >
               <Heart
@@ -179,11 +179,11 @@ const PaletteDetail = () => {
             <Button
               variant="secondary"
               onClick={() => shareEntry(entry.id, loc.title, `/palette/${entry.id}`)}
-              aria-label="Поділитися"
+              aria-label={t('detail.share')}
               className="bg-[#201E1E] hover:bg-[#2A2727] text-neutral-200 hover:text-[#8ABEB9] border border-[#322F2F] h-10 px-4 text-xs sm:text-sm font-medium rounded-lg transition-colors"
             >
               <Share2 className="w-4 h-4 mr-2" aria-hidden="true" />
-              Поділитися
+              {t('detail.share')}
             </Button>
           </div>
 
@@ -200,7 +200,7 @@ const PaletteDetail = () => {
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-[#242424] text-neutral-500 gap-3">
                   <ImageIcon className="w-16 h-16" aria-hidden="true" />
-                  <span className="text-sm">Прев'ю інтерфейсу сайту</span>
+                  <span className="text-sm">{t('card.site_preview')}</span>
                 </div>
               )}
             </div>
@@ -213,7 +213,7 @@ const PaletteDetail = () => {
                   rel="noopener noreferrer"
                   className="text-xs text-neutral-400 underline hover:text-[#8ABEB9] transition-colors"
                 >
-                  Джерело знімку сайту
+                  {t('detail.screenshot_source')}
                 </a>
               </figcaption>
             )}
@@ -225,10 +225,10 @@ const PaletteDetail = () => {
           <div className="mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-neutral-100 tracking-tight flex items-center gap-3">
               <span className="w-2 h-6 bg-[#8ABEB9] rounded-full inline-block" />
-              Палітра кольорів (Color Palette)
+              {t('detail.color_palette')}
             </h2>
             <p className="mt-1 text-sm text-neutral-400">
-              Детальні характеристики кожного кольору з конвертацією значень та готовими фрагментами коду для розробки.
+              {t('detail.color_palette_desc')}
             </p>
           </div>
 
@@ -391,7 +391,7 @@ const PaletteDetail = () => {
                           <div className="flex items-center gap-2">
                             <Code2 className="w-4 h-4 text-[#8ABEB9]" />
                             <span className="text-xs font-bold uppercase tracking-wider text-neutral-300">
-                              Інтеграція в код
+                              {t('detail.code_integration')}
                             </span>
                           </div>
 
@@ -444,7 +444,7 @@ const PaletteDetail = () => {
                             className="absolute top-2.5 right-2.5 h-7 px-2.5 text-[11px] bg-[#1E1C1C] hover:bg-[#2A2727] text-neutral-200 border border-[#353232] shadow-sm gap-1"
                           >
                             <Copy className="w-3 h-3" />
-                            Копіювати код
+                            {t('detail.copy_code')}
                           </Button>
                         </div>
                       </div>

@@ -192,8 +192,23 @@ export const subcategorySchema = z.object({
     .string()
     .trim()
     .min(1, { message: 'Назва підкатегорії обов\'язкова' })
-    .max(100, { message: 'Назва занадто довга' }),
+    .max(100, { message: 'Назва занадто довга' })
+    .optional(),
+  title: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   name_en: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  title_en: z
     .string()
     .trim()
     .max(100)
@@ -213,6 +228,9 @@ export const subcategorySchema = z.object({
     .nullable()
     .or(z.literal('')),
   sort_order: z.number().int().default(0).optional(),
+}).refine((data) => (data.name && data.name.trim().length > 0) || (data.title && data.title.trim().length > 0), {
+  message: 'Назва підкатегорії обов\'язкова',
+  path: ['name'],
 });
 
 // URL sanitization

@@ -2,6 +2,7 @@ import { Heart, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Article } from "@/data/articles";
 import { shareArticle } from "@/lib/share";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface ArticleCardProps {
   article: Article;
@@ -9,6 +10,7 @@ interface ArticleCardProps {
 }
 
 const ArticleCard = ({ article, index = 0 }: ArticleCardProps) => {
+  const { t } = useLanguage();
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -28,8 +30,8 @@ const ArticleCard = ({ article, index = 0 }: ArticleCardProps) => {
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
           />
         </div>
-        <div className="p-5 flex flex-col flex-grow">
-          <div className="flex-grow">
+        <div className="p-5 flex flex-col flex-1">
+          <div className="flex-1 flex flex-col">
             <h3 className="text-lg font-semibold mb-2 line-clamp-2">
               {article.title}
             </h3>
@@ -45,7 +47,7 @@ const ArticleCard = ({ article, index = 0 }: ArticleCardProps) => {
             <button
               type="button"
               onClick={handleShare}
-              aria-label="Поділитися"
+              aria-label={t('card.share')}
               className="inline-flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground transition-colors duration-200 hover:text-primary-foreground hover:bg-primary cursor-pointer"
             >
               <Share2 className="w-4 h-4" />
