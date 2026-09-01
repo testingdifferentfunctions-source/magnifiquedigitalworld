@@ -23,6 +23,7 @@ import { localizeEntry, useModeEntry, useToggleModeEntryLike } from "@/hooks/use
 import { blocksToPlainText } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
 import { ItemTagsList } from "@/components/ItemTagBadge";
+import { logAnalyticsEvent } from "@/lib/analytics";
 
 type CodeTab = "html" | "css" | "scss" | "tailwind";
 
@@ -48,6 +49,9 @@ export const DesignDetail = () => {
   useEffect(() => {
     setLiked(getLikedEntries().includes(id));
     setLikeOffset(0);
+    if (id) {
+      logAnalyticsEvent("view", "design", id);
+    }
   }, [id]);
 
   const loc = entry ? localizeEntry(entry, language) : null;

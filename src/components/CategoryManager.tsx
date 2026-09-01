@@ -47,7 +47,15 @@ import {
   Search,
   Sparkles,
   BarChart3,
+  Wrench,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { categorySchema, subcategorySchema } from "@/lib/validation";
@@ -122,6 +130,13 @@ const MODE_CONFIG: {
     icon: BookMarked,
     accent: "#F3CD97",
   },
+  {
+    id: "tools",
+    label: "Інструменти",
+    subLabel: "Утиліти та онлайн-інструменти",
+    icon: Wrench,
+    accent: "#BDA6CE",
+  },
 ];
 
 const CategoryManager: React.FC = () => {
@@ -143,6 +158,7 @@ const CategoryManager: React.FC = () => {
   // Category Dialog State
   const [isCatDialogOpen, setIsCatDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [catMode, setCatMode] = useState<CategoryMode>("articles");
   const [catNameUk, setCatNameUk] = useState("");
   const [catNameEn, setCatNameEn] = useState("");
   const [catSlug, setCatSlug] = useState("");
@@ -155,6 +171,7 @@ const CategoryManager: React.FC = () => {
   const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
   const [parentCatForSub, setParentCatForSub] = useState<Category | null>(null);
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
+  const [subMode, setSubMode] = useState<CategoryMode>("articles");
   const [subNameUk, setSubNameUk] = useState("");
   const [subNameEn, setSubNameEn] = useState("");
   const [subSlug, setSubSlug] = useState("");
@@ -219,6 +236,7 @@ const CategoryManager: React.FC = () => {
     setCatErrors({});
     if (cat) {
       setEditingCategory(cat);
+      setCatMode(normalizeCategoryMode(cat.mode_slug || cat.mode || selectedMode));
       setCatNameUk(cat.name);
       setCatNameEn(cat.name_en || "");
       setCatSlug(cat.slug || "");
@@ -226,6 +244,7 @@ const CategoryManager: React.FC = () => {
       setCatSortOrder(cat.sort_order || 0);
     } else {
       setEditingCategory(null);
+      setCatMode(selectedMode);
       setCatNameUk("");
       setCatNameEn("");
       setCatSlug("");
@@ -240,7 +259,8 @@ const CategoryManager: React.FC = () => {
     const validation = categorySchema.safeParse({
       name: catNameUk.trim(),
       name_en: catNameEn.trim() || undefined,
-      mode: selectedMode,
+      mode: catMode,
+      mode_slug: catMode,
       slug: catSlug.trim() || undefined,
       image_url: catImage.trim() || undefined,
       sort_order: catSortOrder,
@@ -264,7 +284,8 @@ const CategoryManager: React.FC = () => {
           slug: catSlug.trim() || null,
           image_url: catImage.trim() || null,
           sort_order: catSortOrder,
-          mode: selectedMode,
+          mode: catMode,
+          mode_slug: catMode,
         });
         toast.success("Категорію успішно оновлено");
       } else {
@@ -274,7 +295,8 @@ const CategoryManager: React.FC = () => {
           slug: catSlug.trim() || null,
           image_url: catImage.trim() || null,
           sort_order: catSortOrder,
-          mode: selectedMode,
+          mode: catMode,
+          mode_slug: catMode,
           sub_topics: [],
         });
         toast.success("Категорію успішно створено");
@@ -304,12 +326,14 @@ const CategoryManager: React.FC = () => {
     setParentCatForSub(parentCat);
     if (sub) {
       setEditingSubcategory(sub);
+      setSubMode(normalizeCategoryMode(sub.mode_slug || sub.mode || parentCat.mode_slug || parentCat.mode || selectedMode));
       setSubNameUk(sub.name || sub.title || "");
       setSubNameEn(sub.title_en || sub.name_en || "");
       setSubSlug(sub.slug || "");
       setSubSortOrder(sub.sort_order || 0);
     } else {
       setEditingSubcategory(null);
+      setSubMode(normalizeCategoryMode(parentCat.mode_slug || parentCat.mode || selectedMode));
       setSubNameUk("");
       setSubNameEn("");
       setSubSlug("");
@@ -320,37 +344,58 @@ const CategoryManager: React.FC = () => {
 
   // Save Subcategory
   const handleSaveSubcategory = async () => {
+    // 1. Strict JS-Level Validation: English name is mandatory
+    if (!subNameEn || subNameEn.trim() === "") {
+      toast.error("Англійська назва підрозділу є обов'язковою (English title is required)");
+      setSubErrors((prev) => ({
+        ...prev,
+        name_en: "Англійська назва підрозділу є обов'язковою (English title is required)",
+      }));
+      return; // STOP execution completely
+    }
+
+    // 2. Strict JS-Level Validation: Ukrainian name is mandatory
+    if (!subNameUk || subNameUk.trim() === "") {
+      toast.error("Українська назва підрозділу є обов'язковою (Ukrainian title is required)");
+      setSubErrors((prev) => ({
+        ...prev,
+        name: "Українська назва підрозділу є обов'язковою (Ukrainian title is required)",
+      }));
+      return; // STOP execution completely
+    }
+
     if (!parentCatForSub) return;
 
-    const validation = subcategorySchema.safeParse({
-      name: subNameUk.trim(),
-      name_en: subNameEn.trim() || undefined,
-      title_en: subNameEn.trim() || undefined,
+    const ukrainianTitleState = subNameUk.trim();
+    const englishTitleState = subNameEn.trim();
+
+    // 3. Bulletproof Explicit Payload
+    const payload = {
       category_id: parentCatForSub.id,
-      mode: selectedMode,
+      name: ukrainianTitleState,
+      title: ukrainianTitleState,
+      name_en: englishTitleState,
+      title_en: englishTitleState,
+      mode: subMode,
+      mode_slug: subMode,
       slug: subSlug.trim() || undefined,
       sort_order: subSortOrder,
-    });
+    };
 
-    if (!validation.success) {
-      const newErrors: Record<string, string> = {};
-      validation.error.errors.forEach((err) => {
-        newErrors[err.path[0] as string] = err.message;
-      });
-      setSubErrors(newErrors);
-      return;
-    }
+    console.log("Subcategory Payload:", payload);
 
     try {
       if (editingSubcategory) {
         await updateSubcategory.mutateAsync({
           id: editingSubcategory.id,
-          category_id: parentCatForSub.id,
-          name: subNameUk.trim(),
-          title: subNameUk.trim(),
           previousName: editingSubcategory.name,
-          name_en: subNameEn.trim() || null,
-          title_en: subNameEn.trim() || null,
+          category_id: parentCatForSub.id,
+          name: ukrainianTitleState,
+          title: ukrainianTitleState,
+          name_en: englishTitleState,
+          title_en: englishTitleState,
+          mode: subMode,
+          mode_slug: subMode,
           slug: subSlug.trim() || null,
           sort_order: subSortOrder,
         });
@@ -358,13 +403,14 @@ const CategoryManager: React.FC = () => {
       } else {
         await createSubcategory.mutateAsync({
           category_id: parentCatForSub.id,
-          name: subNameUk.trim(),
-          title: subNameUk.trim(),
-          name_en: subNameEn.trim() || null,
-          title_en: subNameEn.trim() || null,
+          name: ukrainianTitleState,
+          title: ukrainianTitleState,
+          name_en: englishTitleState,
+          title_en: englishTitleState,
+          mode: subMode,
+          mode_slug: subMode,
           slug: subSlug.trim() || null,
           sort_order: subSortOrder,
-          mode: selectedMode,
         });
         toast.success("Підкатегорію додано");
       }
@@ -375,23 +421,19 @@ const CategoryManager: React.FC = () => {
     }
   };
 
-  // Quick Inline Add Subcategory
-  const handleQuickAddSubcategory = async (parentCat: Category) => {
+  // Quick Inline Add Subcategory -> Opens subcategory dialog to ensure English name is entered
+  const handleQuickAddSubcategory = (parentCat: Category) => {
     const text = (quickSubName[parentCat.id] || "").trim();
-    if (!text) return;
-    try {
-      await createSubcategory.mutateAsync({
-        category_id: parentCat.id,
-        name: text,
-        mode: selectedMode,
-        sort_order: (parentCat.subcategories || []).length,
-      });
-      setQuickSubName((prev) => ({ ...prev, [parentCat.id]: "" }));
-      toast.success(`Підкатегорію "${text}" додано`);
-    } catch (err: any) {
-      console.error("Quick add subcategory error:", err);
-      toast.error(err?.message || "Помилка додавання");
-    }
+    setParentCatForSub(parentCat);
+    setEditingSubcategory(null);
+    setSubMode(normalizeCategoryMode(parentCat.mode_slug || parentCat.mode || selectedMode));
+    setSubNameUk(text);
+    setSubNameEn("");
+    setSubSlug("");
+    setSubSortOrder((parentCat.subcategories || []).length);
+    setSubErrors({});
+    setIsSubDialogOpen(true);
+    setQuickSubName((prev) => ({ ...prev, [parentCat.id]: "" }));
   };
 
   // Delete Subcategory
@@ -704,6 +746,38 @@ const CategoryManager: React.FC = () => {
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
+              <Label htmlFor="cat-mode-select">
+                Режим платформи (Mode) <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={catMode}
+                onValueChange={(val: string) => setCatMode(normalizeCategoryMode(val))}
+              >
+                <SelectTrigger id="cat-mode-select" className="w-full bg-background border-border">
+                  <SelectValue placeholder="Оберіть режим" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {MODE_CONFIG.map((m) => {
+                    const Icon = m.icon;
+                    return (
+                      <SelectItem key={m.id} value={m.id} className="cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: m.accent }}
+                          />
+                          <Icon className="w-4 h-4 shrink-0" style={{ color: m.accent }} />
+                          <span className="font-medium">{m.label}</span>
+                          <span className="text-xs text-muted-foreground font-mono">({m.id})</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="cat-name-uk">
                 Назва (Українською) <span className="text-destructive">*</span>
               </Label>
@@ -832,6 +906,38 @@ const CategoryManager: React.FC = () => {
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
+              <Label htmlFor="sub-mode-select">
+                Режим платформи (Mode) <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={subMode}
+                onValueChange={(val: string) => setSubMode(normalizeCategoryMode(val))}
+              >
+                <SelectTrigger id="sub-mode-select" className="w-full bg-background border-border">
+                  <SelectValue placeholder="Оберіть режим" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {MODE_CONFIG.map((m) => {
+                    const Icon = m.icon;
+                    return (
+                      <SelectItem key={m.id} value={m.id} className="cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: m.accent }}
+                          />
+                          <Icon className="w-4 h-4 shrink-0" style={{ color: m.accent }} />
+                          <span className="font-medium">{m.label}</span>
+                          <span className="text-xs text-muted-foreground font-mono">({m.id})</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="sub-name-uk">
                 Назва підкатегорії (Українською) <span className="text-destructive">*</span>
               </Label>
@@ -849,13 +955,21 @@ const CategoryManager: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="sub-name-en">Назва (English - опціонально)</Label>
+              <Label htmlFor="sub-name-en">
+                Назва (English) <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="sub-name-en"
+                required
                 placeholder="e.g. FastAPI, Syntax, React"
                 value={subNameEn}
-                onChange={(e) => setSubNameEn(e.target.value)}
+                onChange={(e) => {
+                  setSubNameEn(e.target.value);
+                  if (subErrors.name_en) setSubErrors((prev) => ({ ...prev, name_en: "" }));
+                }}
+                className={subErrors.name_en ? "border-destructive" : ""}
               />
+              {subErrors.name_en && <p className="text-xs text-destructive">{subErrors.name_en}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3">

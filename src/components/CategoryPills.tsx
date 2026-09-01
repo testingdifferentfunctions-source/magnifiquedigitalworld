@@ -1,33 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { AppMode, MODE_ACCENTS } from "@/hooks/useMode";
-import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
-import {
-  Category,
-  useCreateSubcategory,
-  useUpdateSubcategory,
-  useDeleteSubcategory,
-  getSubcategoryTranslation,
-} from "@/hooks/useCategories";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, MoreVertical, Sparkles } from "lucide-react";
-import { toast } from "sonner";
-import { subcategorySchema } from "@/lib/validation";
+import { Category } from "@/hooks/useCategories";
 
 export interface PillItem {
   id: string;
@@ -47,8 +21,6 @@ interface CategoryPillsProps {
   selectedCategory?: Category | null;
 }
 
-const ITEMS_PER_ROW = 8;
-
 const CategoryPills: React.FC<CategoryPillsProps> = ({
   pills,
   activePillId,
@@ -56,193 +28,12 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
   accentColor,
   mode = "articles",
   className = "",
-  selectedCategory,
 }) => {
-  const { isAdmin } = useAuth();
   const { language } = useLanguage();
   const resolvedAccent =
     accentColor || (mode ? MODE_ACCENTS[mode] : "#A07DFA") || "#A07DFA";
 
-  const createSubcategory = useCreateSubcategory();
-  const updateSubcategory = useUpdateSubcategory();
-  const deleteSubcategory = useDeleteSubcategory();
-
-  // Inline Subcategory Modal state
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSub, setEditingSub] = useState<{ id?: string; name: string; name_en?: string; title_en?: string; slug?: string; sort_order?: number } | null>(null);
-  const [nameUk, setNameUk] = useState("");
-  const [nameEn, setNameEn] = useState("");
-  const [slug, setSlug] = useState("");
-  const [sortOrder, setSortOrder] = useState<number>(0);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Quick inline add state
-  const [quickInput, setQuickInput] = useState("");
-  const [isQuickAdding, setIsQuickAdding] = useState(false);
-
-  // Chunk pills into rows of maximum 8 items
-  const chunkedPills = React.useMemo(() => {
-    if (!pills || pills.length === 0) return [];
-    const chunks: PillItem[][] = [];
-    for (let i = 0; i < pills.length; i += ITEMS_PER_ROW) {
-      chunks.push(pills.slice(i, i + ITEMS_PER_ROW));
-    }
-    return chunks;
-  }, [pills]);
-
-  const handleOpenAddDialog = () => {
-    if (!selectedCategory) {
-      toast.info("Оберіть конкретний розділ у випадаючому списку, щоб додати до нього підкатегорію");
-      return;
-    }
-    setEditingSub(null);
-    setNameUk("");
-    setNameEn("");
-    setSlug("");
-    setSortOrder((selectedCategory.subcategories || []).length);
-    setErrors({});
-    setIsDialogOpen(true);
-  };
-
-  const handleOpenEditDialog = (pill: PillItem) => {
-    if (!selectedCategory) return;
-    const existing = (selectedCategory.subcategories || []).find(
-      (s) => s.name === pill.id || s.name === pill.label || s.id === pill.id || s.name_en === pill.id || s.title_en === pill.id
-    );
-
-    setEditingSub(existing ? {
-      id: existing.id,
-      name: existing.name || existing.title || "",
-      name_en: existing.name_en || existing.title_en || "",
-      title_en: existing.title_en || existing.name_en || "",
-      slug: existing.slug || "",
-      sort_order: existing.sort_order || 0,
-    } : {
-      name: pill.label,
-      name_en: pill.name_en || pill.title_en || "",
-      title_en: pill.title_en || pill.name_en || "",
-      slug: "",
-      sort_order: 0,
-    });
-
-    setNameUk(existing ? (existing.name || existing.title || "") : pill.label);
-    setNameEn(existing?.title_en || existing?.name_en || pill.name_en || pill.title_en || "");
-    setSlug(existing?.slug || "");
-    setSortOrder(existing?.sort_order || 0);
-    setErrors({});
-    setIsDialogOpen(true);
-  };
-
-  const handleSaveSubcategory = async () => {
-    if (!selectedCategory) {
-      toast.error("Не обрано розділ");
-      return;
-    }
-
-    const validation = subcategorySchema.safeParse({
-      name: nameUk.trim(),
-      name_en: nameEn.trim() || undefined,
-      title_en: nameEn.trim() || undefined,
-      category_id: selectedCategory.id,
-      mode: selectedCategory.mode || mode,
-      slug: slug.trim() || undefined,
-      sort_order: sortOrder,
-    });
-
-    if (!validation.success) {
-      const errMap: Record<string, string> = {};
-      validation.error.errors.forEach((err) => {
-        errMap[err.path[0] as string] = err.message;
-      });
-      setErrors(errMap);
-      return;
-    }
-
-    try {
-      if (editingSub && editingSub.id) {
-        await updateSubcategory.mutateAsync({
-          id: editingSub.id,
-          category_id: selectedCategory.id,
-          name: nameUk.trim(),
-          title: nameUk.trim(),
-          previousName: editingSub.name,
-          name_en: nameEn.trim() || null,
-          title_en: nameEn.trim() || null,
-          slug: slug.trim() || null,
-          sort_order: sortOrder,
-        });
-        toast.success("Підкатегорію оновлено");
-      } else {
-        await createSubcategory.mutateAsync({
-          category_id: selectedCategory.id,
-          name: nameUk.trim(),
-          title: nameUk.trim(),
-          name_en: nameEn.trim() || null,
-          title_en: nameEn.trim() || null,
-          slug: slug.trim() || null,
-          sort_order: sortOrder,
-          mode: selectedCategory.mode || mode,
-        });
-        toast.success("Підкатегорію додано");
-      }
-      setIsDialogOpen(false);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message || "Помилка збереження");
-    }
-  };
-
-  const handleDeleteSubcategory = async (pill: PillItem) => {
-    if (!selectedCategory) return;
-    if (!confirm(`Видалити підкатегорію "${pill.label}"?`)) return;
-
-    const existing = (selectedCategory.subcategories || []).find(
-      (s) => s.name === pill.id || s.name === pill.label || s.id === pill.id || s.name_en === pill.id || s.title_en === pill.id
-    );
-
-    try {
-      await deleteSubcategory.mutateAsync({
-        id: existing?.id || pill.id,
-        category_id: selectedCategory.id,
-        name: pill.label,
-      });
-      if (activePillId === pill.id) {
-        onSelectPill("all");
-      }
-      toast.success(`Підкатегорію "${pill.label}" видалено`);
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Помилка видалення підкатегорії");
-    }
-  };
-
-  const handleQuickAdd = async () => {
-    if (!selectedCategory) {
-      toast.info("Оберіть конкретний розділ у випадаючому списку, щоб додати підкатегорію");
-      return;
-    }
-    const val = quickInput.trim();
-    if (!val) return;
-
-    setIsQuickAdding(true);
-    try {
-      await createSubcategory.mutateAsync({
-        category_id: selectedCategory.id,
-        name: val,
-        title: val,
-        mode: selectedCategory.mode || mode,
-        sort_order: (selectedCategory.subcategories || []).length,
-      });
-      setQuickInput("");
-      toast.success(`Підкатегорію "${val}" додано`);
-    } catch (err: any) {
-      toast.error(err?.message || "Помилка додавання");
-    } finally {
-      setIsQuickAdding(false);
-    }
-  };
-
-  if (!pills || (pills.length <= 1 && !isAdmin)) {
+  if (!pills || pills.length <= 1) {
     return null;
   }
 
@@ -253,232 +44,63 @@ const CategoryPills: React.FC<CategoryPillsProps> = ({
       role="tablist"
       aria-label="Підкатегорії та фільтри"
     >
-      {chunkedPills.map((chunk, rowIndex) => (
-        <div
-          key={`pill-row-${rowIndex}`}
-          className="flex flex-wrap gap-3 items-center mb-3 last:mb-0"
-        >
-          {chunk.map((pill) => {
-            const isActive = activePillId === pill.id;
-            const isAll = pill.id === "all";
-            const isResearch = mode === "research" || resolvedAccent.toLowerCase() === "#f78d60";
-            const isEn = language === "en";
+      <div className="flex flex-wrap items-center gap-3 w-full min-h-[48px]">
+        {pills.map((pill) => {
+          const isActive = activePillId === pill.id;
+          const isAll = pill.id === "all";
+          const isResearch = mode === "research" || resolvedAccent.toLowerCase() === "#f78d60";
+          const displayLabel = isAll
+            ? language === "en"
+              ? "All"
+              : "Всі"
+            : language === "en" && (pill.title_en || pill.name_en)
+            ? pill.title_en || pill.name_en
+            : pill.label;
 
-            // Find matching subcategory in selectedCategory to read dual-language names
-            const matchedSub = selectedCategory?.subcategories?.find(
-              (s) =>
-                s.name === pill.id ||
-                s.name === pill.label ||
-                s.id === pill.id ||
-                s.name_en === pill.id ||
-                s.title_en === pill.id
-            );
-
-            const displayLabel = isAll
-              ? isEn
-                ? "All"
-                : "Всі"
-              : isEn
-              ? matchedSub?.title_en ||
-                matchedSub?.name_en ||
-                pill.title_en ||
-                pill.name_en ||
-                getSubcategoryTranslation(matchedSub?.name || pill.label)
-              : matchedSub?.name || matchedSub?.title || pill.label;
-
-            return (
-              <div key={pill.id} className="relative inline-flex items-center group">
-                <button
-                  id={`category-pill-${pill.id}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => onSelectPill(pill.id)}
+          return (
+            <button
+              key={pill.id}
+              id={`category-pill-${pill.id}`}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onSelectPill(pill.id)}
+              style={{
+                backgroundColor: isActive ? resolvedAccent : undefined,
+                borderColor: isActive ? resolvedAccent : isResearch ? "#F78D6080" : `${resolvedAccent}80`,
+              }}
+              className={`w-fit flex-none inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold border transition-all duration-200 cursor-pointer select-none whitespace-nowrap shadow-sm ${
+                isActive
+                  ? isResearch
+                    ? "bg-[#F78D60] text-[#0F0F0F] font-bold shadow-md scale-[1.02] border-transparent"
+                    : "text-black shadow-md scale-[1.02] border-transparent"
+                  : isResearch
+                  ? "bg-[#141718]/80 text-neutral-300 border-[#F78D60]/50 hover:bg-[#F78D60]/15 hover:text-[#F78D60] hover:border-[#F78D60] active:scale-95 transition-colors duration-200"
+                  : "text-white hover:bg-white/10 active:scale-95 opacity-90 hover:opacity-100 transition-colors duration-200"
+              }`}
+              title={displayLabel}
+            >
+              <span>{displayLabel}</span>
+              {typeof pill.count === "number" && (
+                <span
                   style={{
-                    backgroundColor: isActive ? resolvedAccent : undefined,
-                    borderColor: isActive ? resolvedAccent : isResearch ? "#F78D6080" : `${resolvedAccent}80`,
+                    backgroundColor: isActive
+                      ? isResearch ? "rgba(15,15,15,0.2)" : "rgba(0,0,0,0.18)"
+                      : isResearch ? "rgba(247,141,96,0.15)" : "rgba(255,255,255,0.15)",
                   }}
-                  className={`w-fit flex-none inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold border transition-all duration-200 cursor-pointer select-none whitespace-nowrap shadow-sm ${
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none shrink-0 font-bold ${
                     isActive
-                      ? isResearch
-                        ? "bg-[#F78D60] text-[#0F0F0F] font-bold shadow-md scale-[1.02] border-transparent"
-                        : "text-black shadow-md scale-[1.02] border-transparent"
-                      : isResearch
-                      ? "bg-[#141718]/80 text-neutral-300 border-[#F78D60]/50 hover:bg-[#F78D60]/15 hover:text-[#F78D60] hover:border-[#F78D60] active:scale-95 transition-colors duration-200"
-                      : "text-white hover:bg-white/10 active:scale-95 opacity-90 hover:opacity-100 transition-colors duration-200"
+                      ? isResearch ? "text-[#0F0F0F]" : "text-black"
+                      : isResearch ? "text-[#F78D60]" : "text-white"
                   }`}
-                  title={displayLabel}
                 >
-                  <span>{displayLabel}</span>
-                  {typeof pill.count === "number" && (
-                    <span
-                      style={{
-                        backgroundColor: isActive
-                          ? isResearch
-                            ? "rgba(15,15,15,0.2)"
-                            : "rgba(0,0,0,0.18)"
-                          : isResearch
-                          ? "rgba(247,141,96,0.15)"
-                          : "rgba(255,255,255,0.15)",
-                      }}
-                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none shrink-0 font-bold ${
-                        isActive
-                          ? isResearch
-                            ? "text-[#0F0F0F]"
-                            : "text-black"
-                          : isResearch
-                          ? "text-[#F78D60]"
-                          : "text-white"
-                      }`}
-                    >
-                      {pill.count}
-                    </span>
-                  )}
-                </button>
-
-                {/* Admin context dropdown for inline subcategory management */}
-                {isAdmin && selectedCategory && !isAll && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="ml-1 w-5 h-5 rounded-full bg-background/80 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity border border-border"
-                        title="Керування підкатегорією"
-                      >
-                        <MoreVertical className="w-3 h-3" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-36 bg-card border-border text-xs">
-                      <DropdownMenuItem
-                        onClick={() => handleOpenEditDialog(pill)}
-                        className="cursor-pointer gap-2"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        <span>Редагувати</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteSubcategory(pill)}
-                        className="cursor-pointer gap-2 text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Видалити</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Admin Inline Add Button at the end of the pills */}
-          {isAdmin && selectedCategory && rowIndex === chunkedPills.length - 1 && (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleOpenAddDialog}
-                style={{ borderColor: resolvedAccent + "80", color: resolvedAccent }}
-                className="h-7 px-2.5 rounded-full text-xs font-semibold hover:bg-white/10"
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                Додати підкатегорію
-              </Button>
-
-              <div className="hidden sm:flex items-center gap-1">
-                <Input
-                  placeholder="Швидке додавання..."
-                  value={quickInput}
-                  onChange={(e) => setQuickInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleQuickAdd();
-                    }
-                  }}
-                  disabled={isQuickAdding}
-                  className="h-7 w-36 text-xs bg-background/60 border-border rounded-full px-2.5"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-
-      {/* Admin Dialog for Creating / Editing Subcategories inline */}
-      {isAdmin && selectedCategory && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-md bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <span>
-                  {editingSub ? "Редагування підкатегорії" : "Створити підкатегорію"}
+                  {pill.count}
                 </span>
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              <div className="p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs">
-                <span className="text-muted-foreground">Батьківський розділ: </span>
-                <span className="font-semibold text-foreground">{selectedCategory.name}</span>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="inline-sub-name-uk">Назва підкатегорії (UK) *</Label>
-                <Input
-                  id="inline-sub-name-uk"
-                  placeholder="напр. AsyncIO, Tailwind, FastAPI"
-                  value={nameUk}
-                  onChange={(e) => setNameUk(e.target.value)}
-                  className={errors.name ? "border-destructive" : ""}
-                />
-                {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="inline-sub-name-en">Назва англійською (EN, title_en)</Label>
-                <Input
-                  id="inline-sub-name-en"
-                  placeholder="напр. AsyncIO, Tailwind CSS"
-                  value={nameEn}
-                  onChange={(e) => setNameEn(e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="inline-sub-slug">Slug (URL)</Label>
-                  <Input
-                    id="inline-sub-slug"
-                    placeholder="asyncio"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="inline-sub-sort">Порядок сортування</Label>
-                  <Input
-                    id="inline-sub-sort"
-                    type="number"
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Скасувати
-              </Button>
-              <Button onClick={handleSaveSubcategory} className="font-semibold">
-                {editingSub ? "Зберегти зміни" : "Створити"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

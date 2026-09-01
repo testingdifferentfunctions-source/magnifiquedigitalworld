@@ -169,8 +169,16 @@ export const categorySchema = z.object({
     .nullable()
     .or(z.literal('')),
   mode: z
-    .enum(['articles', 'news', 'resources', 'components', 'templates', 'research', 'palettes', 'resource', 'component', 'template', 'palette', 'dictionary', 'design', 'designs', 'editor'])
-    .default('articles'),
+    .enum(['articles', 'news', 'resources', 'components', 'templates', 'research', 'palettes', 'resource', 'component', 'template', 'palette', 'dictionary', 'design', 'designs', 'editor', 'tools', 'snippets'])
+    .default('articles')
+    .optional(),
+  mode_slug: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   slug: z
     .string()
     .trim()
@@ -220,6 +228,13 @@ export const subcategorySchema = z.object({
     .string()
     .default('articles')
     .optional(),
+  mode_slug: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   slug: z
     .string()
     .trim()

@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useArticles, useArticleUniqueViews } from '@/hooks/useArticles';
+import { use24hAnalytics } from '@/hooks/useAnalytics24h';
 import PageLayout from '@/components/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -25,6 +27,8 @@ import {
   Code,
   Settings,
   FolderTree,
+  Clock,
+  TrendingUp,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -43,6 +47,7 @@ const Admin = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const { data: articles = [] } = useArticles(false);
+  const { data: analytics24h, isLoading: loadingAnalytics } = use24hAnalytics();
   const [statsArticleId, setStatsArticleId] = useState<string | null>(null);
   const [activeAdminTab, setActiveAdminTab] = useState<string>('categories');
 
@@ -154,7 +159,89 @@ const Admin = () => {
         </div>
       </div>
 
-      {/* Stats Summary */}
+      {/* 24-Hour Real-time Analytics Section */}
+      <div className="mb-8 space-y-3" id="admin-24h-analytics-section">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-semibold tracking-tight">Статистика за 24 години</h2>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-3 py-1 rounded-full border border-border/50">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Оновлюється автоматично</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card 1: Views (24h) */}
+          <Card className="bg-card border-border shadow-xs hover:border-primary/40 transition-colors" id="admin-card-views-24h">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Перегляди (24 год)</CardTitle>
+              <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                <Eye className="w-4 h-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingAnalytics ? (
+                <Skeleton className="h-8 w-24 rounded" />
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-bold tracking-tight text-foreground">
+                    {(analytics24h?.views_24h ?? 0).toLocaleString()}
+                  </p>
+                  <span className="text-xs text-muted-foreground">переглядів</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Likes (24h) */}
+          <Card className="bg-card border-border shadow-xs hover:border-rose-500/40 transition-colors" id="admin-card-likes-24h">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Вподобання (24 год)</CardTitle>
+              <div className="p-2 bg-rose-500/10 rounded-lg text-rose-500">
+                <Heart className="w-4 h-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingAnalytics ? (
+                <Skeleton className="h-8 w-24 rounded" />
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-bold tracking-tight text-foreground">
+                    {(analytics24h?.likes_24h ?? 0).toLocaleString()}
+                  </p>
+                  <span className="text-xs text-muted-foreground">вподобань</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Card 3: Shares (24h) */}
+          <Card className="bg-card border-border shadow-xs hover:border-blue-500/40 transition-colors" id="admin-card-shares-24h">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Поширення (24 год)</CardTitle>
+              <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                <Share2 className="w-4 h-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingAnalytics ? (
+                <Skeleton className="h-8 w-24 rounded" />
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-bold tracking-tight text-foreground">
+                    {(analytics24h?.shares_24h ?? 0).toLocaleString()}
+                  </p>
+                  <span className="text-xs text-muted-foreground">поширень</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Stats Summary (All Time) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card className="bg-card border-border">
           <CardHeader className="pb-2">

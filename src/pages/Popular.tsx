@@ -9,8 +9,8 @@ import { TrendingUp } from "lucide-react";
 
 const Popular = () => {
   const { mode } = useMode();
-  // Editor mode has no content cards, default to articles in popular ranking
-  const effectiveMode = mode === "editor" ? "articles" : mode;
+  // Tools mode has its own dashboard, default to articles in popular ranking
+  const effectiveMode = mode === "tools" || (mode as string) === "editor" ? "articles" : mode;
   const { data: popularData = [], isLoading } = usePopularEntriesByMode(effectiveMode, 10);
   const { t, language } = useLanguage();
 
@@ -73,7 +73,7 @@ const Popular = () => {
           <p className="text-muted-foreground">{getModeSubtitle()}</p>
         </div>
         <div className="self-start md:self-auto">
-          <ModeSwitcher excludeModes={["editor"]} />
+          <ModeSwitcher excludeModes={["tools"]} />
         </div>
       </section>
 

@@ -349,7 +349,7 @@ export const CodePlayground: React.FC = () => {
               id="run-code-button"
               onClick={handleRunCode}
               disabled={!engineReady && status === "idle"}
-              className="h-10 px-4 rounded-xl !bg-[#BDA6CE] hover:!bg-[#ab93bd] !text-[#1A1F26] font-semibold gap-2 shadow-lg shadow-[#BDA6CE]/20 transition-all active:scale-95 shrink-0 whitespace-nowrap"
+              className="h-10 px-4 rounded-xl !bg-[#BDA6CE] hover:!bg-[#d6c4e4] !text-[#1A1F26] font-semibold gap-2 shadow-lg shadow-[#BDA6CE]/20 transition-all active:scale-95 shrink-0 whitespace-nowrap"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>{status === "running" ? t("editor.running") : t("editor.run")}</span>
@@ -362,7 +362,7 @@ export const CodePlayground: React.FC = () => {
             variant="outline"
             onClick={handleClearConsole}
             title={t("editor.clear_console")}
-            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
+            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-[#BDA6CE] text-slate-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{t("editor.clear_console")}</span>
@@ -374,7 +374,7 @@ export const CodePlayground: React.FC = () => {
             variant="outline"
             onClick={handleResetCode}
             title={t("editor.reset")}
-            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
+            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-[#BDA6CE] text-slate-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{t("editor.reset")}</span>
@@ -386,7 +386,7 @@ export const CodePlayground: React.FC = () => {
             variant="outline"
             onClick={handleCopyCode}
             title={t("editor.copy")}
-            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-neutral-200 text-neutral-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
+            className="h-10 px-3.5 rounded-xl border-[#393E46] bg-[#1A1F26] hover:bg-[#1A1F26] hover:border-[#BDA6CE] hover:text-[#BDA6CE] text-slate-200 gap-1.5 shrink-0 whitespace-nowrap transition-colors"
           >
             {copied ? (
               <>
@@ -462,7 +462,7 @@ export const CodePlayground: React.FC = () => {
             {/* Status indicator & Execution time */}
             <div className="flex items-center gap-3 text-xs font-mono">
               {executionTime !== null && (
-                <div className="flex items-center gap-1 text-neutral-300">
+                <div className="flex items-center gap-1 text-slate-300">
                   <Clock className="w-3.5 h-3.5 text-[#BDA6CE]" />
                   <span>{executionTime} ms</span>
                 </div>
@@ -499,16 +499,16 @@ export const CodePlayground: React.FC = () => {
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             {logs.length === 0 ? (
-              <div className="text-neutral-400 py-6 text-center italic">
+              <div className="text-slate-400 py-6 text-center italic">
                 <Sparkles className="w-5 h-5 mx-auto mb-2 text-[#BDA6CE]/60" />
-                <p className="text-neutral-200">{t("editor.welcome")}</p>
-                <p className="text-xs text-neutral-400 mt-1">
+                <p className="text-slate-200">{t("editor.welcome")}</p>
+                <p className="text-xs text-slate-400 mt-1">
                   Pyodide WebAssembly • Zero server overhead • Full client-side isolation
                 </p>
               </div>
             ) : (
               logs.map((log) => {
-                let colorClass = "text-neutral-200";
+                let colorClass = "text-slate-200";
                 let prefix = ">";
 
                 if (log.type === "stderr" || log.type === "error") {
@@ -527,7 +527,7 @@ export const CodePlayground: React.FC = () => {
 
                 return (
                   <div key={log.id} className="flex items-start gap-2 leading-relaxed">
-                    <span className="text-neutral-400 select-none text-xs">{log.timestamp}</span>
+                    <span className="text-slate-400 select-none text-xs">{log.timestamp}</span>
                     <span className="text-[#BDA6CE] select-none font-bold">{prefix}</span>
                     <pre
                       className={`whitespace-pre-wrap font-mono flex-1 break-words ${colorClass}`}

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logAnalyticsEvent } from '@/lib/analytics';
 
 export interface Article {
   id: string;
@@ -156,6 +157,7 @@ export const useTrackArticleView = () => {
         viewerId = crypto.randomUUID();
         localStorage.setItem('viewer_id', viewerId);
       }
+      logAnalyticsEvent("view", "articles", articleId, { viewer_id: viewerId });
       const { error } = await supabase.rpc('track_article_view', { 
         p_article_id: articleId,
         p_viewer_id: viewerId
@@ -164,6 +166,7 @@ export const useTrackArticleView = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics-24h'] });
     }
   });
 };
@@ -187,6 +190,9 @@ export const useToggleArticleLikeAnonymous = () => {
   
   return useMutation({
     mutationFn: async ({ articleId, isLiking }: { articleId: string; isLiking: boolean }) => {
+      if (isLiking) {
+        logAnalyticsEvent("like", "articles", articleId);
+      }
       const { error } = await supabase.rpc('toggle_article_like_anonymous', { 
         p_article_id: articleId,
         p_is_liking: isLiking
@@ -196,6 +202,7 @@ export const useToggleArticleLikeAnonymous = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['article'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics-24h'] });
     }
   });
 };

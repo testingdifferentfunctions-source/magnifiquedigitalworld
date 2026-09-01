@@ -6,6 +6,7 @@ import { getFallbackEntries, getFallbackEntryById } from "@/data/modeItems";
 import type { AppMode } from "@/hooks/useMode";
 import type { Article } from "@/hooks/useArticles";
 import { generateEntryEmbedding } from "@/lib/semanticSearch";
+import { logAnalyticsEvent } from "@/lib/analytics";
 
 export type ModeEntryType = "news" | "resource" | "component" | "template" | "palette" | "dictionary" | "design" | "research";
 
@@ -240,14 +241,20 @@ export const useDeleteModeEntry = () => {
 export const useToggleModeEntryLike = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ entryId, isLiking }: { entryId: string; isLiking: boolean }) => {
+    mutationFn: async ({ entryId, isLiking, mode = "mode_entry" }: { entryId: string; isLiking: boolean; mode?: string }) => {
+      if (isLiking) {
+        logAnalyticsEvent("like", mode, entryId);
+      }
       const { error } = await supabase.rpc("toggle_mode_entry_like", {
         p_entry_id: entryId,
         p_is_liking: isLiking,
       } as any);
       if (error) throw error;
     },
-    onSuccess: () => invalidate(queryClient),
+    onSuccess: () => {
+      invalidate(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["analytics-24h"] });
+    },
   });
 };
 
@@ -271,7 +278,7 @@ export const usePopularEntriesByMode = (mode: AppMode | string, limit = 10) => {
     queryKey: ["popular-entries", mode, limit],
     queryFn: async () => {
       let normalized = (mode || "articles").toLowerCase();
-      if (normalized === "editor" || normalized === "редактор") {
+      if (normalized === "tools" || normalized === "editor" || normalized === "інструменти" || normalized === "редактор") {
         normalized = "articles";
       }
       if (normalized === "articles" || normalized === "article") {
@@ -339,7 +346,7 @@ export const useLikedEntriesByMode = (mode: AppMode | string, limit = 10) => {
     queryKey: ["liked-entries", mode, limit],
     queryFn: async () => {
       let normalized = (mode || "articles").toLowerCase();
-      if (normalized === "editor" || normalized === "редактор") {
+      if (normalized === "tools" || normalized === "editor" || normalized === "інструменти" || normalized === "редактор") {
         normalized = "articles";
       }
       if (normalized === "articles" || normalized === "article") {

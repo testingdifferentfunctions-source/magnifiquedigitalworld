@@ -11,12 +11,14 @@ export type CategoryMode =
   | "palettes"
   | "dictionary"
   | "design"
+  | "tools"
   | "editor";
 
 export interface Subcategory {
   id: string;
   category_id: string;
   mode: CategoryMode;
+  mode_slug?: string | null;
   name: string; // Ukrainian (base)
   title?: string;
   name_en?: string | null;
@@ -30,6 +32,7 @@ export interface Subcategory {
 export interface Category {
   id: string;
   mode: CategoryMode;
+  mode_slug?: string | null;
   name: string; // Ukrainian (base)
   name_en?: string | null;
   slug?: string | null;
@@ -172,7 +175,8 @@ export const normalizeCategoryMode = (mode?: string): CategoryMode => {
   if (m === "palette" || m === "palettes") return "palettes";
   if (m === "dictionary" || m === "terms" || m === "vocab") return "dictionary";
   if (m === "design" || m === "designs") return "design";
-  if (m === "editor" || m === "code" || m === "playground") return "editor";
+  if (m === "tools" || m === "tool" || m === "utilities" || m === "інструменти") return "tools";
+  if (m === "editor" || m === "code" || m === "playground" || m === "редактор") return "editor";
   return "articles";
 };
 
@@ -500,6 +504,24 @@ export const DEFAULT_SEED_CATEGORIES: Record<
       subcategories: ["ACID", "Індексація", "Sharding", "CAP теорема", "Vector Search", "Redis"],
     },
   ],
+  tools: [
+    {
+      id: "tool-code-env",
+      name: "Середовища розробки",
+      name_en: "Dev Environments",
+      slug: "dev-environments",
+      image_url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&fit=crop",
+      subcategories: ["Редактори коду", "WebAssembly", "Пісочниці", "REPL", "IDE"],
+    },
+    {
+      id: "tool-generators",
+      name: "Генератори & Конвертери",
+      name_en: "Generators & Converters",
+      slug: "generators-converters",
+      image_url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&fit=crop",
+      subcategories: ["Форматування коду", "JSON валідація", "Regex тестер", "CSS генератори"],
+    },
+  ],
   editor: [
     {
       id: "ed-basics",
@@ -567,6 +589,7 @@ const getFallbackCategoriesForMode = (mode: CategoryMode): Category[] => {
   return seeds.map((s, idx) => ({
     id: s.id,
     mode,
+    mode_slug: mode,
     name: s.name,
     name_en: s.name_en || null,
     slug: s.slug,
@@ -579,6 +602,7 @@ const getFallbackCategoriesForMode = (mode: CategoryMode): Category[] => {
         id: `${s.id}-sub-${subIdx}`,
         category_id: s.id,
         mode,
+        mode_slug: mode,
         name: subName,
         title: subName,
         title_en: transEn,
@@ -607,13 +631,13 @@ export const useCategories = (rawMode?: string) => {
         // 1. Fetch categories
         let catQuery = supabase.from("categories").select("*");
         if (normalizedMode) {
-          catQuery = catQuery.eq("mode", normalizedMode);
+          catQuery = catQuery.or(`mode_slug.eq.${normalizedMode},mode.eq.${normalizedMode}`);
         }
         const { data: catData, error: catError } = await catQuery
           .order("sort_order", { ascending: true })
           .order("name", { ascending: true });
 
-        // If table doesn't have mode or column error, retry without mode filter
+        // If table doesn't have mode_slug or column error, retry with simpler query
         let finalCatData = catData;
         if (catError) {
           const { data: fallbackData, error: fallbackError } = await supabase
@@ -623,7 +647,12 @@ export const useCategories = (rawMode?: string) => {
           if (!fallbackError && fallbackData) {
             finalCatData = normalizedMode
               ? fallbackData.filter(
-                  (c: any) => !c.mode || normalizeCategoryMode(c.mode) === normalizedMode
+                  (c: any) =>
+                    (c.mode_slug
+                      ? normalizeCategoryMode(c.mode_slug)
+                      : c.mode
+                      ? normalizeCategoryMode(c.mode)
+                      : "articles") === normalizedMode
                 )
               : fallbackData;
           } else {
@@ -636,7 +665,7 @@ export const useCategories = (rawMode?: string) => {
         try {
           let subQuery = supabase.from("subcategories").select("*");
           if (normalizedMode) {
-            subQuery = subQuery.eq("mode", normalizedMode);
+            subQuery = subQuery.or(`mode_slug.eq.${normalizedMode},mode.eq.${normalizedMode}`);
           }
           const { data: subData, error: subError } = await subQuery
             .order("sort_order", { ascending: true })
@@ -644,6 +673,15 @@ export const useCategories = (rawMode?: string) => {
 
           if (!subError && subData) {
             subcatsData = subData as any[];
+          } else {
+            // Fallback: fetch all and filter in memory
+            const { data: subFallback } = await supabase
+              .from("subcategories")
+              .select("*")
+              .order("sort_order", { ascending: true });
+            if (subFallback) {
+              subcatsData = subFallback as any[];
+            }
           }
         } catch {
           // Subcategories table might not be created yet; we gracefully fall back to sub_topics array
@@ -651,8 +689,18 @@ export const useCategories = (rawMode?: string) => {
 
         // Map subcategories under their parent categories
         if (finalCatData && finalCatData.length > 0) {
-          return finalCatData.map((c: any) => {
-            const linkedSubcategories = subcatsData.filter((sc) => sc.category_id === c.id);
+          const mappedCategories = finalCatData.map((c: any) => {
+            const resolvedMode = normalizeCategoryMode(
+              c.mode_slug || c.mode || normalizedMode || "articles"
+            );
+            const linkedSubcategories = subcatsData.filter(
+              (sc) =>
+                sc.category_id === c.id &&
+                (!normalizedMode ||
+                  (sc.mode_slug
+                    ? normalizeCategoryMode(sc.mode_slug)
+                    : normalizeCategoryMode(sc.mode || resolvedMode)) === normalizedMode)
+            );
             const legacySubTopics: string[] = Array.isArray(c.sub_topics) ? c.sub_topics : [];
 
             // If subcategories table has records for this category, use them
@@ -662,10 +710,14 @@ export const useCategories = (rawMode?: string) => {
                 ? linkedSubcategories.map((sc: any) => {
                     const rawName = sc.name || sc.title || "";
                     const rawEn = sc.title_en || sc.name_en || getSubcategoryTranslation(rawName);
+                    const subMode = normalizeCategoryMode(
+                      sc.mode_slug || sc.mode || resolvedMode
+                    );
                     return {
                       id: sc.id,
                       category_id: sc.category_id,
-                      mode: normalizeCategoryMode(sc.mode || c.mode || normalizedMode || "articles"),
+                      mode: subMode,
+                      mode_slug: subMode,
                       name: rawName,
                       title: rawName,
                       title_en: rawEn,
@@ -681,7 +733,8 @@ export const useCategories = (rawMode?: string) => {
                     return {
                       id: `${c.id}-sub-${idx}`,
                       category_id: c.id,
-                      mode: normalizeCategoryMode(c.mode || normalizedMode || "articles"),
+                      mode: resolvedMode,
+                      mode_slug: resolvedMode,
                       name: st,
                       title: st,
                       title_en: transEn,
@@ -697,11 +750,25 @@ export const useCategories = (rawMode?: string) => {
 
             return {
               ...c,
-              mode: normalizeCategoryMode(c.mode || normalizedMode || "articles"),
+              mode: resolvedMode,
+              mode_slug: resolvedMode,
               sub_topics: resolvedSubTopics,
               subcategories: resolvedSubcategories,
             } as Category;
           });
+
+          // In-memory filter for strict isolation per mode
+          if (normalizedMode) {
+            const filtered = mappedCategories.filter(
+              (cat) =>
+                (cat.mode_slug
+                  ? normalizeCategoryMode(cat.mode_slug)
+                  : normalizeCategoryMode(cat.mode)) === normalizedMode
+            );
+            if (filtered.length > 0) return filtered;
+          } else {
+            return mappedCategories;
+          }
         }
       } catch (err) {
         console.warn("Failed to fetch categories from Supabase, using fallback:", err);
@@ -720,6 +787,10 @@ export const useCategories = (rawMode?: string) => {
         ...getFallbackCategoriesForMode("components"),
         ...getFallbackCategoriesForMode("templates"),
         ...getFallbackCategoriesForMode("palettes"),
+        ...getFallbackCategoriesForMode("research"),
+        ...getFallbackCategoriesForMode("design"),
+        ...getFallbackCategoriesForMode("dictionary"),
+        ...getFallbackCategoriesForMode("tools"),
       ];
     },
   });
@@ -736,15 +807,18 @@ export const useCreateCategory = () => {
       name: string;
       name_en?: string | null;
       mode?: string;
+      mode_slug?: string | null;
       slug?: string | null;
       image_url?: string | null;
       sub_topics?: string[];
       sort_order?: number;
     }) => {
+      const normMode = normalizeCategoryMode(category.mode_slug || category.mode);
       const payload: any = {
         name: category.name.trim(),
         name_en: category.name_en?.trim() || null,
-        mode: normalizeCategoryMode(category.mode),
+        mode: normMode,
+        mode_slug: normMode,
         slug: category.slug?.trim() || null,
         image_url: category.image_url || null,
         sub_topics: category.sub_topics || [],
@@ -776,10 +850,12 @@ export const useUpdateCategory = () => {
     mutationFn: async ({
       id,
       ...category
-    }: Partial<Category> & { id: string }) => {
+    }: Partial<Category> & { id: string; mode_slug?: string | null }) => {
       const payload: any = { ...category };
-      if (payload.mode) {
-        payload.mode = normalizeCategoryMode(payload.mode);
+      if (payload.mode || payload.mode_slug) {
+        const normMode = normalizeCategoryMode(payload.mode_slug || payload.mode);
+        payload.mode = normMode;
+        payload.mode_slug = normMode;
       }
       delete payload.subcategories; // Don't send joined field
 
@@ -830,70 +906,59 @@ export const useCreateSubcategory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (sub: {
-      category_id: string;
-      name?: string;
-      title?: string;
-      name_en?: string | null;
-      title_en?: string | null;
-      mode?: string;
-      slug?: string | null;
-      sort_order?: number;
-    }) => {
+    mutationFn: async (sub: any) => {
       const subName = (sub.name || sub.title || "").trim();
-      const subEn = (sub.title_en || sub.name_en || "").trim() || null;
+      const subEn = (sub.name_en || sub.title_en || "").trim() || null;
+      const normMode = sub.mode_slug || sub.mode || "articles";
+      const finalSlug = sub.slug?.trim() || null;
 
-      const payload: any = {
+      // Attempt 1: Schema using 'title' and 'title_en'
+      let data: any = null;
+      const { data: initialData, error } = await supabase.from("subcategories").insert({
         category_id: sub.category_id,
-        name: subName,
         title: subName,
-        name_en: subEn,
         title_en: subEn,
-        mode: normalizeCategoryMode(sub.mode),
-        slug: sub.slug?.trim() || null,
+        mode: normMode,
+        slug: finalSlug,
         sort_order: sub.sort_order ?? 0,
-      };
+      } as any).select().single();
 
-      // 1. Try to insert into subcategories table
-      let insertedRow: any = null;
+      if (error) {
+        console.log("Insert with title failed, trying name...", error);
+        // Attempt 2: Schema using 'name' and 'name_en'
+        const { data: retryData, error: retryError } = await supabase.from("subcategories").insert({
+          category_id: sub.category_id,
+          name: subName,
+          name_en: subEn,
+          mode: normMode,
+          slug: finalSlug,
+          sort_order: sub.sort_order ?? 0,
+        } as any).select().single();
+
+        if (retryError) {
+          throw new Error(
+            `DB Error: ${retryError.message} ${retryError.details || ""} ${retryError.hint || ""}`.trim()
+          );
+        }
+        data = retryData;
+      } else {
+        data = initialData;
+      }
+
+      // Legacy Sync
       try {
-        const { data, error } = await supabase
-          .from("subcategories")
-          .insert(payload)
-          .select()
-          .single();
-
-        if (!error && data) {
-          insertedRow = data;
+        const { data: catData } = await supabase.from("categories").select("sub_topics").eq("id", sub.category_id).single();
+        const currentTopics = Array.isArray(catData?.sub_topics) ? catData.sub_topics : [];
+        if (!currentTopics.includes(subName)) {
+          await supabase.from("categories").update({ sub_topics: [...currentTopics, subName] } as any).eq("id", sub.category_id);
         }
       } catch {
         /* ignore */
       }
 
-      // 2. Also append to parent category's `sub_topics` array for legacy/instant sync
-      try {
-        const { data: cat } = await supabase
-          .from("categories")
-          .select("sub_topics")
-          .eq("id", sub.category_id)
-          .maybeSingle();
-
-        const currentList = Array.isArray(cat?.sub_topics) ? cat.sub_topics : [];
-        if (!currentList.includes(subName)) {
-          await supabase
-            .from("categories")
-            .update({ sub_topics: [...currentList, subName] } as any)
-            .eq("id", sub.category_id);
-        }
-      } catch (err) {
-        console.warn("Could not sync sub_topics to category:", err);
-      }
-
-      return insertedRow || { id: crypto.randomUUID(), ...payload };
+      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["categories"] }),
   });
 };
 
@@ -904,66 +969,56 @@ export const useUpdateSubcategory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      previousName,
-      ...sub
-    }: {
-      id: string;
-      category_id: string;
-      name?: string;
-      title?: string;
-      previousName?: string;
-      name_en?: string | null;
-      title_en?: string | null;
-      slug?: string | null;
-      sort_order?: number;
-    }) => {
+    mutationFn: async (sub: any) => {
       const subName = (sub.name || sub.title || "").trim();
-      const subEn = (sub.title_en || sub.name_en || "").trim() || null;
+      const subEn = (sub.name_en || sub.title_en || "").trim() || null;
+      const finalSlug = sub.slug?.trim() || null;
 
-      // 1. Update in subcategories table
-      try {
-        await supabase
-          .from("subcategories")
-          .update({
+      // Attempt 1: Schema using 'title' and 'title_en'
+      let data: any = null;
+      const { data: initialData, error } = await supabase.from("subcategories").update({
+        title: subName,
+        title_en: subEn,
+        slug: finalSlug,
+        sort_order: sub.sort_order ?? 0,
+      } as any).eq("id", sub.id).select().single();
+
+      if (error) {
+         console.log("Update with title failed, trying name...", error);
+         // Attempt 2: Schema using 'name' and 'name_en'
+         const { data: retryData, error: retryError } = await supabase.from("subcategories").update({
             name: subName,
-            title: subName,
             name_en: subEn,
-            title_en: subEn,
-            slug: sub.slug?.trim() || null,
+            slug: finalSlug,
             sort_order: sub.sort_order ?? 0,
-          } as any)
-          .eq("id", id);
-      } catch {
-        /* ignore */
+         } as any).eq("id", sub.id).select().single();
+
+         if (retryError) {
+           throw new Error(
+             `DB Error: ${retryError.message} ${retryError.details || ""} ${retryError.hint || ""}`.trim()
+           );
+         }
+         data = retryData;
+      } else {
+        data = initialData;
       }
 
-      // 2. Sync in parent category `sub_topics`
-      if (sub.category_id && previousName) {
+      // Legacy Sync
+      if (sub.previousName && sub.previousName !== subName) {
         try {
-          const { data: cat } = await supabase
-            .from("categories")
-            .select("sub_topics")
-            .eq("id", sub.category_id)
-            .maybeSingle();
-
-          const currentList = Array.isArray(cat?.sub_topics) ? cat.sub_topics : [];
-          const updatedList = currentList.map((item) =>
-            item === previousName ? subName : item
-          );
-          await supabase
-            .from("categories")
-            .update({ sub_topics: updatedList } as any)
-            .eq("id", sub.category_id);
+          const { data: catData } = await supabase.from("categories").select("sub_topics").eq("id", sub.category_id).single();
+          if (Array.isArray(catData?.sub_topics)) {
+            const updated = catData.sub_topics.map((t: string) => t === sub.previousName ? subName : t);
+            await supabase.from("categories").update({ sub_topics: updated } as any).eq("id", sub.category_id);
+          }
         } catch {
           /* ignore */
         }
       }
+
+      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["categories"] }),
   });
 };
 

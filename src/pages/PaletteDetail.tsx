@@ -25,6 +25,7 @@ import {
   type ColorSwatch,
 } from "@/lib/colors";
 import { ItemTagsList } from "@/components/ItemTagBadge";
+import { logAnalyticsEvent } from "@/lib/analytics";
 
 const PaletteDetail = () => {
   const { id = "" } = useParams();
@@ -41,6 +42,9 @@ const PaletteDetail = () => {
   useEffect(() => {
     setLiked(getLikedEntries().includes(id));
     setLikeOffset(0);
+    if (id) {
+      logAnalyticsEvent("view", "palette", id);
+    }
   }, [id]);
 
   const loc = entry ? localizeEntry(entry, language) : null;

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 
-export type AppMode = "news" | "articles" | "resources" | "components" | "templates" | "research" | "palettes" | "design" | "dictionary" | "editor";
+export type AppMode = "news" | "articles" | "resources" | "components" | "templates" | "research" | "palettes" | "design" | "dictionary" | "tools";
 
 export type Language = "uk" | "en";
 
@@ -194,24 +194,24 @@ export const MODE_METADATA: Record<AppMode, ModeInfo> = {
       en: "No dictionary terms yet",
     },
   },
-  editor: {
-    label: { uk: "Редактор", en: "Editor" },
-    title: { uk: "Онлайн-Редактор Коду", en: "Online Code Editor" },
+  tools: {
+    label: { uk: "Інструменти", en: "Tools" },
+    title: { uk: "Інструменти", en: "Tools" },
     subtitle: {
-      uk: "Пишіть та виконуйте код Python безпосередньо у браузері через WebAssembly (Pyodide) без серверного навантаження.",
-      en: "Write and execute Python code directly in your browser via WebAssembly (Pyodide) with zero server latency.",
+      uk: "Набір інтерактивних інструментів, пісочниць та утиліт для веброзробників та інженерів.",
+      en: "A suite of interactive tools, playgrounds, and developer utilities.",
     },
     searchPlaceholder: {
-      uk: "Пошук коду та функцій...",
-      en: "Search code & functions...",
+      uk: "Пошук інструментів...",
+      en: "Search tools...",
     },
     emptySearch: {
-      uk: "Нічого не знайдено за вашим запитом",
-      en: "No results found matching your query",
+      uk: "Інструментів не знайдено за вашим запитом",
+      en: "No tools found matching your query",
     },
     emptyDefault: {
-      uk: "Консоль готова до роботи",
-      en: "Console ready for execution",
+      uk: "Інструменти готові до використання",
+      en: "Tools ready for use",
     },
   },
 };
@@ -226,7 +226,7 @@ export const MODE_LABELS: Record<AppMode, string> = {
   palettes: "Палітри",
   design: "Дизайн",
   dictionary: "Словник",
-  editor: "Редактор",
+  tools: "Інструменти",
 };
 
 export const getModeLabel = (mode: AppMode, lang: Language = "uk"): string => {
@@ -265,7 +265,7 @@ export const MODE_ACCENTS: Record<AppMode, string> = {
   templates: "#C562AF",
   research: "#F78D60",
   dictionary: "#F3CD97",
-  editor: "#BDA6CE",
+  tools: "#BDA6CE",
 };
 
 /**
@@ -363,16 +363,16 @@ const MODE_THEMES: Record<AppMode, ModeTheme> = {
   },
   design: {
     "--background": "263 100% 1.6%", // #030008 deep soft black primary background
-    "--card": "248 100% 12.5%", // #090040 deep flat card container
-    "--popover": "263 100% 1.6%", // #030008 dropdown / popover menu container
-    "--muted": "248 40% 16%", // #171145
-    "--muted-foreground": "263 15% 72%", // #a69fb0
-    "--border": "248 40% 21%", // #1b1458
-    "--input": "248 40% 21%", // #1b1458
+    "--card": "228 20% 15%", // #1E212D dark slate card container
+    "--popover": "228 20% 15%", // #1E212D dropdown / popover menu container
+    "--muted": "228 15% 20%", // #2A2E3D
+    "--muted-foreground": "228 10% 70%", // #A8ADC0
+    "--border": "228 18% 28%", // #3A3F53
+    "--input": "228 18% 28%", // #3A3F53
     "--primary": "0 100% 87%", // #FFBCBC pastel peach accent
-    "--primary-foreground": "263 100% 1.6%", // #030008 high contrast dark text
+    "--primary-foreground": "228 20% 15%", // #1E212D high contrast dark text
     "--accent": "0 100% 87%", // #FFBCBC
-    "--accent-foreground": "263 100% 1.6%", // #030008
+    "--accent-foreground": "228 20% 15%", // #1E212D
     "--ring": "0 100% 87%",
   },
   dictionary: {
@@ -389,18 +389,18 @@ const MODE_THEMES: Record<AppMode, ModeTheme> = {
     "--accent-foreground": "0 60% 2%", // #080202
     "--ring": "35 79% 77%",
   },
-  editor: {
-    "--background": "0 0% 1.2%", // #030303 OLED pure dark background
-    "--card": "0 0% 2.4%", // #060606
-    "--popover": "0 0% 2.4%",
-    "--muted": "0 0% 6%", // #0f0f0f
-    "--muted-foreground": "0 0% 70%",
-    "--border": "0 0% 13%", // #212121
-    "--input": "0 0% 13%",
-    "--primary": "275 29% 73%", // #BDA6CE lavender accent
-    "--primary-foreground": "0 0% 10%",
+  tools: {
+    "--background": "0 60% 2%", // #080202 deep dark near-black background
+    "--card": "0 5% 6%", // #0F0E0E card surface
+    "--popover": "0 5% 6%", // #0F0E0E
+    "--muted": "0 5% 10%",
+    "--muted-foreground": "0 10% 70%",
+    "--border": "0 15% 15%",
+    "--input": "0 15% 15%",
+    "--primary": "275 29% 73%", // #BDA6CE lavender / light accent
+    "--primary-foreground": "0 5% 6%", // #0F0E0E dark text on accent buttons
     "--accent": "275 29% 73%", // #BDA6CE
-    "--accent-foreground": "0 0% 10%",
+    "--accent-foreground": "0 5% 6%", // #0F0E0E
     "--ring": "275 29% 73%",
   },
 };
@@ -421,8 +421,9 @@ const ModeContext = createContext<ModeContextType | undefined>(undefined);
 
 const readStoredMode = (): AppMode => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY) as AppMode | null;
-    if (stored && stored in MODE_THEMES) return stored;
+    const stored = localStorage.getItem(STORAGE_KEY) as string | null;
+    if (stored === "editor") return "tools";
+    if (stored && stored in MODE_THEMES) return stored as AppMode;
   } catch {
     /* ignore */
   }

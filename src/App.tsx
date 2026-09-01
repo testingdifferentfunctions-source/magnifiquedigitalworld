@@ -21,6 +21,8 @@ import ComponentDetail from "./pages/ComponentDetail";
 import DictionaryDetail from "./pages/DictionaryDetail";
 import DesignDetail from "./pages/DesignDetail";
 import ResearchDetail from "./pages/ResearchDetail";
+import ToolsPage from "./pages/ToolsPage";
+import CodeEditorPage from "./pages/CodeEditorPage";
 import EditorPage from "./pages/EditorPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ResetRequest from "./pages/ResetRequest";
@@ -69,6 +71,8 @@ const App = () => (
                 <Route path="/design/:id" element={<DesignDetail />} />
                 <Route path="/research" element={<Index />} />
                 <Route path="/research/:id" element={<ResearchDetail />} />
+                <Route path="/tools" element={<ToolsPage />} />
+                <Route path="/tools/code-editor" element={<CodeEditorPage />} />
                 <Route path="/editor" element={<EditorPage />} />
                 <Route path="/auth" element={<NotFound />} />
                 <Route path="/reset-request/:token" element={<ResetRequest />} />

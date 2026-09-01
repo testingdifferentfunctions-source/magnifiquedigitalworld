@@ -1,8 +1,10 @@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logAnalyticsEvent } from "@/lib/analytics";
 
 const incrementShareCount = async (articleId: string) => {
   try {
+    logAnalyticsEvent("share", "articles", articleId);
     const { error } = await supabase.rpc("increment_article_shares" as any, {
       p_article_id: articleId,
     } as any);

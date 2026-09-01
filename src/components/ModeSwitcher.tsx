@@ -24,16 +24,19 @@ const ModeSwitcher = ({ className, excludeModes = [] }: ModeSwitcherProps) => {
   const currentSelected = excludeModes.includes(mode) ? (availableModes[0] || "articles") : mode;
   const isDesignMode = currentSelected === "design";
   const isResearchMode = currentSelected === "research";
+  const isToolsMode = currentSelected === "tools";
 
   const handleModeChange = (newMode: AppMode) => {
     setMode(newMode);
-    if (newMode === "editor") {
-      if (location.pathname !== "/editor") {
-        navigate("/editor");
+    if (newMode === "tools") {
+      if (location.pathname !== "/tools" && !location.pathname.startsWith("/tools/")) {
+        navigate("/tools");
       }
     } else if (newMode === "research") {
       // If navigating to research from non-root pages other than popular/favorites, navigate to home (which renders research) or /research
       if (
+        location.pathname === "/tools" ||
+        location.pathname.startsWith("/tools/") ||
         location.pathname === "/editor" ||
         location.pathname.startsWith("/section/") ||
         location.pathname.startsWith("/news/") ||
@@ -46,8 +49,10 @@ const ModeSwitcher = ({ className, excludeModes = [] }: ModeSwitcherProps) => {
         navigate("/");
       }
     } else {
-      // If switching from /research, /editor, or research detail page, redirect to home root (/)
+      // If switching from /tools, /research, /editor, or research detail page, redirect to home root (/)
       if (
+        location.pathname === "/tools" ||
+        location.pathname.startsWith("/tools/") ||
         location.pathname === "/editor" ||
         location.pathname === "/research" ||
         location.pathname.startsWith("/research/") ||
@@ -67,6 +72,8 @@ const ModeSwitcher = ({ className, excludeModes = [] }: ModeSwitcherProps) => {
             ? "bg-[#030008] text-white border-[#231b2f] hover:border-[#FFBCBC]/60 font-medium [&>svg]:text-white [&>svg]:opacity-90"
             : isResearchMode
             ? "bg-[#141718] text-neutral-100 border-[#253538] hover:border-[#F78D60]/60 font-medium"
+            : isToolsMode
+            ? "bg-[#222831] text-slate-100 border-[#393E46] hover:border-[#BDA6CE]/60 font-medium"
             : "bg-card border-border text-foreground"
         } ${className ?? ""}`}
         aria-label={language === "en" ? "Content Mode" : "Режим контенту"}
@@ -81,6 +88,8 @@ const ModeSwitcher = ({ className, excludeModes = [] }: ModeSwitcherProps) => {
             ? "bg-[#030008] border-[#231b2f] text-slate-100 shadow-2xl"
             : isResearchMode
             ? "bg-[#141718] border-[#222B2C] text-neutral-100 shadow-2xl"
+            : isToolsMode
+            ? "bg-[#222831] border-[#393E46] text-slate-100 shadow-2xl"
             : "bg-popover border-border"
         }`}
       >
@@ -93,6 +102,8 @@ const ModeSwitcher = ({ className, excludeModes = [] }: ModeSwitcherProps) => {
                 ? "text-slate-200 transition-colors duration-200 cursor-pointer focus:bg-[#FFBCBC] focus:text-black hover:bg-[#FFBCBC] hover:text-black data-[highlighted]:bg-[#FFBCBC] data-[highlighted]:text-black data-[state=checked]:bg-[#FFBCBC] data-[state=checked]:text-black [&[data-state=checked]>span>svg]:text-black [&[data-highlighted]>span>svg]:text-black [&:focus>span>svg]:text-black"
                 : isResearchMode
                 ? "text-neutral-200 transition-colors duration-200 cursor-pointer focus:bg-[#F78D60] focus:text-[#0F0F0F] hover:bg-[#F78D60] hover:text-[#0F0F0F] data-[highlighted]:bg-[#F78D60] data-[highlighted]:text-[#0F0F0F] data-[state=checked]:bg-[#F78D60] data-[state=checked]:text-[#0F0F0F] [&[data-state=checked]>span>svg]:text-[#0F0F0F] [&[data-highlighted]>span>svg]:text-[#0F0F0F] [&:focus>span>svg]:text-[#0F0F0F]"
+                : isToolsMode
+                ? "text-slate-200 transition-colors duration-200 cursor-pointer focus:bg-[#BDA6CE] focus:text-[#1A1F26] hover:bg-[#BDA6CE] hover:text-[#1A1F26] data-[highlighted]:bg-[#BDA6CE] data-[highlighted]:text-[#1A1F26] data-[state=checked]:bg-[#BDA6CE] data-[state=checked]:text-[#1A1F26] [&[data-state=checked]>span>svg]:text-[#1A1F26] [&[data-highlighted]>span>svg]:text-[#1A1F26] [&:focus>span>svg]:text-[#1A1F26]"
                 : "transition-colors duration-200 cursor-pointer"
             }
           >

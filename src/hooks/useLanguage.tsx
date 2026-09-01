@@ -36,8 +36,18 @@ const translations: Record<Language, Record<string, string>> = {
     'modes.research': 'Дослідження',
     'modes.palettes': 'Палітри',
     'modes.dictionary': 'Словник',
+    'modes.tools': 'Інструменти',
     'modes.editor': 'Редактор',
     'modes.design': 'Дизайн',
+
+    // Tools Mode & Hub
+    'tools.title': 'Інструменти',
+    'tools.subtitle': 'Набір інтерактивних онлайн-інструментів, пісочниць та утиліт для веброзробників.',
+    'tools.open': 'Відкрити',
+    'tools.back_to_hub': 'Всі інструменти',
+    'tools.code_editor.title': 'Редактор коду',
+    'tools.code_editor.description': 'Повноцінний редактор коду з підтримкою виконання скриптів',
+    'tools.code_editor.badge': 'Python • WebAssembly',
 
     // Editor Mode
     'editor.title': 'Онлайн-Редактор Коду',
@@ -247,8 +257,18 @@ const translations: Record<Language, Record<string, string>> = {
     'modes.research': 'Research',
     'modes.palettes': 'Palettes',
     'modes.dictionary': 'Dictionary',
+    'modes.tools': 'Tools',
     'modes.editor': 'Editor',
     'modes.design': 'Design',
+
+    // Tools Mode & Hub
+    'tools.title': 'Tools',
+    'tools.subtitle': 'A suite of interactive online developer tools, playgrounds, and utilities.',
+    'tools.open': 'Open',
+    'tools.back_to_hub': 'All Tools',
+    'tools.code_editor.title': 'Code Editor',
+    'tools.code_editor.description': 'Full-featured online code editor with real-time script execution',
+    'tools.code_editor.badge': 'Python • WebAssembly',
 
     // Editor Mode
     'editor.title': 'Online Code Editor',

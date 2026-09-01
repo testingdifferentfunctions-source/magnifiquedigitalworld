@@ -1,14 +1,17 @@
 import { toast } from "sonner";
 import { incrementModeEntryShares } from "@/hooks/useModeEntries";
+import { logAnalyticsEvent } from "@/lib/analytics";
 
 /** Share a Resource / Component / Template entry (Web Share API + clipboard fallback). */
 export const shareEntry = async (entryId: string, title: string, path: string) => {
   const shareUrl = `${window.location.origin}${path}`;
+  const mode = path.split("/")[1] || "mode_entry";
 
   try {
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({ title, url: shareUrl });
+        logAnalyticsEvent("share", mode, entryId, { title, path });
         await incrementModeEntryShares(entryId);
         return true;
       } catch (err: any) {
@@ -18,6 +21,7 @@ export const shareEntry = async (entryId: string, title: string, path: string) =
 
     await navigator.clipboard.writeText(shareUrl);
     toast.success("Посилання скопійовано!");
+    logAnalyticsEvent("share", mode, entryId, { title, path });
     await incrementModeEntryShares(entryId);
     return true;
   } catch (err) {

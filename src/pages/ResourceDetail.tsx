@@ -10,6 +10,7 @@ import { localizeEntry, useModeEntry, useToggleModeEntryLike } from "@/hooks/use
 import { blocksToPlainText } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
 import { ItemTagsList } from "@/components/ItemTagBadge";
+import { logAnalyticsEvent } from "@/lib/analytics";
 
 const ResourceDetail = () => {
   const { id = "" } = useParams();
@@ -24,6 +25,9 @@ const ResourceDetail = () => {
   useEffect(() => {
     setLiked(getLikedEntries().includes(id));
     setLikeOffset(0);
+    if (id) {
+      logAnalyticsEvent("view", "resource", id);
+    }
   }, [id]);
 
   if (isLoading) {

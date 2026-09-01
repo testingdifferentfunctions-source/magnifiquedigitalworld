@@ -131,29 +131,47 @@ const getFilteredModeEntries = (
 
   // 3. Secondary Filter (Pill Selection)
   if (activePill !== "all") {
-    const pillLower = activePill.toLowerCase();
-    const pillEnTranslation = getSubcategoryTranslation(activePill).toLowerCase();
+    const activePillLower = activePill.toLowerCase();
+    const matchedSub = categoriesList
+      .flatMap((c) => c.subcategories || [])
+      .find(
+        (s) =>
+          s.id === activePill ||
+          s.name?.toLowerCase() === activePillLower ||
+          s.title?.toLowerCase() === activePillLower ||
+          s.name_en?.toLowerCase() === activePillLower ||
+          s.title_en?.toLowerCase() === activePillLower
+      );
+
+    const targetNames = new Set<string>();
+    targetNames.add(activePillLower);
+    if (matchedSub) {
+      if (matchedSub.name) targetNames.add(matchedSub.name.toLowerCase());
+      if (matchedSub.title) targetNames.add(matchedSub.title.toLowerCase());
+      if (matchedSub.name_en) targetNames.add(matchedSub.name_en.toLowerCase());
+      if (matchedSub.title_en) targetNames.add(matchedSub.title_en.toLowerCase());
+    }
+    const translation = getSubcategoryTranslation(activePill);
+    if (translation) targetNames.add(translation.toLowerCase());
+
+    const targetList = Array.from(targetNames);
 
     list = list.filter(({ entry, loc }) => {
-      const matchTag = entry.tags.some((tag) => {
-        const tLower = tag.toLowerCase();
-        return (
-          tLower === pillLower ||
-          (pillEnTranslation && tLower === pillEnTranslation) ||
-          pillLower.includes(tLower) ||
-          tLower.includes(pillLower)
-        );
-      });
-      const matchText =
-        loc.title.toLowerCase().includes(pillLower) ||
-        loc.description.toLowerCase().includes(pillLower) ||
-        entry.title.toLowerCase().includes(pillLower) ||
-        entry.description.toLowerCase().includes(pillLower) ||
-        (pillEnTranslation &&
-          (loc.title.toLowerCase().includes(pillEnTranslation) ||
-            loc.description.toLowerCase().includes(pillEnTranslation) ||
-            entry.title.toLowerCase().includes(pillEnTranslation) ||
-            entry.description.toLowerCase().includes(pillEnTranslation)));
+      const entryTags = (entry.tags || []).map((t) => t.toLowerCase());
+      const matchTag = entryTags.some((t) =>
+        targetList.some((target) => t === target || t.includes(target) || target.includes(t))
+      );
+      const titleLocLower = loc.title.toLowerCase();
+      const descLocLower = loc.description.toLowerCase();
+      const titleEntryLower = (entry.title || "").toLowerCase();
+      const descEntryLower = (entry.description || "").toLowerCase();
+      const matchText = targetList.some(
+        (target) =>
+          titleLocLower.includes(target) ||
+          descLocLower.includes(target) ||
+          titleEntryLower.includes(target) ||
+          descEntryLower.includes(target)
+      );
 
       return matchTag || matchText;
     });
@@ -270,26 +288,21 @@ const Index = () => {
     const allPill: PillItem = { id: "all", label: language === "en" ? "All" : "Всі" };
 
     if (categoryId === "all") {
-      const pillsMap = new Map<string, PillItem>();
+      // If "All" is selected in dropdown, show all subcategories for current Mode
+      const pillsList: PillItem[] = [];
+      const seen = new Set<string>();
+
       modeCategories.forEach((cat) => {
         (cat.subcategories || []).forEach((sc) => {
           const ukName = sc.name || sc.title || "";
           const enName = sc.title_en || sc.name_en || getSubcategoryTranslation(ukName);
-          if (ukName && !pillsMap.has(ukName)) {
-            pillsMap.set(ukName, {
-              id: ukName,
-              label: language === "en" ? (enName || ukName) : ukName,
-              name_en: enName,
-              title_en: enName,
-            });
-          }
-        });
-        (cat.sub_topics || []).forEach((st) => {
-          if (st && !pillsMap.has(st)) {
-            const enName = getSubcategoryTranslation(st);
-            pillsMap.set(st, {
-              id: st,
-              label: language === "en" ? (enName || st) : st,
+          const uniqueKey = sc.id || ukName;
+          if (ukName && !seen.has(uniqueKey) && !seen.has(ukName)) {
+            seen.add(uniqueKey);
+            seen.add(ukName);
+            pillsList.push({
+              id: sc.id || ukName,
+              label: ukName,
               name_en: enName,
               title_en: enName,
             });
@@ -297,138 +310,50 @@ const Index = () => {
         });
       });
 
-      if (mode === "articles") {
-        articles.forEach((art) => (art.tags || []).forEach((t) => {
-          if (t && !pillsMap.has(t)) {
-            const enName = getSubcategoryTranslation(t);
-            pillsMap.set(t, {
-              id: t,
-              label: language === "en" ? (enName || t) : t,
-              name_en: enName,
-              title_en: enName,
-            });
-          }
-        }));
-      } else {
-        const currentEntries =
-          mode === "news"
-            ? news
-            : mode === "research"
-            ? research
-            : mode === "palettes"
-            ? palettes
-            : mode === "resources"
-            ? resources
-            : mode === "components"
-            ? components
-            : mode === "templates"
-            ? templates
-            : mode === "design"
-            ? design
-            : dictionary;
-        currentEntries.forEach((entry) => (entry.tags || []).forEach((t) => {
-          if (t && !pillsMap.has(t)) {
-            const enName = getSubcategoryTranslation(t);
-            pillsMap.set(t, {
-              id: t,
-              label: language === "en" ? (enName || t) : t,
-              name_en: enName,
-              title_en: enName,
-            });
-          }
-        }));
-      }
-
-      const pills = Array.from(pillsMap.values()).slice(0, 15);
-      return [allPill, ...pills];
+      return [allPill, ...pillsList];
     } else {
+      // When a specific Category is selected from dropdown (e.g., "Python"),
+      // strictly filter subcategories to match that Category's ID
       const currentCategory = modeCategories.find((c) => c.id === categoryId);
       if (currentCategory) {
-        const pillsMap = new Map<string, PillItem>();
+        const pillsList: PillItem[] = [];
+        const seen = new Set<string>();
+
         (currentCategory.subcategories || []).forEach((sc) => {
           const ukName = sc.name || sc.title || "";
           const enName = sc.title_en || sc.name_en || getSubcategoryTranslation(ukName);
-          if (ukName && !pillsMap.has(ukName)) {
-            pillsMap.set(ukName, {
-              id: ukName,
-              label: language === "en" ? (enName || ukName) : ukName,
-              name_en: enName,
-              title_en: enName,
-            });
-          }
-        });
-        (currentCategory.sub_topics || []).forEach((st) => {
-          if (st && !pillsMap.has(st)) {
-            const enName = getSubcategoryTranslation(st);
-            pillsMap.set(st, {
-              id: st,
-              label: language === "en" ? (enName || st) : st,
+          const uniqueKey = sc.id || ukName;
+          if (ukName && !seen.has(uniqueKey) && !seen.has(ukName)) {
+            seen.add(uniqueKey);
+            seen.add(ukName);
+            pillsList.push({
+              id: sc.id || ukName,
+              label: ukName,
               name_en: enName,
               title_en: enName,
             });
           }
         });
 
-        if (pillsMap.size > 0) {
-          return [allPill, ...Array.from(pillsMap.values())];
-        }
+        return [allPill, ...pillsList];
       }
 
-      // Fallback: collect tags from items matching category
-      const tagsMap = new Map<string, PillItem>();
-      if (mode === "articles") {
-        articles
-          .filter((a) => a.category_id === categoryId)
-          .flatMap((a) => a.tags || [])
-          .forEach((t) => {
-            if (t && !tagsMap.has(t)) {
-              const enName = getSubcategoryTranslation(t);
-              tagsMap.set(t, {
-                id: t,
-                label: language === "en" ? (enName || t) : t,
-                name_en: enName,
-                title_en: enName,
-              });
-            }
-          });
-      } else {
-        const currentEntries =
-          mode === "news"
-            ? news
-            : mode === "research"
-            ? research
-            : mode === "palettes"
-            ? palettes
-            : mode === "resources"
-            ? resources
-            : mode === "components"
-            ? components
-            : mode === "templates"
-            ? templates
-            : mode === "design"
-            ? design
-            : dictionary;
-        currentEntries.forEach((e) => (e.tags || []).forEach((t) => {
-          if (t && !tagsMap.has(t)) {
-            const enName = getSubcategoryTranslation(t);
-            tagsMap.set(t, {
-              id: t,
-              label: language === "en" ? (enName || t) : t,
-              name_en: enName,
-              title_en: enName,
-            });
-          }
-        }));
-      }
-      return [allPill, ...Array.from(tagsMap.values()).slice(0, 15)];
+      return [allPill];
     }
-  }, [mode, categoryId, modeCategories, articles, news, research, palettes, resources, components, templates, dictionary, design, language]);
+  }, [categoryId, modeCategories, language]);
 
   // Localized articles
   const localizedArticles = useMemo(
     () => articles.map((a) => ({ article: a, loc: localizeArticle(a, language) })),
     [articles, language]
   );
+
+  // Redirect to /tools if mode is tools
+  useEffect(() => {
+    if (mode === "tools") {
+      navigate("/tools");
+    }
+  }, [mode, navigate]);
 
   // Trigger Supabase semantic vector RPC search when search query changes
   useEffect(() => {
@@ -482,13 +407,43 @@ const Index = () => {
 
     // 3. Secondary Filter (Pill Tag / Subtopic)
     if (activePill !== "all") {
-      const pillLower = activePill.toLowerCase();
-      result = result.filter(
-        ({ article, loc }) =>
-          (article.tags || []).some((t) => t.toLowerCase() === pillLower) ||
-          loc.title.toLowerCase().includes(pillLower) ||
-          loc.description.toLowerCase().includes(pillLower)
-      );
+      const activePillLower = activePill.toLowerCase();
+      const matchedSub = modeCategories
+        .flatMap((c) => c.subcategories || [])
+        .find(
+          (s) =>
+            s.id === activePill ||
+            s.name?.toLowerCase() === activePillLower ||
+            s.title?.toLowerCase() === activePillLower ||
+            s.name_en?.toLowerCase() === activePillLower ||
+            s.title_en?.toLowerCase() === activePillLower
+        );
+
+      const targetNames = new Set<string>();
+      targetNames.add(activePillLower);
+      if (matchedSub) {
+        if (matchedSub.name) targetNames.add(matchedSub.name.toLowerCase());
+        if (matchedSub.title) targetNames.add(matchedSub.title.toLowerCase());
+        if (matchedSub.name_en) targetNames.add(matchedSub.name_en.toLowerCase());
+        if (matchedSub.title_en) targetNames.add(matchedSub.title_en.toLowerCase());
+      }
+      const translation = getSubcategoryTranslation(activePill);
+      if (translation) targetNames.add(translation.toLowerCase());
+
+      const targetList = Array.from(targetNames);
+
+      result = result.filter(({ article, loc }) => {
+        const articleTags = (article.tags || []).map((t) => t.toLowerCase());
+        const matchTag = articleTags.some((t) =>
+          targetList.some((target) => t === target || t.includes(target) || target.includes(t))
+        );
+        const titleLower = loc.title.toLowerCase();
+        const descLower = loc.description.toLowerCase();
+        const matchText = targetList.some(
+          (target) => titleLower.includes(target) || descLower.includes(target)
+        );
+        return matchTag || matchText;
+      });
     }
 
     // 4. Sort (ranked by semantic relevance when searching)
@@ -502,7 +457,7 @@ const Index = () => {
     });
 
     return result;
-  }, [mode, localizedArticles, searchQuery, sortBy, categoryId, activePill, rpcScores]);
+  }, [mode, localizedArticles, searchQuery, sortBy, categoryId, activePill, rpcScores, modeCategories]);
 
   const filteredNews = useMemo(
     () =>

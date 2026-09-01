@@ -15,11 +15,20 @@ interface SitemapEntry {
 }
 
 async function fetchJson(url: string) {
-  const res = await fetch(url, {
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-  });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.warn(`sitemap: fetch error for ${url}:`, err);
+    return [];
+  }
 }
 
 async function buildEntries(): Promise<SitemapEntry[]> {

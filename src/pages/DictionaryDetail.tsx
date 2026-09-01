@@ -23,6 +23,7 @@ import {
 import { blocksToPlainText, extractHeadings } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
 import { ItemTagsList } from "@/components/ItemTagBadge";
+import { logAnalyticsEvent } from "@/lib/analytics";
 
 const DictionaryDetail = () => {
   const { id = "" } = useParams();
@@ -51,6 +52,9 @@ const DictionaryDetail = () => {
   useEffect(() => {
     setLiked(getLikedEntries().includes(id));
     setLikeOffset(0);
+    if (id) {
+      logAnalyticsEvent("view", "dictionary", id);
+    }
   }, [id]);
 
   const loc = entry ? localizeEntry(entry, language) : null;

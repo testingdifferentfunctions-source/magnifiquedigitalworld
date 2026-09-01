@@ -196,18 +196,18 @@ export const DesignCard = ({
     <div
       id={`design-card-${item.id}`}
       onClick={onView}
-      className="cursor-pointer group flex flex-col md:flex-row items-stretch justify-between p-0 rounded-2xl bg-[#090040] border border-[#1b1458] hover:border-[#FFBCBC] transition-all duration-300 shadow-md hover:shadow-2xl hover:shadow-[#FFBCBC]/10 relative overflow-hidden min-h-[340px] md:min-h-[350px]"
+      className="cursor-pointer group flex flex-col md:flex-row items-stretch justify-between p-0 rounded-2xl bg-[#1E212D] border border-[#3A3F53] hover:border-[#FFBCBC] transition-all duration-300 shadow-md hover:shadow-2xl hover:shadow-[#FFBCBC]/10 relative overflow-hidden min-h-[340px] md:min-h-[350px]"
     >
       {/* Left Content Section (Strict 50%) */}
-      <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between min-w-0 bg-[#090040] h-full">
+      <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between min-w-0 bg-[#1E212D] h-full">
         <div className="space-y-3.5 flex-1 flex flex-col">
           {/* Title */}
-          <h3 className="text-xl md:text-2xl font-bold text-foreground group-hover:text-[#FFBCBC] transition-colors leading-snug">
+          <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-[#FFBCBC] transition-colors leading-snug">
             {item.title}
           </h3>
 
           {/* Short Description */}
-          <p className="text-sm text-neutral-300 leading-relaxed line-clamp-4">
+          <p className="text-sm text-slate-300 leading-relaxed line-clamp-4">
             {item.description}
           </p>
 
@@ -220,7 +220,7 @@ export const DesignCard = ({
               className={`h-9 px-3 rounded-lg text-xs gap-1.5 transition-colors ${
                 isLiked
                   ? "text-[#FFBCBC] bg-[#FFBCBC]/15 hover:bg-[#FFBCBC]/25"
-                  : "text-neutral-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10"
+                  : "text-slate-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10"
               }`}
               aria-label={t('card.like')}
             >
@@ -232,7 +232,7 @@ export const DesignCard = ({
               variant="ghost"
               size="sm"
               onClick={handleShareClick}
-              className="h-9 px-3 rounded-lg text-xs gap-1.5 text-neutral-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10 transition-colors"
+              className="h-9 px-3 rounded-lg text-xs gap-1.5 text-slate-400 hover:text-[#FFBCBC] hover:bg-[#FFBCBC]/10 transition-colors"
               aria-label={t('card.share')}
             >
               <Share2 className="w-4 h-4" />
@@ -241,16 +241,16 @@ export const DesignCard = ({
         </div>
 
         {/* Action Bar (View button separated in its primary position at bottom) */}
-        <div className="flex items-center gap-2.5 pt-5 mt-6 border-t border-[#1b1458]">
+        <div className="flex items-center gap-2.5 pt-5 mt-6 border-t border-[#3A3F53]">
           <Button
             onClick={(e) => {
               e.stopPropagation();
               onView();
             }}
-            className="h-11 px-5 rounded-xl text-sm font-semibold bg-[#FFBCBC] text-[#030008] hover:bg-[#FFBCBC]/90 shadow-sm transition-all gap-1.5 border-0 cursor-pointer"
+            className="h-11 px-5 rounded-xl text-sm font-semibold bg-[#FFBCBC] text-[#1E212D] hover:bg-[#FFBCBC]/90 shadow-sm transition-all gap-1.5 border-0 cursor-pointer"
           >
             <span>{t('card.view')}</span>
-            <ArrowUpRight className="w-4 h-4 text-[#030008]" />
+            <ArrowUpRight className="w-4 h-4 text-[#1E212D]" />
           </Button>
         </div>
       </div>

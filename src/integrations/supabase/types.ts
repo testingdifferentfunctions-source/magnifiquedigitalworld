@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          mode: string
+          target_id: string
+          viewer_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          mode?: string
+          target_id: string
+          viewer_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          mode?: string
+          target_id?: string
+          viewer_id?: string | null
+        }
+        Relationships: []
+      }
       article_translations: {
         Row: {
           article_id: string
@@ -175,7 +205,12 @@ export type Database = {
           created_at: string
           id: string
           image_url: string
+          mode?: string | null
+          mode_slug: string | null
           name: string
+          name_en?: string | null
+          slug?: string | null
+          sort_order?: number | null
           sub_topics: string[]
           updated_at: string
         }
@@ -183,7 +218,12 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string
+          mode?: string | null
+          mode_slug?: string | null
           name: string
+          name_en?: string | null
+          slug?: string | null
+          sort_order?: number | null
           sub_topics?: string[]
           updated_at?: string
         }
@@ -191,7 +231,12 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string
+          mode?: string | null
+          mode_slug?: string | null
           name?: string
+          name_en?: string | null
+          slug?: string | null
+          sort_order?: number | null
           sub_topics?: string[]
           updated_at?: string
         }
@@ -265,6 +310,7 @@ export type Database = {
           created_at: string
           id: string
           mode: string
+          mode_slug: string | null
           name: string
           name_en: string | null
           slug: string | null
@@ -278,6 +324,7 @@ export type Database = {
           created_at?: string
           id?: string
           mode?: string
+          mode_slug?: string | null
           name: string
           name_en?: string | null
           slug?: string | null
@@ -291,6 +338,7 @@ export type Database = {
           created_at?: string
           id?: string
           mode?: string
+          mode_slug?: string | null
           name?: string
           name_en?: string | null
           slug?: string | null
@@ -362,6 +410,14 @@ export type Database = {
         Args: { p_article_id: string }
         Returns: boolean
       }
+      get_24h_analytics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          likes_24h: number
+          shares_24h: number
+          views_24h: number
+        }[]
+      }
       get_article_unique_views: {
         Args: { p_article_id: string }
         Returns: number
@@ -385,9 +441,27 @@ export type Database = {
         Args: { p_article_id: string }
         Returns: undefined
       }
+      increment_mode_entry_shares: {
+        Args: { p_entry_id: string }
+        Returns: undefined
+      }
+      log_analytics_event: {
+        Args: {
+          p_event_type: string
+          p_metadata?: Json | null
+          p_mode: string
+          p_target_id: string
+          p_viewer_id?: string | null
+        }
+        Returns: string
+      }
       toggle_article_like: { Args: { p_article_id: string }; Returns: boolean }
       toggle_article_like_anonymous: {
         Args: { p_article_id: string; p_is_liking: boolean }
+        Returns: undefined
+      }
+      toggle_mode_entry_like: {
+        Args: { p_entry_id: string; p_is_liking: boolean }
         Returns: undefined
       }
       track_article_view: {
