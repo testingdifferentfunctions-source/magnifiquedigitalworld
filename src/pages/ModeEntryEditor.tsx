@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,12 +32,13 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Trash2, Upload, ExternalLink, Image as ImageIcon, Plus, X, BookOpen } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Upload, ExternalLink, Image as ImageIcon, Plus, X, BookOpen, Clock, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeUrl } from "@/lib/validation";
 import type { ContentBlock } from "@/lib/blocks";
 import { getAdminRoute } from "@/lib/adminPath";
+import { saveDraft, loadDraft, clearDraft, formatDraftTime } from "@/lib/autosave";
 
 const TYPE_OPTIONS: { value: ModeEntryType; label: string }[] = [
   { value: "news", label: "Новини (News)" },
@@ -114,6 +115,7 @@ const ModeEntryEditor = () => {
     setValue,
     watch,
     reset,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(modeEntrySchema),
@@ -141,6 +143,14 @@ const ModeEntryEditor = () => {
   const watchedTags = watch("tags") || [];
   const { data: modeCategories = [] } = useCategories(watchedType);
 
+  // Autosave & draft state
+  const draftKey = isEditing
+    ? `draft_mode_entry_${id}`
+    : `draft_mode_entry_${watchedType || initialType}_new`;
+  const isInitializedRef = useRef(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const [hasDraftRestored, setHasDraftRestored] = useState(false);
+
   const activeCategory = modeCategories.find((c) => c.id === selectedCategoryId) || modeCategories[0];
   const categorySubcategories = activeCategory?.subcategories || [];
 
@@ -150,8 +160,112 @@ const ModeEntryEditor = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Restore draft for new entry
   useEffect(() => {
-    if (existingEntry) {
+    if (!isEditing && !isInitializedRef.current) {
+      const saved = loadDraft<FormValues>(draftKey);
+      if (saved && saved.data) {
+        reset(saved.data);
+        setDraftSavedAt(saved.savedAt);
+        setHasDraftRestored(true);
+      } else if (rawType && VALID_TYPES.includes(rawType as ModeEntryType)) {
+        setValue("type", rawType as ModeEntryType);
+      }
+      isInitializedRef.current = true;
+    }
+  }, [isEditing, draftKey, rawType, reset, setValue]);
+
+  // Populate or restore draft for existing entry
+  useEffect(() => {
+    if (existingEntry && isEditing && !isInitializedRef.current) {
+      const saved = loadDraft<FormValues>(draftKey);
+      if (saved && saved.data) {
+        reset(saved.data);
+        setDraftSavedAt(saved.savedAt);
+        setHasDraftRestored(true);
+      } else {
+        reset({
+          type: existingEntry.type,
+          slug: existingEntry.slug ?? "",
+          title_uk: existingEntry.title_uk ?? "",
+          title_en: existingEntry.title_en ?? "",
+          description_uk: existingEntry.description_uk ?? "",
+          description_en: existingEntry.description_en ?? "",
+          image_url: existingEntry.image_url ?? "",
+          image_source_url: existingEntry.image_source_url ?? "",
+          external_url: existingEntry.external_url ?? "",
+          sources: (existingEntry.sources as any[]) || [],
+          tags: existingEntry.tags ?? [],
+          published: existingEntry.published,
+          canonical_url_uk: existingEntry.canonical_url_uk ?? "",
+          canonical_url_en: existingEntry.canonical_url_en ?? "",
+          blocks_uk: existingEntry.blocks_uk ?? [],
+          blocks_en: existingEntry.blocks_en ?? [],
+        });
+      }
+      isInitializedRef.current = true;
+    }
+  }, [existingEntry, isEditing, draftKey, reset]);
+
+  // Flush save on tab blur, window unload, etc.
+  const flushSave = useCallback(() => {
+    if (!isInitializedRef.current) return;
+    const values = getValues();
+    saveDraft(draftKey, values);
+  }, [draftKey, getValues]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushSave();
+      }
+    };
+    const handleBeforeUnload = () => {
+      flushSave();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [flushSave]);
+
+  // Continuous Autosave on form changes
+  useEffect(() => {
+    const subscription = watch((value) => {
+      if (!isInitializedRef.current) return;
+      if (!value) return;
+
+      const hasContent = Boolean(
+        value.title_uk ||
+        value.description_uk ||
+        value.title_en ||
+        value.description_en ||
+        value.image_url ||
+        (value.tags && value.tags.length > 0) ||
+        (value.blocks_uk && (value.blocks_uk as any[]).length > 0) ||
+        (value.blocks_en && (value.blocks_en as any[]).length > 0)
+      );
+
+      if (hasContent || isEditing) {
+        saveDraft(draftKey, value as FormValues);
+        setDraftSavedAt(Date.now());
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [watch, draftKey, isEditing]);
+
+  const handleDiscardDraft = () => {
+    if (!confirm("Ви впевнені, що хочете очистити чернетку? Незбережені зміни будуть видалені.")) return;
+    clearDraft(draftKey);
+    setDraftSavedAt(null);
+    setHasDraftRestored(false);
+
+    if (existingEntry && isEditing) {
       reset({
         type: existingEntry.type,
         slug: existingEntry.slug ?? "",
@@ -170,10 +284,28 @@ const ModeEntryEditor = () => {
         blocks_uk: existingEntry.blocks_uk ?? [],
         blocks_en: existingEntry.blocks_en ?? [],
       });
-    } else if (rawType && VALID_TYPES.includes(rawType as ModeEntryType)) {
-      setValue("type", rawType as ModeEntryType);
+    } else {
+      reset({
+        type: initialType,
+        slug: "",
+        title_uk: "",
+        title_en: "",
+        description_uk: "",
+        description_en: "",
+        image_url: "",
+        image_source_url: "",
+        external_url: "",
+        sources: [],
+        tags: [],
+        published: true,
+        canonical_url_uk: "",
+        canonical_url_en: "",
+        blocks_uk: [],
+        blocks_en: [],
+      });
     }
-  }, [existingEntry, rawType, reset, setValue]);
+    toast.success("Чернетку очищено");
+  };
 
   const watchedImageUrl = watch("image_url");
   const isCodeMode =
@@ -251,9 +383,15 @@ const ModeEntryEditor = () => {
 
       if (isEditing && id) {
         await updateEntry.mutateAsync({ id, ...payload });
+        clearDraft(draftKey);
+        setDraftSavedAt(null);
+        setHasDraftRestored(false);
         toast.success("Запис успішно оновлено");
       } else {
         await createEntry.mutateAsync(payload);
+        clearDraft(draftKey);
+        setDraftSavedAt(null);
+        setHasDraftRestored(false);
         toast.success("Запис успішно створено");
       }
       navigate(getAdminRoute());
@@ -267,6 +405,9 @@ const ModeEntryEditor = () => {
     if (!id || !confirm("Ви впевнені, що хочете видалити цей запис?")) return;
     try {
       await deleteEntry.mutateAsync(id);
+      clearDraft(draftKey);
+      setDraftSavedAt(null);
+      setHasDraftRestored(false);
       toast.success("Запис видалено");
       navigate(getAdminRoute());
     } catch (err: any) {
@@ -289,17 +430,39 @@ const ModeEntryEditor = () => {
   return (
     <PageLayout>
       <div className="max-w-4xl mx-auto space-y-6 pb-12">
-        <div className="flex items-center justify-between gap-4">
-          <Button variant="ghost" onClick={() => navigate(getAdminRoute())}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад до панелі керування
-          </Button>
-          {isEditing && (
-            <Button variant="destructive" size="sm" onClick={handleDelete}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Видалити
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={() => navigate(getAdminRoute())}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Назад до панелі керування
             </Button>
-          )}
+            {draftSavedAt && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md border border-border/40">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span>Автозбережено: {formatDraftTime(draftSavedAt)}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(draftSavedAt || hasDraftRestored) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDiscardDraft}
+                className="text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                Очистити чернетку
+              </Button>
+            )}
+            {isEditing && (
+              <Button variant="destructive" size="sm" onClick={handleDelete}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Видалити
+              </Button>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit, onFormError)} className="space-y-6">

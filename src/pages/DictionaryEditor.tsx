@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,7 +27,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, BookMarked, Save, Trash2, Globe, ExternalLink } from "lucide-react";
+import { ArrowLeft, BookMarked, Save, Trash2, Globe, ExternalLink, Clock, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   dictionaryEntrySchema,
@@ -36,6 +36,7 @@ import {
 } from "@/lib/validation";
 import type { ContentBlock } from "@/lib/blocks";
 import { getAdminRoute } from "@/lib/adminPath";
+import { saveDraft, loadDraft, clearDraft, formatDraftTime } from "@/lib/autosave";
 
 /**
  * Dedicated Admin Block Editor for "Словник" (Dictionary) mode.
@@ -56,6 +57,12 @@ export const DictionaryEditor = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const isEditing = !!id;
 
+  // Autosave & draft tracking
+  const draftKey = isEditing ? `draft_dictionary_${id}` : `draft_dictionary_new`;
+  const isInitializedRef = useRef(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const [hasDraftRestored, setHasDraftRestored] = useState(false);
+
   const { data: dictionaryCategories = [] } = useCategories("dictionary");
   const activeCategory =
     dictionaryCategories.find((c) => c.id === selectedCategoryId) ||
@@ -69,6 +76,7 @@ export const DictionaryEditor = () => {
     setValue,
     watch,
     reset,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<DictionaryEntryFormValues>({
     resolver: zodResolver(dictionaryEntrySchema),
@@ -101,9 +109,106 @@ export const DictionaryEditor = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  // Load existing dictionary entry
+  // Restore draft for new dictionary term
   useEffect(() => {
-    if (existingEntry) {
+    if (!isEditing && !isInitializedRef.current) {
+      const saved = loadDraft<DictionaryEntryFormValues>(draftKey);
+      if (saved && saved.data) {
+        reset(saved.data);
+        setDraftSavedAt(saved.savedAt);
+        setHasDraftRestored(true);
+      }
+      isInitializedRef.current = true;
+    }
+  }, [isEditing, draftKey, reset]);
+
+  // Load existing dictionary entry or restore draft for existing
+  useEffect(() => {
+    if (existingEntry && isEditing && !isInitializedRef.current) {
+      const saved = loadDraft<DictionaryEntryFormValues>(draftKey);
+      if (saved && saved.data) {
+        reset(saved.data);
+        setDraftSavedAt(saved.savedAt);
+        setHasDraftRestored(true);
+      } else {
+        reset({
+          type: "dictionary",
+          slug: existingEntry.slug ?? "",
+          title_uk: existingEntry.title_uk ?? "",
+          title_en: existingEntry.title_en ?? "",
+          description_uk: existingEntry.description_uk ?? "",
+          description_en: existingEntry.description_en ?? "",
+          external_url: existingEntry.external_url ?? "",
+          tags: existingEntry.tags ?? [],
+          published: existingEntry.published,
+          canonical_url_uk: existingEntry.canonical_url_uk ?? "",
+          canonical_url_en: existingEntry.canonical_url_en ?? "",
+          blocks_uk: existingEntry.blocks_uk ?? [],
+          blocks_en: existingEntry.blocks_en ?? [],
+        });
+      }
+      isInitializedRef.current = true;
+    }
+  }, [existingEntry, isEditing, draftKey, reset]);
+
+  // Flush save on window unload / visibility change
+  const flushSave = useCallback(() => {
+    if (!isInitializedRef.current) return;
+    const values = getValues();
+    saveDraft(draftKey, values);
+  }, [draftKey, getValues]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushSave();
+      }
+    };
+    const handleBeforeUnload = () => {
+      flushSave();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [flushSave]);
+
+  // Continuous Autosave on form changes
+  useEffect(() => {
+    const subscription = watch((value) => {
+      if (!isInitializedRef.current) return;
+      if (!value) return;
+
+      const hasContent = Boolean(
+        value.title_uk ||
+        value.description_uk ||
+        value.title_en ||
+        value.description_en ||
+        (value.tags && value.tags.length > 0) ||
+        (value.blocks_uk && (value.blocks_uk as any[]).length > 0) ||
+        (value.blocks_en && (value.blocks_en as any[]).length > 0)
+      );
+
+      if (hasContent || isEditing) {
+        saveDraft(draftKey, value as DictionaryEntryFormValues);
+        setDraftSavedAt(Date.now());
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [watch, draftKey, isEditing]);
+
+  const handleDiscardDraft = () => {
+    if (!confirm("Ви впевнені, що хочете очистити чернетку? Незбережені зміни будуть видалені.")) return;
+    clearDraft(draftKey);
+    setDraftSavedAt(null);
+    setHasDraftRestored(false);
+
+    if (existingEntry && isEditing) {
       reset({
         type: "dictionary",
         slug: existingEntry.slug ?? "",
@@ -119,8 +224,26 @@ export const DictionaryEditor = () => {
         blocks_uk: existingEntry.blocks_uk ?? [],
         blocks_en: existingEntry.blocks_en ?? [],
       });
+    } else {
+      reset({
+        type: "dictionary",
+        slug: "",
+        title_uk: "",
+        title_en: "",
+        description_uk: "",
+        description_en: "",
+        category_id: "",
+        external_url: "",
+        tags: [],
+        published: true,
+        canonical_url_uk: "",
+        canonical_url_en: "",
+        blocks_uk: [],
+        blocks_en: [],
+      });
     }
-  }, [existingEntry, reset]);
+    toast.success("Чернетку очищено");
+  };
 
   const onFormError = (formErrors: any) => {
     console.error("Dictionary form validation errors:", formErrors);
@@ -155,9 +278,15 @@ export const DictionaryEditor = () => {
 
       if (isEditing && id) {
         await updateEntry.mutateAsync({ id, ...payload });
+        clearDraft(draftKey);
+        setDraftSavedAt(null);
+        setHasDraftRestored(false);
         toast.success("Термін словника успішно оновлено");
       } else {
         await createEntry.mutateAsync(payload);
+        clearDraft(draftKey);
+        setDraftSavedAt(null);
+        setHasDraftRestored(false);
         toast.success("Термін словника успішно створено");
       }
       navigate(getAdminRoute());
@@ -172,6 +301,9 @@ export const DictionaryEditor = () => {
       return;
     try {
       await deleteEntry.mutateAsync(id);
+      clearDraft(draftKey);
+      setDraftSavedAt(null);
+      setHasDraftRestored(false);
       toast.success("Термін видалено зі словника");
       navigate(getAdminRoute());
     } catch (err: any) {
@@ -195,21 +327,43 @@ export const DictionaryEditor = () => {
     <PageLayout>
       <div className="max-w-4xl mx-auto space-y-6 pb-16">
         {/* Navigation & Header */}
-        <div className="flex items-center justify-between gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(getAdminRoute())}
-            className="hover:bg-neutral-800 text-neutral-300 hover:text-white"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад до панелі керування
-          </Button>
-          {isEditing && (
-            <Button variant="destructive" size="sm" onClick={handleDelete}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Видалити термін
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(getAdminRoute())}
+              className="hover:bg-neutral-800 text-neutral-300 hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Назад до панелі керування
             </Button>
-          )}
+            {draftSavedAt && (
+              <div className="flex items-center gap-1.5 text-xs text-neutral-300 bg-neutral-800/80 px-2.5 py-1 rounded-md border border-neutral-700/60">
+                <Clock className="w-3.5 h-3.5 text-[#F3CD97]" />
+                <span>Автозбережено: {formatDraftTime(draftSavedAt)}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(draftSavedAt || hasDraftRestored) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDiscardDraft}
+                className="text-xs border-neutral-700 text-neutral-400 hover:text-destructive hover:border-destructive/50"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                Очистити чернетку
+              </Button>
+            )}
+            {isEditing && (
+              <Button variant="destructive" size="sm" onClick={handleDelete}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Видалити термін
+              </Button>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit, onFormError)} className="space-y-6">

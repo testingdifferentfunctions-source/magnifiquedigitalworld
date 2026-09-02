@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useArticle, useCreateArticle, useUpdateArticle, useDeleteArticle } from '@/hooks/useArticles';
@@ -15,10 +15,28 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import TagInput from '@/components/TagInput';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Clock, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { articleSchema, sanitizeUrl, sanitizeHtml } from '@/lib/validation';
 import { getAdminRoute } from '@/lib/adminPath';
+import { saveDraft, loadDraft, clearDraft, formatDraftTime } from '@/lib/autosave';
+
+interface ArticleDraftData {
+  titleUk: string;
+  descriptionUk: string;
+  contentUk: string;
+  titleEn: string;
+  descriptionEn: string;
+  contentEn: string;
+  imageUrl: string;
+  categoryId: string;
+  published: boolean;
+  showTestButton: boolean;
+  tags: string[];
+  canonicalUrlUk: string;
+  canonicalUrlEn: string;
+  originalSourceUrl: string;
+}
 
 const ArticleEditor = () => {
   const { id } = useParams();
@@ -50,11 +68,16 @@ const ArticleEditor = () => {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Autosave & draft tracking
+  const isEditing = !!id;
+  const draftKey = isEditing ? `draft_article_edit_${id}` : `draft_article_new`;
+  const isInitializedRef = useRef(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const [hasDraftRestored, setHasDraftRestored] = useState(false);
+
   // Selected Category subcategories
   const selectedCategory = categories.find((c) => c.id === categoryId);
   const availableSubcategories = selectedCategory?.subcategories || [];
-
-  const isEditing = !!id;
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -62,8 +85,193 @@ const ArticleEditor = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Restore draft for new article
   useEffect(() => {
-    if (existingArticle) {
+    if (!isEditing && !isInitializedRef.current) {
+      const saved = loadDraft<ArticleDraftData>(draftKey);
+      if (saved && saved.data) {
+        if (saved.data.titleUk !== undefined) setTitleUk(saved.data.titleUk);
+        if (saved.data.descriptionUk !== undefined) setDescriptionUk(saved.data.descriptionUk);
+        if (saved.data.contentUk !== undefined) setContentUk(saved.data.contentUk);
+        if (saved.data.titleEn !== undefined) setTitleEn(saved.data.titleEn);
+        if (saved.data.descriptionEn !== undefined) setDescriptionEn(saved.data.descriptionEn);
+        if (saved.data.contentEn !== undefined) setContentEn(saved.data.contentEn);
+        if (saved.data.imageUrl !== undefined) setImageUrl(saved.data.imageUrl);
+        if (saved.data.categoryId !== undefined) setCategoryId(saved.data.categoryId);
+        if (saved.data.published !== undefined) setPublished(saved.data.published);
+        if (saved.data.tags !== undefined) setTags(saved.data.tags);
+        if (saved.data.canonicalUrlUk !== undefined) setCanonicalUrlUk(saved.data.canonicalUrlUk);
+        if (saved.data.canonicalUrlEn !== undefined) setCanonicalUrlEn(saved.data.canonicalUrlEn);
+        if (saved.data.originalSourceUrl !== undefined) setOriginalSourceUrl(saved.data.originalSourceUrl);
+        if (saved.data.showTestButton !== undefined) setShowTestButton(saved.data.showTestButton);
+        setDraftSavedAt(saved.savedAt);
+        setHasDraftRestored(true);
+      }
+      isInitializedRef.current = true;
+    }
+  }, [isEditing, draftKey]);
+
+  // Populate or restore draft for existing article
+  useEffect(() => {
+    if (existingArticle && isEditing && !isInitializedRef.current) {
+      const saved = loadDraft<ArticleDraftData>(draftKey);
+      if (saved && saved.data) {
+        if (saved.data.titleUk !== undefined) setTitleUk(saved.data.titleUk);
+        if (saved.data.descriptionUk !== undefined) setDescriptionUk(saved.data.descriptionUk);
+        if (saved.data.contentUk !== undefined) setContentUk(saved.data.contentUk);
+        if (saved.data.titleEn !== undefined) setTitleEn(saved.data.titleEn);
+        if (saved.data.descriptionEn !== undefined) setDescriptionEn(saved.data.descriptionEn);
+        if (saved.data.contentEn !== undefined) setContentEn(saved.data.contentEn);
+        if (saved.data.imageUrl !== undefined) setImageUrl(saved.data.imageUrl);
+        if (saved.data.categoryId !== undefined) setCategoryId(saved.data.categoryId);
+        if (saved.data.published !== undefined) setPublished(saved.data.published);
+        if (saved.data.tags !== undefined) setTags(saved.data.tags);
+        if (saved.data.canonicalUrlUk !== undefined) setCanonicalUrlUk(saved.data.canonicalUrlUk);
+        if (saved.data.canonicalUrlEn !== undefined) setCanonicalUrlEn(saved.data.canonicalUrlEn);
+        if (saved.data.originalSourceUrl !== undefined) setOriginalSourceUrl(saved.data.originalSourceUrl);
+        if (saved.data.showTestButton !== undefined) setShowTestButton(saved.data.showTestButton);
+        setDraftSavedAt(saved.savedAt);
+        setHasDraftRestored(true);
+      } else {
+        setTitleUk(existingArticle.title_uk ?? existingArticle.title ?? '');
+        setDescriptionUk(existingArticle.description_uk ?? existingArticle.description ?? '');
+        setContentUk(existingArticle.content_uk ?? existingArticle.content ?? '');
+        setTitleEn(existingArticle.title_en ?? '');
+        setDescriptionEn(existingArticle.description_en ?? '');
+        setContentEn(existingArticle.content_en ?? '');
+        setImageUrl(existingArticle.image_url);
+        setCategoryId(existingArticle.category_id || '');
+        setPublished(existingArticle.published);
+        setShowTestButton(Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton));
+        setTags(existingArticle.tags || []);
+        setCanonicalUrlUk(existingArticle.canonical_url_uk ?? existingArticle.original_source_url ?? '');
+        setCanonicalUrlEn(existingArticle.canonical_url_en ?? '');
+        setOriginalSourceUrl(existingArticle.original_source_url || '');
+      }
+      isInitializedRef.current = true;
+    }
+  }, [existingArticle, isEditing, draftKey]);
+
+  // Flush save handler for visibility change / beforeunload
+  const flushSave = useCallback(() => {
+    if (!isInitializedRef.current) return;
+    const dataToSave: ArticleDraftData = {
+      titleUk,
+      descriptionUk,
+      contentUk,
+      titleEn,
+      descriptionEn,
+      contentEn,
+      imageUrl,
+      categoryId,
+      published,
+      showTestButton,
+      tags,
+      canonicalUrlUk,
+      canonicalUrlEn,
+      originalSourceUrl,
+    };
+    saveDraft(draftKey, dataToSave);
+  }, [
+    titleUk,
+    descriptionUk,
+    contentUk,
+    titleEn,
+    descriptionEn,
+    contentEn,
+    imageUrl,
+    categoryId,
+    published,
+    showTestButton,
+    tags,
+    canonicalUrlUk,
+    canonicalUrlEn,
+    originalSourceUrl,
+    draftKey,
+  ]);
+
+  // Page lifecycle listeners (tab switch, refresh, close)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushSave();
+      }
+    };
+    const handleBeforeUnload = () => {
+      flushSave();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [flushSave]);
+
+  // Continuous Autosave on field state changes
+  useEffect(() => {
+    if (!isInitializedRef.current) return;
+
+    const hasAnyContent = Boolean(
+      titleUk ||
+      descriptionUk ||
+      contentUk ||
+      titleEn ||
+      descriptionEn ||
+      contentEn ||
+      imageUrl ||
+      categoryId ||
+      tags.length > 0
+    );
+
+    if (hasAnyContent || isEditing) {
+      const dataToSave: ArticleDraftData = {
+        titleUk,
+        descriptionUk,
+        contentUk,
+        titleEn,
+        descriptionEn,
+        contentEn,
+        imageUrl,
+        categoryId,
+        published,
+        showTestButton,
+        tags,
+        canonicalUrlUk,
+        canonicalUrlEn,
+        originalSourceUrl,
+      };
+      saveDraft(draftKey, dataToSave);
+      setDraftSavedAt(Date.now());
+    }
+  }, [
+    titleUk,
+    descriptionUk,
+    contentUk,
+    titleEn,
+    descriptionEn,
+    contentEn,
+    imageUrl,
+    categoryId,
+    published,
+    showTestButton,
+    tags,
+    canonicalUrlUk,
+    canonicalUrlEn,
+    originalSourceUrl,
+    draftKey,
+    isEditing,
+  ]);
+
+  const handleDiscardDraft = () => {
+    if (!confirm('Ви впевнені, що хочете очистити чернетку? Незбережені зміни будуть видалені.')) return;
+    clearDraft(draftKey);
+    setDraftSavedAt(null);
+    setHasDraftRestored(false);
+
+    if (existingArticle && isEditing) {
       setTitleUk(existingArticle.title_uk ?? existingArticle.title ?? '');
       setDescriptionUk(existingArticle.description_uk ?? existingArticle.description ?? '');
       setContentUk(existingArticle.content_uk ?? existingArticle.content ?? '');
@@ -78,8 +286,24 @@ const ArticleEditor = () => {
       setCanonicalUrlUk(existingArticle.canonical_url_uk ?? existingArticle.original_source_url ?? '');
       setCanonicalUrlEn(existingArticle.canonical_url_en ?? '');
       setOriginalSourceUrl(existingArticle.original_source_url || '');
+    } else {
+      setTitleUk('');
+      setDescriptionUk('');
+      setContentUk('');
+      setTitleEn('');
+      setDescriptionEn('');
+      setContentEn('');
+      setImageUrl('');
+      setCategoryId('');
+      setPublished(false);
+      setShowTestButton(false);
+      setTags([]);
+      setCanonicalUrlUk('');
+      setCanonicalUrlEn('');
+      setOriginalSourceUrl('');
     }
-  }, [existingArticle]);
+    toast.success('Чернетку очищено');
+  };
 
   if (authLoading || (isEditing && articleLoading)) {
     return (
@@ -171,9 +395,15 @@ const ArticleEditor = () => {
 
       if (isEditing) {
         await updateArticle.mutateAsync({ id, ...articleData });
+        clearDraft(draftKey);
+        setDraftSavedAt(null);
+        setHasDraftRestored(false);
         toast.success('Статтю оновлено');
       } else {
         await createArticle.mutateAsync(articleData);
+        clearDraft(draftKey);
+        setDraftSavedAt(null);
+        setHasDraftRestored(false);
         toast.success('Статтю створено');
         navigate(getAdminRoute());
       }
@@ -189,6 +419,9 @@ const ArticleEditor = () => {
 
     try {
       await deleteArticle.mutateAsync(id!);
+      clearDraft(draftKey);
+      setDraftSavedAt(null);
+      setHasDraftRestored(false);
       toast.success('Статтю видалено');
       navigate(getAdminRoute());
     } catch {
@@ -199,12 +432,31 @@ const ArticleEditor = () => {
   return (
     <PageLayout>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <Button variant="ghost" onClick={() => navigate(getAdminRoute())}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад
-          </Button>
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={() => navigate(getAdminRoute())}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Назад
+            </Button>
+            {draftSavedAt && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md border border-border/40">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span>Автозбережено: {formatDraftTime(draftSavedAt)}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(draftSavedAt || hasDraftRestored) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDiscardDraft}
+                className="text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                Очистити чернетку
+              </Button>
+            )}
             {isEditing && (
               <Button variant="destructive" onClick={handleDelete}>
                 <Trash2 className="w-4 h-4 mr-2" />

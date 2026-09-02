@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import ModeSwitcher from "@/components/ModeSwitcher";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
+import { saveDraft, loadDraft, clearDraft } from "@/lib/autosave";
 
 interface LogMessage {
   id: string;
@@ -26,6 +27,8 @@ interface LogMessage {
   text: string;
   timestamp: string;
 }
+
+const CODE_PLAYGROUND_DRAFT_KEY = "draft_python_code_playground";
 
 const DEFAULT_PYTHON_SNIPPET = `# Magnifique numérique — Python in WebAssembly (Pyodide)
 import time
@@ -127,7 +130,13 @@ const slateEditorTheme = EditorView.theme(
 
 export const CodePlayground: React.FC = () => {
   const { t, language } = useLanguage();
-  const [code, setCode] = useState<string>(DEFAULT_PYTHON_SNIPPET);
+  const [code, setCode] = useState<string>(() => {
+    const saved = loadDraft<string>(CODE_PLAYGROUND_DRAFT_KEY);
+    if (saved && typeof saved.data === "string" && saved.data.trim()) {
+      return saved.data;
+    }
+    return DEFAULT_PYTHON_SNIPPET;
+  });
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [status, setStatus] = useState<"idle" | "ready" | "running" | "error" | "timeout">("idle");
   const [engineReady, setEngineReady] = useState<boolean>(false);
@@ -137,6 +146,31 @@ export const CodePlayground: React.FC = () => {
   const workerRef = useRef<Worker | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Autosave code snippet to localStorage
+  useEffect(() => {
+    saveDraft(CODE_PLAYGROUND_DRAFT_KEY, code);
+  }, [code]);
+
+  // Flush save on tab blur, window unload
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        saveDraft(CODE_PLAYGROUND_DRAFT_KEY, code);
+      }
+    };
+    const handleBeforeUnload = () => {
+      saveDraft(CODE_PLAYGROUND_DRAFT_KEY, code);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [code]);
 
   const formatTimestamp = () => {
     const d = new Date();
@@ -307,6 +341,7 @@ export const CodePlayground: React.FC = () => {
 
   const handleResetCode = () => {
     setCode(DEFAULT_PYTHON_SNIPPET);
+    clearDraft(CODE_PLAYGROUND_DRAFT_KEY);
     toast.info(language === "en" ? "Code reset to default" : "Код скинуто до початкового стану");
   };
 
