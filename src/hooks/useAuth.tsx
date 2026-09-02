@@ -56,15 +56,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
 
-    setIsAdmin(!!data);
-    setRoleLoading(false);
+      setIsAdmin(!error && !!data && data.role === 'admin');
+    } catch {
+      setIsAdmin(false);
+    } finally {
+      setRoleLoading(false);
+    }
   };
 
   const signIn = async (email: string, password: string) => {

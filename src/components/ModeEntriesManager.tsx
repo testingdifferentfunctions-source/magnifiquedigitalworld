@@ -12,6 +12,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Heart, Pencil, Plus, Share2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { getAdminRoute } from "@/lib/adminPath";
 import {
   useAllModeEntries,
   useDeleteModeEntry,
@@ -64,7 +65,7 @@ const ModeEntriesManager = () => {
             return (
               <TabsContent key={type} value={type} className="space-y-4">
                 <Button asChild size="sm">
-                  <Link to={type === "dictionary" ? "/admin/dictionary" : `/admin/entry/${type}`}>
+                  <Link to={type === "dictionary" ? getAdminRoute("/dictionary") : getAdminRoute(`/entry/${type}`)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Додати ({label})
                   </Link>
@@ -122,8 +123,8 @@ const ModeEntriesManager = () => {
                                   <Link
                                     to={
                                       entry.type === "dictionary"
-                                        ? `/admin/dictionary/${entry.id}`
-                                        : `/admin/entry/${entry.type}/${entry.id}`
+                                        ? getAdminRoute(`/dictionary/${entry.id}`)
+                                        : getAdminRoute(`/entry/${entry.type}/${entry.id}`)
                                     }
                                   >
                                     <Pencil className="w-4 h-4" />

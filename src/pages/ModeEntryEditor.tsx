@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeUrl } from "@/lib/validation";
 import type { ContentBlock } from "@/lib/blocks";
+import { getAdminRoute } from "@/lib/adminPath";
 
 const TYPE_OPTIONS: { value: ModeEntryType; label: string }[] = [
   { value: "news", label: "Новини (News)" },
@@ -145,7 +146,7 @@ const ModeEntryEditor = () => {
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
-      navigate("/auth");
+      navigate("/");
     }
   }, [user, isAdmin, authLoading, navigate]);
 
@@ -255,7 +256,7 @@ const ModeEntryEditor = () => {
         await createEntry.mutateAsync(payload);
         toast.success("Запис успішно створено");
       }
-      navigate("/admin");
+      navigate(getAdminRoute());
     } catch (err: any) {
       console.error("Save error:", err);
       toast.error(err?.message || "Помилка збереження запису");
@@ -267,7 +268,7 @@ const ModeEntryEditor = () => {
     try {
       await deleteEntry.mutateAsync(id);
       toast.success("Запис видалено");
-      navigate("/admin");
+      navigate(getAdminRoute());
     } catch (err: any) {
       toast.error(err?.message || "Помилка видалення");
     }
@@ -289,7 +290,7 @@ const ModeEntryEditor = () => {
     <PageLayout>
       <div className="max-w-4xl mx-auto space-y-6 pb-12">
         <div className="flex items-center justify-between gap-4">
-          <Button variant="ghost" onClick={() => navigate("/admin")}>
+          <Button variant="ghost" onClick={() => navigate(getAdminRoute())}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад до панелі керування
           </Button>
@@ -867,7 +868,7 @@ const ModeEntryEditor = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate("/admin")}
+              onClick={() => navigate(getAdminRoute())}
             >
               Скасувати
             </Button>

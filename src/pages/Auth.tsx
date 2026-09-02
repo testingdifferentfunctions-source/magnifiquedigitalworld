@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { emailSchema, passwordSchema } from '@/lib/validation';
 import { ShieldCheck, ArrowLeft, KeyRound, Lock } from 'lucide-react';
 import logo from '@/assets/logo.svg';
+import { getAdminRoute } from '@/lib/adminPath';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 48 48" className="h-4 w-4" aria-hidden="true">
@@ -70,7 +71,7 @@ const Auth = () => {
           // User requires 2FA, do not auto-redirect
           return;
         }
-        navigate('/');
+        navigate(getAdminRoute());
       });
     }
   }, [user, step, navigate]);
@@ -209,7 +210,7 @@ const Auth = () => {
       // If no 2FA required, proceed to application
       clearAttempts();
       toast.success(t('auth.success'));
-      navigate('/');
+      navigate(getAdminRoute());
     } catch {
       toast.error(t('auth.general_error'));
     } finally {
@@ -238,7 +239,7 @@ const Auth = () => {
 
       clearAttempts();
       toast.success(t('auth.success'));
-      navigate('/');
+      navigate(getAdminRoute());
     } catch {
       toast.error(t('auth.mfa_invalid'));
     } finally {

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { ADMIN_BASE_PATH } from '@/lib/adminPath';
 import NotFound from '@/pages/NotFound';
 
 // The login form is only downloaded once the backend confirms that the
@@ -13,13 +14,20 @@ const Spinner = () => (
   </div>
 );
 
+const normalizePath = (p: string): string => {
+  const trimmed = p.trim();
+  const withSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return withSlash.length > 1 && withSlash.endsWith('/')
+    ? withSlash.slice(0, -1)
+    : withSlash;
+};
+
 /**
  * Wildcard route handler.
  *
- * The secret admin path is never present in the frontend bundle. This gate
- * simply asks the backend whether the path the visitor typed is the admin
- * login path. Any other unmatched route renders the normal 404 page, so the
- * secret path is indistinguishable from a random URL until the backend says so.
+ * Checks against configured admin path or asks the backend whether the path
+ * the visitor typed is the admin login path. Any other unmatched route renders
+ * the normal 404 page.
  */
 const SecretGate = () => {
   const location = useLocation();
@@ -29,6 +37,13 @@ const SecretGate = () => {
     let active = true;
     setState('checking');
 
+    // 1. Direct match with configured ADMIN_BASE_PATH
+    if (normalizePath(location.pathname) === normalizePath(ADMIN_BASE_PATH)) {
+      setState('granted');
+      return;
+    }
+
+    // 2. Edge Function fallback
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke('verify-admin-path', {

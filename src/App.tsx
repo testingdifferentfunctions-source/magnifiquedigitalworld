@@ -3,11 +3,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import { ModeProvider } from "@/hooks/useMode";
 import RequireAdmin from "@/components/RequireAdmin";
+import { getAdminRoute } from "@/lib/adminPath";
 import Index from "./pages/Index";
 import Popular from "./pages/Popular";
 import Favorites from "./pages/Favorites";
@@ -33,6 +34,7 @@ import SecretGate from "./pages/SecretGate";
 // Admin code is split into separate chunks and only downloaded once
 // RequireAdmin has confirmed an authenticated user with the admin role.
 const Admin = lazy(() => import("./pages/Admin"));
+const Auth = lazy(() => import("./pages/Auth"));
 const ArticleEditor = lazy(() => import("./pages/ArticleEditor"));
 const ModeEntryEditor = lazy(() => import("./pages/ModeEntryEditor"));
 const DictionaryEditor = lazy(() => import("./pages/DictionaryEditor"));
@@ -42,6 +44,32 @@ const AdminFallback = () => (
     <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
   </div>
 );
+
+const AdminGate = () => {
+  const { user, isAdmin, loading, roleLoading } = useAuth();
+
+  if (loading || (user && roleLoading)) {
+    return <AdminFallback />;
+  }
+
+  if (user && isAdmin) {
+    return (
+      <Suspense fallback={<AdminFallback />}>
+        <Admin />
+      </Suspense>
+    );
+  }
+
+  if (user && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <Suspense fallback={<AdminFallback />}>
+      <Auth />
+    </Suspense>
+  );
+};
 
 const queryClient = new QueryClient();
 
@@ -78,17 +106,11 @@ const App = () => (
                 <Route path="/reset-request/:token" element={<ResetRequest />} />
                 <Route path="/reset-password" element={<UpdatePassword />} />
                 <Route
-                  path="/admin"
-                  element={
-                    <RequireAdmin>
-                      <Suspense fallback={<AdminFallback />}>
-                        <Admin />
-                      </Suspense>
-                    </RequireAdmin>
-                  }
+                  path={getAdminRoute()}
+                  element={<AdminGate />}
                 />
                 <Route
-                  path="/admin/editor"
+                  path={getAdminRoute('/editor')}
                   element={
                     <RequireAdmin>
                       <Suspense fallback={<AdminFallback />}>
@@ -98,7 +120,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin/editor/:id"
+                  path={getAdminRoute('/editor/:id')}
                   element={
                     <RequireAdmin>
                       <Suspense fallback={<AdminFallback />}>
@@ -108,7 +130,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin/entry/:type"
+                  path={getAdminRoute('/entry/:type')}
                   element={
                     <RequireAdmin>
                       <Suspense fallback={<AdminFallback />}>
@@ -118,7 +140,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin/entry/:type/:id"
+                  path={getAdminRoute('/entry/:type/:id')}
                   element={
                     <RequireAdmin>
                       <Suspense fallback={<AdminFallback />}>
@@ -128,7 +150,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin/dictionary"
+                  path={getAdminRoute('/dictionary')}
                   element={
                     <RequireAdmin>
                       <Suspense fallback={<AdminFallback />}>
@@ -138,7 +160,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin/dictionary/:id"
+                  path={getAdminRoute('/dictionary/:id')}
                   element={
                     <RequireAdmin>
                       <Suspense fallback={<AdminFallback />}>

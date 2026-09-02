@@ -390,6 +390,10 @@ const CategoryManager: React.FC = () => {
           id: editingSubcategory.id,
           previousName: editingSubcategory.name,
           category_id: parentCatForSub.id,
+          category_name: parentCatForSub.name,
+          category_name_en: parentCatForSub.name_en,
+          category_slug: parentCatForSub.slug,
+          category_image_url: parentCatForSub.image_url,
           name: ukrainianTitleState,
           title: ukrainianTitleState,
           name_en: englishTitleState,
@@ -403,6 +407,10 @@ const CategoryManager: React.FC = () => {
       } else {
         await createSubcategory.mutateAsync({
           category_id: parentCatForSub.id,
+          category_name: parentCatForSub.name,
+          category_name_en: parentCatForSub.name_en,
+          category_slug: parentCatForSub.slug,
+          category_image_url: parentCatForSub.image_url,
           name: ukrainianTitleState,
           title: ukrainianTitleState,
           name_en: englishTitleState,

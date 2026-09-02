@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useArticle, useCreateArticle, useUpdateArticle, useDeleteArticle } from '@/hooks/useArticles';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories, isValidUUID, toDeterministicUUID } from '@/hooks/useCategories';
 import PageLayout from '@/components/PageLayout';
 import RichTextEditor from '@/components/RichTextEditor';
 import ImageDropzone from '@/components/ImageDropzone';
@@ -18,6 +18,7 @@ import TagInput from '@/components/TagInput';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { articleSchema, sanitizeUrl, sanitizeHtml } from '@/lib/validation';
+import { getAdminRoute } from '@/lib/adminPath';
 
 const ArticleEditor = () => {
   const { id } = useParams();
@@ -28,10 +29,6 @@ const ArticleEditor = () => {
   const createArticle = useCreateArticle();
   const updateArticle = useUpdateArticle();
   const deleteArticle = useDeleteArticle();
-
-  // Selected Category subcategories
-  const selectedCategory = categories.find((c) => c.id === categoryId);
-  const availableSubcategories = selectedCategory?.subcategories || [];
 
   // Ukrainian (base) fields
   const [titleUk, setTitleUk] = useState('');
@@ -53,11 +50,15 @@ const ArticleEditor = () => {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Selected Category subcategories
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const availableSubcategories = selectedCategory?.subcategories || [];
+
   const isEditing = !!id;
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
-      navigate('/auth');
+      navigate('/');
     }
   }, [user, isAdmin, authLoading, navigate]);
 
@@ -154,7 +155,7 @@ const ArticleEditor = () => {
         description_en: descriptionEn.trim() || null,
         content_en: contentEn.trim() ? sanitizeHtml(contentEn) : null,
         image_url: sanitizedImageUrl || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop',
-        category_id: categoryId || null,
+        category_id: categoryId ? (isValidUUID(categoryId) ? categoryId : toDeterministicUUID(categoryId)) : null,
         published,
         show_test_button: showTestButton,
         showTestButton: showTestButton,
@@ -174,7 +175,7 @@ const ArticleEditor = () => {
       } else {
         await createArticle.mutateAsync(articleData);
         toast.success('Статтю створено');
-        navigate('/admin');
+        navigate(getAdminRoute());
       }
     } catch {
       toast.error('Помилка збереження');
@@ -189,7 +190,7 @@ const ArticleEditor = () => {
     try {
       await deleteArticle.mutateAsync(id!);
       toast.success('Статтю видалено');
-      navigate('/admin');
+      navigate(getAdminRoute());
     } catch {
       toast.error('Помилка видалення');
     }
@@ -199,7 +200,7 @@ const ArticleEditor = () => {
     <PageLayout>
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <Button variant="ghost" onClick={() => navigate('/admin')}>
+          <Button variant="ghost" onClick={() => navigate(getAdminRoute())}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад
           </Button>

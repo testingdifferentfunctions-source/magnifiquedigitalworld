@@ -42,6 +42,7 @@ import SocialLinksManager from '@/components/SocialLinksManager';
 import ModeEntriesManager from '@/components/ModeEntriesManager';
 import CategoryManager from '@/components/CategoryManager';
 import TwoFactorAuthSettings from '@/components/TwoFactorAuthSettings';
+import { getAdminRoute } from '@/lib/adminPath';
 
 const Admin = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -53,7 +54,7 @@ const Admin = () => {
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
-      navigate('/auth');
+      navigate('/');
     }
   }, [user, isAdmin, loading, navigate]);
 
@@ -94,55 +95,55 @@ const Admin = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-card border-border">
               <DropdownMenuItem asChild>
-                <Link to="/admin/editor" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/editor')} className="flex items-center gap-2 cursor-pointer">
                   <FileText className="w-4 h-4 text-[#A07DFA]" />
                   <span>Стаття (Статті)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/admin/entry/news" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/entry/news')} className="flex items-center gap-2 cursor-pointer">
                   <Newspaper className="w-4 h-4 text-[#A4B885]" />
                   <span>Новина (Новини)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/admin/entry/palette" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/entry/palette')} className="flex items-center gap-2 cursor-pointer">
                   <Palette className="w-4 h-4 text-[#8ABEB9]" />
                   <span>Палітра (Палітри)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/admin/entry/resource" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/entry/resource')} className="flex items-center gap-2 cursor-pointer">
                   <BookOpen className="w-4 h-4 text-[#5DA7DB]" />
                   <span>Ресурс (Ресурси)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/admin/entry/component" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/entry/component')} className="flex items-center gap-2 cursor-pointer">
                   <Layers className="w-4 h-4 text-[#F1F5F9]" />
                   <span>Компонент (Компоненти)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/admin/entry/template" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/entry/template')} className="flex items-center gap-2 cursor-pointer">
                   <Code className="w-4 h-4 text-[#C562AF]" />
                   <span>Сніпет коду (Сніпети)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/admin/entry/research" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/entry/research')} className="flex items-center gap-2 cursor-pointer">
                   <BarChart3 className="w-4 h-4 text-[#F78D60]" />
                   <span>Дослідження (Research)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/admin/dictionary" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/dictionary')} className="flex items-center gap-2 cursor-pointer">
                   <BookMarked className="w-4 h-4 text-[#F3CD97]" />
                   <span>Термін (Словник)</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/admin/entry/design" className="flex items-center gap-2 cursor-pointer">
+                <Link to={getAdminRoute('/entry/design')} className="flex items-center gap-2 cursor-pointer">
                   <Sparkles className="w-4 h-4 text-[#FFBCBC]" />
                   <span>Дизайн (UI & Градієнти)</span>
                 </Link>
@@ -150,7 +151,7 @@ const Admin = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link to="/admin/editor">
+          <Link to={getAdminRoute('/editor')}>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               Нова стаття
@@ -337,7 +338,7 @@ const Admin = () => {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Статті блогу ({articles.length})</CardTitle>
-              <Link to="/admin/editor">
+              <Link to={getAdminRoute('/editor')}>
                 <Button size="sm">
                   <Plus className="w-4 h-4 mr-1.5" />
                   Додати статтю
@@ -396,7 +397,7 @@ const Admin = () => {
                           >
                             <BarChart3 className="w-4 h-4" />
                           </Button>
-                          <Link to={`/admin/editor/${article.id}`}>
+                          <Link to={getAdminRoute(`/editor/${article.id}`)}>
                             <Button size="sm" variant="ghost" title="Редагувати">
                               <Pencil className="w-4 h-4" />
                             </Button>

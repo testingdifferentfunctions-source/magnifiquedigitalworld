@@ -35,6 +35,7 @@ import {
   sanitizeUrl,
 } from "@/lib/validation";
 import type { ContentBlock } from "@/lib/blocks";
+import { getAdminRoute } from "@/lib/adminPath";
 
 /**
  * Dedicated Admin Block Editor for "Словник" (Dictionary) mode.
@@ -96,7 +97,7 @@ export const DictionaryEditor = () => {
   // Protect route
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
-      navigate("/auth");
+      navigate("/");
     }
   }, [user, isAdmin, authLoading, navigate]);
 
@@ -159,7 +160,7 @@ export const DictionaryEditor = () => {
         await createEntry.mutateAsync(payload);
         toast.success("Термін словника успішно створено");
       }
-      navigate("/admin");
+      navigate(getAdminRoute());
     } catch (err: any) {
       console.error("Dictionary save error:", err);
       toast.error(err?.message || "Помилка збереження терміну словника");
@@ -172,7 +173,7 @@ export const DictionaryEditor = () => {
     try {
       await deleteEntry.mutateAsync(id);
       toast.success("Термін видалено зі словника");
-      navigate("/admin");
+      navigate(getAdminRoute());
     } catch (err: any) {
       toast.error(err?.message || "Помилка видалення терміну");
     }
@@ -197,7 +198,7 @@ export const DictionaryEditor = () => {
         <div className="flex items-center justify-between gap-4">
           <Button
             variant="ghost"
-            onClick={() => navigate("/admin")}
+            onClick={() => navigate(getAdminRoute())}
             className="hover:bg-neutral-800 text-neutral-300 hover:text-white"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -489,7 +490,7 @@ export const DictionaryEditor = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate("/admin")}
+              onClick={() => navigate(getAdminRoute())}
               className="border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-neutral-200"
             >
               Скасувати

@@ -584,37 +584,76 @@ export const DEFAULT_SEED_CATEGORIES: Record<
   ],
 };
 
+export const isValidUUID = (str?: string | null): boolean => {
+  if (!str || typeof str !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str.trim());
+};
+
+/**
+ * Deterministically maps any non-UUID string (like 'art-python-basics') to a valid UUIDv4 string
+ */
+export const toDeterministicUUID = (input: string): string => {
+  if (isValidUUID(input)) return input.toLowerCase().trim();
+
+  let h1 = 0x811c9dc5;
+  let h2 = 0x27d4eb2f;
+  let h3 = 0x165667b1;
+  let h4 = 0xd3a2646c;
+
+  for (let i = 0; i < input.length; i++) {
+    const k = input.charCodeAt(i);
+    h1 = Math.imul(h1 ^ k, 16777619);
+    h2 = Math.imul(h2 ^ k, 2246822519);
+    h3 = Math.imul(h3 ^ k, 3266489917);
+    h4 = Math.imul(h4 ^ k, 374761393);
+  }
+
+  const p1 = (h1 >>> 0).toString(16).padStart(8, "0");
+  const p2 = ((h2 >>> 0) & 0xffff).toString(16).padStart(4, "0");
+  const p3 = (0x4000 | ((h3 >>> 0) & 0x0fff)).toString(16).padStart(4, "0");
+  const p4 = (0x8000 | ((h4 >>> 0) & 0x3fff)).toString(16).padStart(4, "0");
+  const p5 = (
+    ((h1 ^ h3) >>> 0).toString(16).padStart(6, "0") +
+    ((h2 ^ h4) >>> 0).toString(16).padStart(6, "0")
+  ).slice(0, 12);
+
+  return `${p1}-${p2}-${p3}-${p4}-${p5}`.toLowerCase();
+};
+
 const getFallbackCategoriesForMode = (mode: CategoryMode): Category[] => {
   const seeds = DEFAULT_SEED_CATEGORIES[mode] || [];
-  return seeds.map((s, idx) => ({
-    id: s.id,
-    mode,
-    mode_slug: mode,
-    name: s.name,
-    name_en: s.name_en || null,
-    slug: s.slug,
-    image_url: s.image_url || null,
-    sort_order: idx,
-    sub_topics: s.subcategories,
-    subcategories: s.subcategories.map((subName, subIdx) => {
-      const transEn = getSubcategoryTranslation(subName);
-      return {
-        id: `${s.id}-sub-${subIdx}`,
-        category_id: s.id,
-        mode,
-        mode_slug: mode,
-        name: subName,
-        title: subName,
-        title_en: transEn,
-        name_en: transEn,
-        sort_order: subIdx,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-    }),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }));
+  return seeds.map((s, idx) => {
+    const parentUuid = toDeterministicUUID(s.id);
+    return {
+      id: parentUuid,
+      mode,
+      mode_slug: mode,
+      name: s.name,
+      name_en: s.name_en || null,
+      slug: s.slug,
+      image_url: s.image_url || null,
+      sort_order: idx,
+      sub_topics: s.subcategories,
+      subcategories: s.subcategories.map((subName, subIdx) => {
+        const transEn = getSubcategoryTranslation(subName);
+        return {
+          id: toDeterministicUUID(`${s.id}-sub-${subIdx}`),
+          category_id: parentUuid,
+          mode,
+          mode_slug: mode,
+          name: subName,
+          title: subName,
+          title_en: transEn,
+          name_en: transEn,
+          sort_order: subIdx,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      }),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  });
 };
 
 /**
@@ -731,7 +770,7 @@ export const useCategories = (rawMode?: string) => {
                 : legacySubTopics.map((st, idx) => {
                     const transEn = getSubcategoryTranslation(st);
                     return {
-                      id: `${c.id}-sub-${idx}`,
+                      id: toDeterministicUUID(`${c.id}-sub-${idx}`),
                       category_id: c.id,
                       mode: resolvedMode,
                       mode_slug: resolvedMode,
@@ -797,6 +836,199 @@ export const useCategories = (rawMode?: string) => {
 };
 
 /**
+ * Resolves a valid parent category UUID in Supabase.
+ * If the category does not exist in DB (e.g. was a client-side seed category),
+ * it inserts the parent category into `categories` table first so foreign keys and UUID types work.
+ */
+export async function resolveOrCreateParentCategory(
+  categoryId: string,
+  meta?: {
+    category_id?: string;
+    category_name?: string;
+    category_name_en?: string | null;
+    category_slug?: string | null;
+    category_image_url?: string | null;
+    name?: string;
+    title?: string;
+    name_en?: string | null;
+    slug?: string | null;
+    mode?: string;
+    mode_slug?: string;
+  }
+): Promise<string> {
+  const normMode = normalizeCategoryMode(meta?.mode_slug || meta?.mode);
+  const catName = (
+    meta?.category_name ||
+    (meta?.name && !meta?.title ? meta?.name : "") ||
+    ""
+  ).trim();
+  const catSlug = (
+    meta?.category_slug ||
+    (meta?.slug && !meta?.title ? meta?.slug : "") ||
+    ""
+  ).trim();
+
+  // 1. If valid UUID, check if it already exists in Supabase categories table
+  if (isValidUUID(categoryId)) {
+    try {
+      const { data: existing } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("id", categoryId)
+        .maybeSingle();
+      if (existing?.id) {
+        return existing.id;
+      }
+    } catch (e) {
+      console.warn("Check category by ID error:", e);
+    }
+  }
+
+  // 2. Lookup existing category in DB by name or slug
+  const allSeeds = Object.values(DEFAULT_SEED_CATEGORIES).flat();
+  const seed = allSeeds.find(
+    (s) =>
+      s.id === categoryId ||
+      toDeterministicUUID(s.id) === categoryId ||
+      (catSlug && s.slug === catSlug) ||
+      (catName && s.name === catName)
+  );
+
+  const searchName = catName || seed?.name || "";
+  const searchSlug = catSlug || seed?.slug || "";
+
+  if (searchName || searchSlug) {
+    try {
+      let query = supabase.from("categories").select("id");
+      if (searchSlug) {
+        query = query.eq("slug", searchSlug);
+      } else if (searchName) {
+        query = query.eq("name", searchName);
+      }
+      const { data: matched } = await query.maybeSingle();
+      if (matched?.id) {
+        return matched.id;
+      }
+    } catch (e) {
+      console.warn("Check category by name/slug error:", e);
+    }
+  }
+
+  // 3. Category does not exist in DB yet. We must persist it!
+  const targetId = isValidUUID(categoryId) ? categoryId : toDeterministicUUID(categoryId);
+  const finalName = searchName || "Нова категорія";
+  const finalNameEn = meta?.category_name_en || seed?.name_en || null;
+  const finalSlug = searchSlug || (seed?.slug ? seed.slug : null);
+  const finalImageUrl =
+    meta?.category_image_url ||
+    seed?.image_url ||
+    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=200&h=200&fit=crop";
+  const seedSubTopics = seed?.subcategories || [];
+
+  // Progressive insertion attempts to handle various DB schema states and ensure it exists in DB
+  const payloads = [
+    // Attempt 1: Full modern schema with explicit targetId
+    {
+      id: targetId,
+      name: finalName,
+      name_en: finalNameEn,
+      slug: finalSlug,
+      image_url: finalImageUrl,
+      mode: normMode,
+      mode_slug: normMode,
+      sub_topics: seedSubTopics,
+      sort_order: 0,
+    },
+    // Attempt 2: Without mode_slug (mode only)
+    {
+      id: targetId,
+      name: finalName,
+      name_en: finalNameEn,
+      slug: finalSlug,
+      image_url: finalImageUrl,
+      mode: normMode,
+      sub_topics: seedSubTopics,
+      sort_order: 0,
+    },
+    // Attempt 3: Without mode (mode_slug only)
+    {
+      id: targetId,
+      name: finalName,
+      name_en: finalNameEn,
+      slug: finalSlug,
+      image_url: finalImageUrl,
+      mode_slug: normMode,
+      sub_topics: seedSubTopics,
+      sort_order: 0,
+    },
+    // Attempt 4: Minimal schema with id
+    {
+      id: targetId,
+      name: finalName,
+      image_url: finalImageUrl,
+      sub_topics: seedSubTopics,
+    },
+    // Attempt 5: Full modern schema with auto-generated ID
+    {
+      name: finalName,
+      name_en: finalNameEn,
+      slug: finalSlug,
+      image_url: finalImageUrl,
+      mode: normMode,
+      mode_slug: normMode,
+      sub_topics: seedSubTopics,
+      sort_order: 0,
+    },
+    // Attempt 6: Minimal schema with auto-generated ID
+    {
+      name: finalName,
+      image_url: finalImageUrl,
+      sub_topics: seedSubTopics,
+    },
+  ];
+
+  let lastError: any = null;
+  for (const payload of payloads) {
+    try {
+      const { data: newCat, error } = await supabase
+        .from("categories")
+        .insert(payload as any)
+        .select("id")
+        .single();
+
+      if (!error && newCat?.id) {
+        return newCat.id;
+      }
+      if (error) {
+        lastError = error;
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  // After attempting all inserts, do a check by name/slug or targetId in case it was inserted
+  try {
+    const { data: check } = await supabase
+      .from("categories")
+      .select("id")
+      .or(`id.eq.${targetId},name.eq.${finalName}`)
+      .maybeSingle();
+    if (check?.id) {
+      return check.id;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  throw new Error(
+    `Не вдалося створити батьківську категорію в БД перед додаванням підкатегорії: ${
+      lastError?.message || lastError?.details || "Перевірте дозволи до таблиці categories"
+    }`
+  );
+}
+
+/**
  * Mutation: Create Main Category
  */
 export const useCreateCategory = () => {
@@ -814,25 +1046,69 @@ export const useCreateCategory = () => {
       sort_order?: number;
     }) => {
       const normMode = normalizeCategoryMode(category.mode_slug || category.mode);
-      const payload: any = {
-        name: category.name.trim(),
-        name_en: category.name_en?.trim() || null,
-        mode: normMode,
-        mode_slug: normMode,
-        slug: category.slug?.trim() || null,
-        image_url: category.image_url || null,
-        sub_topics: category.sub_topics || [],
-        sort_order: category.sort_order ?? 0,
-      };
+      const defaultImg =
+        "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=200&h=200&fit=crop";
+      const finalImage =
+        category.image_url && category.image_url.trim()
+          ? category.image_url.trim()
+          : defaultImg;
 
-      const { data, error } = await supabase
-        .from("categories")
-        .insert(payload)
-        .select()
-        .single();
+      const payloads = [
+        {
+          name: category.name.trim(),
+          name_en: category.name_en?.trim() || null,
+          mode: normMode,
+          mode_slug: normMode,
+          slug: category.slug?.trim() || null,
+          image_url: finalImage,
+          sub_topics: category.sub_topics || [],
+          sort_order: category.sort_order ?? 0,
+        },
+        {
+          name: category.name.trim(),
+          name_en: category.name_en?.trim() || null,
+          mode: normMode,
+          slug: category.slug?.trim() || null,
+          image_url: finalImage,
+          sub_topics: category.sub_topics || [],
+          sort_order: category.sort_order ?? 0,
+        },
+        {
+          name: category.name.trim(),
+          name_en: category.name_en?.trim() || null,
+          mode_slug: normMode,
+          slug: category.slug?.trim() || null,
+          image_url: finalImage,
+          sub_topics: category.sub_topics || [],
+          sort_order: category.sort_order ?? 0,
+        },
+        {
+          name: category.name.trim(),
+          image_url: finalImage,
+          sub_topics: category.sub_topics || [],
+          sort_order: category.sort_order ?? 0,
+        },
+      ];
 
-      if (error) throw error;
-      return data;
+      let lastError: any = null;
+      for (const payload of payloads) {
+        try {
+          const { data, error } = await supabase
+            .from("categories")
+            .insert(payload as any)
+            .select()
+            .single();
+
+          if (!error && data) {
+            return data;
+          }
+          if (error) lastError = error;
+        } catch (e) {
+          lastError = e;
+        }
+      }
+
+      if (lastError) throw lastError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -851,23 +1127,48 @@ export const useUpdateCategory = () => {
       id,
       ...category
     }: Partial<Category> & { id: string; mode_slug?: string | null }) => {
+      const normMode = normalizeCategoryMode(category.mode_slug || category.mode);
       const payload: any = { ...category };
-      if (payload.mode || payload.mode_slug) {
-        const normMode = normalizeCategoryMode(payload.mode_slug || payload.mode);
-        payload.mode = normMode;
-        payload.mode_slug = normMode;
-      }
+      payload.mode = normMode;
+      payload.mode_slug = normMode;
       delete payload.subcategories; // Don't send joined field
 
-      const { data, error } = await supabase
-        .from("categories")
-        .update(payload)
-        .eq("id", id)
-        .select()
-        .single();
+      const validId = await resolveOrCreateParentCategory(id, {
+        ...category,
+        mode: normMode,
+        mode_slug: normMode,
+      });
 
-      if (error) throw error;
-      return data;
+      const updatePayloads = [
+        payload,
+        { ...payload, mode: normMode },
+        { ...payload, mode_slug: normMode },
+        {
+          name: payload.name,
+          image_url: payload.image_url,
+          sort_order: payload.sort_order,
+          sub_topics: payload.sub_topics,
+        },
+      ];
+
+      let lastError: any = null;
+      for (const p of updatePayloads) {
+        try {
+          const { data, error } = await supabase
+            .from("categories")
+            .update(p as any)
+            .eq("id", validId)
+            .select()
+            .single();
+
+          if (!error && data) return data;
+          if (error) lastError = error;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      if (lastError) throw lastError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -883,6 +1184,10 @@ export const useDeleteCategory = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!isValidUUID(id)) {
+        return;
+      }
+
       // First delete subcategories if table exists
       try {
         await supabase.from("subcategories").delete().eq("category_id", id);
@@ -909,54 +1214,114 @@ export const useCreateSubcategory = () => {
     mutationFn: async (sub: any) => {
       const subName = (sub.name || sub.title || "").trim();
       const subEn = (sub.name_en || sub.title_en || "").trim() || null;
-      const normMode = sub.mode_slug || sub.mode || "articles";
+      const normMode = normalizeCategoryMode(sub.mode_slug || sub.mode || "articles");
       const finalSlug = sub.slug?.trim() || null;
+      const sortOrder = typeof sub.sort_order === "number" ? sub.sort_order : 0;
 
-      // Attempt 1: Schema using 'title' and 'title_en'
-      let data: any = null;
-      const { data: initialData, error } = await supabase.from("subcategories").insert({
-        category_id: sub.category_id,
-        title: subName,
-        title_en: subEn,
-        mode: normMode,
-        slug: finalSlug,
-        sort_order: sub.sort_order ?? 0,
-      } as any).select().single();
+      // Ensure parent category exists in DB and obtain its verified UUID
+      const validCategoryId = await resolveOrCreateParentCategory(sub.category_id, sub);
 
-      if (error) {
-        console.log("Insert with title failed, trying name...", error);
-        // Attempt 2: Schema using 'name' and 'name_en'
-        const { data: retryData, error: retryError } = await supabase.from("subcategories").insert({
-          category_id: sub.category_id,
+      // Progressive subcategory inserts to handle various DB schema states
+      const payloads = [
+        // Attempt 1: All columns
+        {
+          category_id: validCategoryId,
+          name: subName,
+          title: subName,
+          name_en: subEn,
+          title_en: subEn,
+          mode: normMode,
+          mode_slug: normMode,
+          slug: finalSlug,
+          sort_order: sortOrder,
+        },
+        // Attempt 2: Title and title_en
+        {
+          category_id: validCategoryId,
+          title: subName,
+          title_en: subEn,
+          mode: normMode,
+          mode_slug: normMode,
+          slug: finalSlug,
+          sort_order: sortOrder,
+        },
+        // Attempt 3: Name and name_en
+        {
+          category_id: validCategoryId,
           name: subName,
           name_en: subEn,
           mode: normMode,
+          mode_slug: normMode,
           slug: finalSlug,
-          sort_order: sub.sort_order ?? 0,
-        } as any).select().single();
+          sort_order: sortOrder,
+        },
+        // Attempt 4: Name only
+        {
+          category_id: validCategoryId,
+          name: subName,
+          mode: normMode,
+          sort_order: sortOrder,
+        },
+        // Attempt 5: Title only
+        {
+          category_id: validCategoryId,
+          title: subName,
+          mode: normMode,
+          sort_order: sortOrder,
+        },
+      ];
 
-        if (retryError) {
-          throw new Error(
-            `DB Error: ${retryError.message} ${retryError.details || ""} ${retryError.hint || ""}`.trim()
-          );
+      let data: any = null;
+      let lastError: any = null;
+
+      for (const payload of payloads) {
+        try {
+          const { data: inserted, error } = await supabase
+            .from("subcategories")
+            .insert(payload as any)
+            .select()
+            .single();
+
+          if (!error && inserted) {
+            data = inserted;
+            lastError = null;
+            break;
+          }
+          if (error) {
+            lastError = error;
+          }
+        } catch (err) {
+          lastError = err;
         }
-        data = retryData;
-      } else {
-        data = initialData;
       }
 
-      // Legacy Sync
+      // Legacy Sync in categories.sub_topics
       try {
-        const { data: catData } = await supabase.from("categories").select("sub_topics").eq("id", sub.category_id).single();
+        const { data: catData } = await supabase
+          .from("categories")
+          .select("sub_topics")
+          .eq("id", validCategoryId)
+          .maybeSingle();
         const currentTopics = Array.isArray(catData?.sub_topics) ? catData.sub_topics : [];
         if (!currentTopics.includes(subName)) {
-          await supabase.from("categories").update({ sub_topics: [...currentTopics, subName] } as any).eq("id", sub.category_id);
+          await supabase
+            .from("categories")
+            .update({ sub_topics: [...currentTopics, subName] } as any)
+            .eq("id", validCategoryId);
         }
-      } catch {
-        /* ignore */
+      } catch (err) {
+        console.warn("Failed to sync sub_topics in categories:", err);
       }
 
-      return data;
+      if (lastError && !data) {
+        throw new Error(
+          `DB Error: ${lastError.message || "Помилка додавання підкатегорії"} ${
+            lastError.details || ""
+          } ${lastError.hint || ""}`.trim()
+        );
+      }
+
+      return data || { id: crypto.randomUUID(), category_id: validCategoryId, name: subName };
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["categories"] }),
   });
@@ -972,51 +1337,207 @@ export const useUpdateSubcategory = () => {
     mutationFn: async (sub: any) => {
       const subName = (sub.name || sub.title || "").trim();
       const subEn = (sub.name_en || sub.title_en || "").trim() || null;
+      const normMode = normalizeCategoryMode(sub.mode_slug || sub.mode || "articles");
       const finalSlug = sub.slug?.trim() || null;
+      const sortOrder = typeof sub.sort_order === "number" ? sub.sort_order : 0;
 
-      // Attempt 1: Schema using 'title' and 'title_en'
-      let data: any = null;
-      const { data: initialData, error } = await supabase.from("subcategories").update({
-        title: subName,
-        title_en: subEn,
-        slug: finalSlug,
-        sort_order: sub.sort_order ?? 0,
-      } as any).eq("id", sub.id).select().single();
+      const validCategoryId = await resolveOrCreateParentCategory(sub.category_id, sub);
 
-      if (error) {
-         console.log("Update with title failed, trying name...", error);
-         // Attempt 2: Schema using 'name' and 'name_en'
-         const { data: retryData, error: retryError } = await supabase.from("subcategories").update({
+      // If sub.id is not a valid UUID (or not in DB), check if it exists in DB or insert it
+      let existingSubId = isValidUUID(sub.id) ? sub.id : null;
+      if (existingSubId) {
+        try {
+          const { data: check } = await supabase
+            .from("subcategories")
+            .select("id")
+            .eq("id", existingSubId)
+            .maybeSingle();
+          if (!check?.id) {
+            existingSubId = null;
+          }
+        } catch {
+          existingSubId = null;
+        }
+      }
+
+      if (!existingSubId) {
+        // Subcategory does not exist in DB yet, perform insert
+        const payloads = [
+          {
+            category_id: validCategoryId,
+            name: subName,
+            title: subName,
+            name_en: subEn,
+            title_en: subEn,
+            mode: normMode,
+            mode_slug: normMode,
+            slug: finalSlug,
+            sort_order: sortOrder,
+          },
+          {
+            category_id: validCategoryId,
+            title: subName,
+            title_en: subEn,
+            mode: normMode,
+            mode_slug: normMode,
+            slug: finalSlug,
+            sort_order: sortOrder,
+          },
+          {
+            category_id: validCategoryId,
             name: subName,
             name_en: subEn,
+            mode: normMode,
+            mode_slug: normMode,
             slug: finalSlug,
-            sort_order: sub.sort_order ?? 0,
-         } as any).eq("id", sub.id).select().single();
+            sort_order: sortOrder,
+          },
+          {
+            category_id: validCategoryId,
+            name: subName,
+            mode: normMode,
+            sort_order: sortOrder,
+          },
+        ];
 
-         if (retryError) {
-           throw new Error(
-             `DB Error: ${retryError.message} ${retryError.details || ""} ${retryError.hint || ""}`.trim()
-           );
-         }
-         data = retryData;
-      } else {
-        data = initialData;
+        let insertedData: any = null;
+        let lastErr: any = null;
+        for (const payload of payloads) {
+          try {
+            const { data, error } = await supabase
+              .from("subcategories")
+              .insert(payload as any)
+              .select()
+              .single();
+            if (!error && data) {
+              insertedData = data;
+              break;
+            }
+            if (error) lastErr = error;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+
+        // Sync legacy sub_topics
+        try {
+          const { data: catData } = await supabase
+            .from("categories")
+            .select("sub_topics")
+            .eq("id", validCategoryId)
+            .maybeSingle();
+          const currentTopics = Array.isArray(catData?.sub_topics) ? catData.sub_topics : [];
+          const updated = sub.previousName
+            ? currentTopics.map((t: string) => (t === sub.previousName ? subName : t))
+            : [...currentTopics, subName];
+          await supabase
+            .from("categories")
+            .update({ sub_topics: updated } as any)
+            .eq("id", validCategoryId);
+        } catch {
+          /* ignore */
+        }
+
+        if (lastErr && !insertedData) {
+          throw new Error(`DB Error: ${lastErr.message || "Помилка оновлення підкатегорії"}`);
+        }
+        return (
+          insertedData || {
+            id: crypto.randomUUID(),
+            category_id: validCategoryId,
+            name: subName,
+          }
+        );
+      }
+
+      // Existing subcategory update
+      const updatePayloads = [
+        {
+          category_id: validCategoryId,
+          name: subName,
+          title: subName,
+          name_en: subEn,
+          title_en: subEn,
+          mode: normMode,
+          mode_slug: normMode,
+          slug: finalSlug,
+          sort_order: sortOrder,
+        },
+        {
+          title: subName,
+          title_en: subEn,
+          slug: finalSlug,
+          sort_order: sortOrder,
+        },
+        {
+          name: subName,
+          name_en: subEn,
+          slug: finalSlug,
+          sort_order: sortOrder,
+        },
+        {
+          name: subName,
+          sort_order: sortOrder,
+        },
+        {
+          title: subName,
+          sort_order: sortOrder,
+        },
+      ];
+
+      let updatedData: any = null;
+      let lastErr: any = null;
+      for (const payload of updatePayloads) {
+        try {
+          const { data, error } = await supabase
+            .from("subcategories")
+            .update(payload as any)
+            .eq("id", existingSubId)
+            .select()
+            .single();
+
+          if (!error && data) {
+            updatedData = data;
+            break;
+          }
+          if (error) lastErr = error;
+        } catch (e) {
+          lastErr = e;
+        }
       }
 
       // Legacy Sync
-      if (sub.previousName && sub.previousName !== subName) {
+      if (
+        sub.category_id &&
+        isValidUUID(sub.category_id) &&
+        sub.previousName &&
+        sub.previousName !== subName
+      ) {
         try {
-          const { data: catData } = await supabase.from("categories").select("sub_topics").eq("id", sub.category_id).single();
+          const { data: catData } = await supabase
+            .from("categories")
+            .select("sub_topics")
+            .eq("id", validCategoryId)
+            .maybeSingle();
           if (Array.isArray(catData?.sub_topics)) {
-            const updated = catData.sub_topics.map((t: string) => t === sub.previousName ? subName : t);
-            await supabase.from("categories").update({ sub_topics: updated } as any).eq("id", sub.category_id);
+            const updated = catData.sub_topics.map((t: string) =>
+              t === sub.previousName ? subName : t
+            );
+            await supabase
+              .from("categories")
+              .update({ sub_topics: updated } as any)
+              .eq("id", validCategoryId);
           }
         } catch {
           /* ignore */
         }
       }
 
-      return data;
+      if (lastErr && !updatedData) {
+        throw new Error(`DB Error: ${lastErr.message || "Помилка оновлення підкатегорії"}`);
+      }
+
+      return updatedData;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["categories"] }),
   });
@@ -1038,15 +1559,17 @@ export const useDeleteSubcategory = () => {
       category_id: string;
       name?: string;
     }) => {
-      // 1. Delete from subcategories table
-      try {
-        await supabase.from("subcategories").delete().eq("id", id);
-      } catch {
-        /* ignore */
+      // 1. Delete from subcategories table if valid UUID
+      if (isValidUUID(id)) {
+        try {
+          await supabase.from("subcategories").delete().eq("id", id);
+        } catch {
+          /* ignore */
+        }
       }
 
       // 2. Remove from parent category's `sub_topics`
-      if (category_id && name) {
+      if (category_id && isValidUUID(category_id) && name) {
         try {
           const { data: cat } = await supabase
             .from("categories")

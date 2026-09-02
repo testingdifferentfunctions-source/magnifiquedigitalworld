@@ -5,6 +5,7 @@ import { useMode } from "@/hooks/useMode";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.svg";
 import { LogOut, Settings, Globe } from "lucide-react";
+import { getAdminRoute, ADMIN_BASE_PATH } from "@/lib/adminPath";
 
 const Header = () => {
   const location = useLocation();
@@ -58,9 +59,9 @@ const Header = () => {
             ))}
             {isAdmin && (
               <Link
-                to="/admin"
+                to={getAdminRoute()}
                 className={`nav-link pb-1 flex items-center gap-1 ${
-                  location.pathname.startsWith('/admin') 
+                  location.pathname.startsWith(ADMIN_BASE_PATH) 
                     ? "text-primary" 
                     : "text-muted-foreground"
                 }`}
@@ -123,9 +124,9 @@ const Header = () => {
                 ))}
                 {isAdmin && (
                   <Link
-                    to="/admin"
+                    to={getAdminRoute()}
                     className={`block px-4 py-2 hover:bg-primary/10 transition-colors ${
-                      location.pathname.startsWith('/admin')
+                      location.pathname.startsWith(ADMIN_BASE_PATH)
                         ? "text-primary" 
                         : "text-muted-foreground"
                     }`}
