@@ -349,12 +349,6 @@ const ModeEntryEditor = () => {
         values.type === "component" ||
         values.type === "template" ||
         values.type === "dictionary";
-      const sanitizedSources = (values.sources || [])
-        .filter((s) => s && (s.url?.trim() || s.title?.trim()))
-        .map((s) => ({
-          title: s.title?.trim() || s.url?.trim() || "Джерело",
-          url: sanitizeUrl(s.url?.trim() || "") || s.url?.trim() || "#",
-        }));
 
       const payload = {
         type: values.type,
@@ -366,14 +360,15 @@ const ModeEntryEditor = () => {
         image_url: isCodeOnly ? null : (sanitizeUrl(values.image_url || "") || null),
         image_source_url: isCodeOnly ? null : (sanitizeUrl(values.image_source_url || "") || null),
         external_url: sanitizeUrl(values.external_url || "") || null,
-        sources: sanitizedSources,
-        tags: values.tags || [],
-        published: values.published,
+        tags: Array.isArray(values.tags) ? values.tags : [],
+        published: Boolean(values.published),
         canonical_url_uk: sanitizeUrl(values.canonical_url_uk || "") || null,
         canonical_url_en: sanitizeUrl(values.canonical_url_en || "") || null,
         blocks_uk: (values.blocks_uk as ContentBlock[]) || [],
         blocks_en: (values.blocks_en as ContentBlock[]) || [],
       };
+
+      console.log('[ModeEntryEditor] Submitting payload:', payload);
 
       if (isEditing && id) {
         await updateEntry.mutateAsync({ id, ...payload });
@@ -390,7 +385,7 @@ const ModeEntryEditor = () => {
       }
       navigate(getAdminRoute());
     } catch (err: any) {
-      console.error("Save error:", err);
+      console.error("[ModeEntryEditor] Save error:", err);
       toast.error(err?.message || "Помилка збереження запису");
     }
   };
@@ -405,7 +400,8 @@ const ModeEntryEditor = () => {
       toast.success("Запис видалено");
       navigate(getAdminRoute());
     } catch (err: any) {
-      toast.error(err?.message || "Помилка видалення");
+      console.error("[ModeEntryEditor] Delete error:", err);
+      toast.error(err?.message || "Помилка видалення запису");
     }
   };
 

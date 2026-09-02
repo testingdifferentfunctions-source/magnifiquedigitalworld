@@ -160,6 +160,84 @@ const invalidate = (queryClient: ReturnType<typeof useQueryClient>) => {
   queryClient.invalidateQueries({ queryKey: ["mode-entry"] });
 };
 
+// UUID validator helper
+const isValidUUID = (str?: string | null): boolean => {
+  if (!str) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str.trim());
+};
+
+/**
+ * Sanitizes mode entries payload ensuring it strictly matches PostgreSQL mode_entries columns.
+ * Removes virtual fields like 'sources' that are not columns on public.mode_entries table.
+ */
+export const sanitizeModeEntryPayload = (entry: Record<string, any>): Record<string, any> => {
+  const allowedColumns = [
+    'type',
+    'slug',
+    'title_uk',
+    'title_en',
+    'description_uk',
+    'description_en',
+    'blocks_uk',
+    'blocks_en',
+    'tags',
+    'image_url',
+    'image_source_url',
+    'external_url',
+    'category_id',
+    'published',
+    'sort_order',
+    'canonical_url_uk',
+    'canonical_url_en',
+    'embedding',
+  ];
+
+  const payload: Record<string, any> = {};
+  for (const col of allowedColumns) {
+    if (col in entry && entry[col] !== undefined) {
+      payload[col] = entry[col];
+    }
+  }
+
+  // Ensure title_uk & description_uk NOT NULL requirements
+  if (payload.title_uk !== undefined) {
+    payload.title_uk = typeof payload.title_uk === 'string' ? payload.title_uk.trim() : (payload.title_en || 'Без назви');
+  }
+  if (payload.description_uk !== undefined) {
+    payload.description_uk = typeof payload.description_uk === 'string' ? payload.description_uk.trim() : '';
+  }
+  
+  if (payload.title_en !== undefined) {
+    payload.title_en = typeof payload.title_en === 'string' && payload.title_en.trim() ? payload.title_en.trim() : null;
+  }
+  if (payload.description_en !== undefined) {
+    payload.description_en = typeof payload.description_en === 'string' && payload.description_en.trim() ? payload.description_en.trim() : null;
+  }
+  if (payload.slug !== undefined) {
+    payload.slug = typeof payload.slug === 'string' && payload.slug.trim() ? payload.slug.trim() : null;
+  }
+
+  // Category ID must be valid UUID or null
+  if (payload.category_id !== undefined) {
+    payload.category_id = isValidUUID(payload.category_id) ? payload.category_id : null;
+  }
+
+  if (payload.published !== undefined) {
+    payload.published = Boolean(payload.published);
+  }
+  if (payload.tags !== undefined) {
+    payload.tags = Array.isArray(payload.tags) ? payload.tags : [];
+  }
+  if (payload.blocks_uk !== undefined) {
+    payload.blocks_uk = Array.isArray(payload.blocks_uk) ? payload.blocks_uk : [];
+  }
+  if (payload.blocks_en !== undefined) {
+    payload.blocks_en = Array.isArray(payload.blocks_en) ? payload.blocks_en : [];
+  }
+
+  return payload;
+};
+
 export const useCreateModeEntry = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -174,15 +252,32 @@ export const useCreateModeEntry = () => {
         blocks_en: entry.blocks_en,
       });
 
+      const sanitized = sanitizeModeEntryPayload({
+        ...entry,
+        embedding,
+      });
+
+      console.log('[useCreateModeEntry] Submitting payload to Supabase mode_entries:', sanitized);
+
       const { data, error } = await supabase
         .from("mode_entries")
-        .insert({
-          ...entry,
-          embedding: embedding as any,
-        } as any)
+        .insert(sanitized as any)
         .select()
         .single();
-      if (error) throw error;
+
+      if (error) {
+        console.error('[useCreateModeEntry] Supabase insert error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          errorObject: error,
+          attemptedPayload: sanitized,
+        });
+        throw new Error(error.message || `Помилка створення запису (${error.code || '400'})`);
+      }
+
+      console.log('[useCreateModeEntry] Successfully created mode entry:', data);
       return mapRow(data);
     },
     onSuccess: () => invalidate(queryClient),
@@ -193,7 +288,7 @@ export const useUpdateModeEntry = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...entry }: Partial<ModeEntryInput> & { id: string }) => {
-      const payload: Record<string, any> = { ...entry };
+      const sanitized = sanitizeModeEntryPayload(entry);
 
       // Re-generate vector embedding if title, description, tags or blocks are being updated
       if (
@@ -202,7 +297,7 @@ export const useUpdateModeEntry = () => {
         entry.tags !== undefined ||
         entry.blocks_uk !== undefined
       ) {
-        payload.embedding = generateEntryEmbedding({
+        sanitized.embedding = generateEntryEmbedding({
           title_uk: entry.title_uk || "",
           title_en: entry.title_en,
           description_uk: entry.description_uk || "",
@@ -213,13 +308,28 @@ export const useUpdateModeEntry = () => {
         });
       }
 
+      console.log('[useUpdateModeEntry] Submitting update to Supabase mode_entries for ID', id, ':', sanitized);
+
       const { data, error } = await supabase
         .from("mode_entries")
-        .update(payload as any)
+        .update(sanitized as any)
         .eq("id", id)
         .select()
         .single();
-      if (error) throw error;
+
+      if (error) {
+        console.error('[useUpdateModeEntry] Supabase update error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          errorObject: error,
+          attemptedPayload: sanitized,
+        });
+        throw new Error(error.message || `Помилка оновлення запису (${error.code || '400'})`);
+      }
+
+      console.log('[useUpdateModeEntry] Successfully updated mode entry:', data);
       return mapRow(data);
     },
     onSuccess: () => invalidate(queryClient),
@@ -230,8 +340,18 @@ export const useDeleteModeEntry = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      console.log('[useDeleteModeEntry] Deleting mode entry with ID:', id);
       const { error } = await supabase.from("mode_entries").delete().eq("id", id);
-      if (error) throw error;
+      if (error) {
+        console.error('[useDeleteModeEntry] Supabase delete error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          errorObject: error,
+        });
+        throw new Error(error.message || `Помилка видалення запису (${error.code})`);
+      }
     },
     onSuccess: () => invalidate(queryClient),
   });

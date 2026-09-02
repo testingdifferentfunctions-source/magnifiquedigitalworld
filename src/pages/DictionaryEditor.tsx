@@ -264,13 +264,15 @@ export const DictionaryEditor = () => {
         image_url: null,
         image_source_url: null,
         external_url: sanitizeUrl(values.external_url || "") || null,
-        tags: values.tags || [],
-        published: values.published,
+        tags: Array.isArray(values.tags) ? values.tags : [],
+        published: Boolean(values.published),
         canonical_url_uk: sanitizeUrl(values.canonical_url_uk || "") || null,
         canonical_url_en: sanitizeUrl(values.canonical_url_en || "") || null,
         blocks_uk: (values.blocks_uk as ContentBlock[]) || [],
         blocks_en: (values.blocks_en as ContentBlock[]) || [],
       };
+
+      console.log('[DictionaryEditor] Submitting payload:', payload);
 
       if (isEditing && id) {
         await updateEntry.mutateAsync({ id, ...payload });
@@ -287,7 +289,7 @@ export const DictionaryEditor = () => {
       }
       navigate(getAdminRoute());
     } catch (err: any) {
-      console.error("Dictionary save error:", err);
+      console.error("[DictionaryEditor] Save error:", err);
       toast.error(err?.message || "Помилка збереження терміну словника");
     }
   };
@@ -303,6 +305,7 @@ export const DictionaryEditor = () => {
       toast.success("Термін видалено зі словника");
       navigate(getAdminRoute());
     } catch (err: any) {
+      console.error("[DictionaryEditor] Delete error:", err);
       toast.error(err?.message || "Помилка видалення терміну");
     }
   };

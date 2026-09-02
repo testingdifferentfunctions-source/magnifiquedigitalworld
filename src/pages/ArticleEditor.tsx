@@ -202,15 +202,17 @@ const ArticleEditor = () => {
     setSaving(true);
     try {
       const sanitizedImageUrl = sanitizeUrl(form.imageUrl);
-      const sanitizedCanonicalUk = sanitizeUrl(form.canonicalUrlUk);
-      const sanitizedCanonicalEn = sanitizeUrl(form.canonicalUrlEn);
 
+      // Clean category_id to ensure only valid UUID strings or null are sent
+      const cleanCategoryId = form.categoryId && form.categoryId.trim() && isValidUUID(form.categoryId.trim())
+        ? form.categoryId.trim()
+        : null;
+
+      // Construct pure article payload conforming strictly to Supabase public.articles table
       const articleData = {
-        // Legacy columns kept in sync with Ukrainian (base) content
         title: form.titleUk.trim(),
         description: form.descriptionUk.trim(),
         content: sanitizeHtml(form.contentUk),
-        // Per-language fields
         title_uk: form.titleUk.trim(),
         description_uk: form.descriptionUk.trim(),
         content_uk: sanitizeHtml(form.contentUk),
@@ -218,31 +220,30 @@ const ArticleEditor = () => {
         description_en: form.descriptionEn.trim() || null,
         content_en: form.contentEn.trim() ? sanitizeHtml(form.contentEn) : null,
         image_url: sanitizedImageUrl || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop',
-        category_id: form.categoryId ? (isValidUUID(form.categoryId) ? form.categoryId : toDeterministicUUID(form.categoryId)) : null,
-        published: form.published,
-        show_test_button: form.showTestButton,
-        tags: form.tags,
-        canonical_url_uk: sanitizedCanonicalUk || null,
-        canonical_url_en: sanitizedCanonicalEn || null,
-        original_source_url: sanitizedCanonicalUk || sanitizedCanonicalEn || form.originalSourceUrl.trim() || null,
+        category_id: cleanCategoryId,
+        published: Boolean(form.published),
+        tags: Array.isArray(form.tags) ? form.tags : [],
         reads: existingArticle?.reads || 0,
         likes: existingArticle?.likes || 0,
         impressions: existingArticle?.impressions || 0,
         share_count: existingArticle?.share_count || 0,
       };
 
+      console.log('[ArticleEditor] Saving article data:', articleData);
+
       if (isEditing && id) {
         await updateArticle.mutateAsync({ id, ...articleData });
         clearDraft();
-        toast.success('Статтю оновлено');
+        toast.success('Статтю успішно оновлено');
       } else {
         await createArticle.mutateAsync(articleData);
         clearDraft();
-        toast.success('Статтю створено');
+        toast.success('Статтю успішно створено');
         navigate(getAdminRoute());
       }
-    } catch {
-      toast.error('Помилка збереження');
+    } catch (err: any) {
+      console.error('[ArticleEditor] Save failed:', err);
+      toast.error(err?.message || 'Помилка збереження статті. Перевірте зʼєднання та заповнення полів.');
     } finally {
       setSaving(false);
     }
@@ -256,8 +257,9 @@ const ArticleEditor = () => {
       clearDraft();
       toast.success('Статтю видалено');
       navigate(getAdminRoute());
-    } catch {
-      toast.error('Помилка видалення');
+    } catch (err: any) {
+      console.error('[ArticleEditor] Delete failed:', err);
+      toast.error(err?.message || 'Помилка видалення статті');
     }
   };
 
