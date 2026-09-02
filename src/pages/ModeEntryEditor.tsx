@@ -108,6 +108,20 @@ const ModeEntryEditor = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const isEditing = !!id;
 
+  // Autosave & draft state with unique key per mode
+  const draftKey = isEditing
+    ? `draft_mode_entry_${id}`
+    : `draft_mode_${rawType || "news"}_new`;
+
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(() => {
+    const saved = loadDraft<FormValues>(draftKey);
+    return saved?.savedAt ?? null;
+  });
+  const [hasDraftRestored, setHasDraftRestored] = useState<boolean>(() => {
+    const saved = loadDraft<FormValues>(draftKey);
+    return Boolean(saved && saved.data);
+  });
+
   const {
     register,
     control,
@@ -119,37 +133,35 @@ const ModeEntryEditor = () => {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(modeEntrySchema),
-    defaultValues: {
-      type: initialType,
-      slug: "",
-      title_uk: "",
-      title_en: "",
-      description_uk: "",
-      description_en: "",
-      image_url: "",
-      image_source_url: "",
-      external_url: "",
-      sources: [],
-      tags: [],
-      published: true,
-      canonical_url_uk: "",
-      canonical_url_en: "",
-      blocks_uk: [],
-      blocks_en: [],
+    defaultValues: () => {
+      const saved = loadDraft<FormValues>(draftKey);
+      if (saved && saved.data) {
+        return saved.data;
+      }
+      return {
+        type: initialType,
+        slug: "",
+        title_uk: "",
+        title_en: "",
+        description_uk: "",
+        description_en: "",
+        image_url: "",
+        image_source_url: "",
+        external_url: "",
+        sources: [],
+        tags: [],
+        published: true,
+        canonical_url_uk: "",
+        canonical_url_en: "",
+        blocks_uk: [],
+        blocks_en: [],
+      };
     },
   });
 
   const watchedType = watch("type");
   const watchedTags = watch("tags") || [];
   const { data: modeCategories = [] } = useCategories(watchedType);
-
-  // Autosave & draft state
-  const draftKey = isEditing
-    ? `draft_mode_entry_${id}`
-    : `draft_mode_entry_${watchedType || initialType}_new`;
-  const isInitializedRef = useRef(false);
-  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
-  const [hasDraftRestored, setHasDraftRestored] = useState(false);
 
   const activeCategory = modeCategories.find((c) => c.id === selectedCategoryId) || modeCategories[0];
   const categorySubcategories = activeCategory?.subcategories || [];
@@ -160,30 +172,11 @@ const ModeEntryEditor = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  // Restore draft for new entry
+  // Populate from database for existing entry ONLY IF no unsaved local draft exists
   useEffect(() => {
-    if (!isEditing && !isInitializedRef.current) {
-      const saved = loadDraft<FormValues>(draftKey);
-      if (saved && saved.data) {
-        reset(saved.data);
-        setDraftSavedAt(saved.savedAt);
-        setHasDraftRestored(true);
-      } else if (rawType && VALID_TYPES.includes(rawType as ModeEntryType)) {
-        setValue("type", rawType as ModeEntryType);
-      }
-      isInitializedRef.current = true;
-    }
-  }, [isEditing, draftKey, rawType, reset, setValue]);
-
-  // Populate or restore draft for existing entry
-  useEffect(() => {
-    if (existingEntry && isEditing && !isInitializedRef.current) {
-      const saved = loadDraft<FormValues>(draftKey);
-      if (saved && saved.data) {
-        reset(saved.data);
-        setDraftSavedAt(saved.savedAt);
-        setHasDraftRestored(true);
-      } else {
+    if (existingEntry && isEditing) {
+      const existingDraft = loadDraft<FormValues>(draftKey);
+      if (!existingDraft || !existingDraft.data) {
         reset({
           type: existingEntry.type,
           slug: existingEntry.slug ?? "",
@@ -203,13 +196,11 @@ const ModeEntryEditor = () => {
           blocks_en: existingEntry.blocks_en ?? [],
         });
       }
-      isInitializedRef.current = true;
     }
   }, [existingEntry, isEditing, draftKey, reset]);
 
-  // Flush save on tab blur, window unload, etc.
+  // Flush save on tab blur, window unload, pagehide, unmount
   const flushSave = useCallback(() => {
-    if (!isInitializedRef.current) return;
     const values = getValues();
     saveDraft(draftKey, values);
   }, [draftKey, getValues]);
@@ -226,17 +217,19 @@ const ModeEntryEditor = () => {
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
 
     return () => {
+      flushSave();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
     };
   }, [flushSave]);
 
   // Continuous Autosave on form changes
   useEffect(() => {
     const subscription = watch((value) => {
-      if (!isInitializedRef.current) return;
       if (!value) return;
 
       const hasContent = Boolean(
@@ -253,6 +246,7 @@ const ModeEntryEditor = () => {
       if (hasContent || isEditing) {
         saveDraft(draftKey, value as FormValues);
         setDraftSavedAt(Date.now());
+        setHasDraftRestored(true);
       }
     });
 

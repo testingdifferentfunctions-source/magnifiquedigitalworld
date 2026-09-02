@@ -38,16 +38,44 @@ const DOMPURIFY_CONFIG = {
 
 const RichTextEditor = ({ value, onChange, maxLength = 50000 }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   // Sync external value into the DOM only when it differs, to avoid resetting
   // the caret on every keystroke.
   useEffect(() => {
     if (!editorRef.current) return;
-    const clean = DOMPurify.sanitize(value, DOMPURIFY_CONFIG);
+    const clean = DOMPurify.sanitize(value || '', DOMPURIFY_CONFIG);
     if (editorRef.current.innerHTML !== clean) {
       editorRef.current.innerHTML = clean;
     }
   }, [value]);
+
+  // Flush any pending content during tab switch, page refresh or unmount
+  useEffect(() => {
+    const handleFlush = () => {
+      if (editorRef.current) {
+        onChangeRef.current(editorRef.current.innerHTML);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleFlush();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleFlush);
+    window.addEventListener('pagehide', handleFlush);
+
+    return () => {
+      handleFlush();
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleFlush);
+      window.removeEventListener('pagehide', handleFlush);
+    };
+  }, []);
 
   const execCommand = useCallback((command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -201,6 +229,8 @@ const applyPurpleAccent = () => {
       <div
         ref={editorRef}
         contentEditable
+        suppressContentEditableWarning
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(value || '', DOMPURIFY_CONFIG) }}
         onInput={handleInput}
         dir="ltr"
         className="article-content min-h-[300px] p-4 bg-background focus:outline-none prose prose-sm dark:prose-invert max-w-none

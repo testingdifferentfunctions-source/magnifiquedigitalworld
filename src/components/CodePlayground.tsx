@@ -453,7 +453,10 @@ export const CodePlayground: React.FC = () => {
             className="h-full w-full text-left"
             theme="dark"
             extensions={[python(), EditorView.lineWrapping, oneDark, slateEditorTheme]}
-            onChange={(val) => setCode(val)}
+            onChange={(val) => {
+              setCode(val);
+              saveDraft(CODE_PLAYGROUND_DRAFT_KEY, val);
+            }}
             basicSetup={{
               lineNumbers: true,
               highlightActiveLineGutter: true,

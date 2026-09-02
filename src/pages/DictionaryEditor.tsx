@@ -59,9 +59,15 @@ export const DictionaryEditor = () => {
 
   // Autosave & draft tracking
   const draftKey = isEditing ? `draft_dictionary_${id}` : `draft_dictionary_new`;
-  const isInitializedRef = useRef(false);
-  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
-  const [hasDraftRestored, setHasDraftRestored] = useState(false);
+
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(() => {
+    const saved = loadDraft<DictionaryEntryFormValues>(draftKey);
+    return saved?.savedAt ?? null;
+  });
+  const [hasDraftRestored, setHasDraftRestored] = useState<boolean>(() => {
+    const saved = loadDraft<DictionaryEntryFormValues>(draftKey);
+    return Boolean(saved && saved.data);
+  });
 
   const { data: dictionaryCategories = [] } = useCategories("dictionary");
   const activeCategory =
@@ -80,21 +86,27 @@ export const DictionaryEditor = () => {
     formState: { errors, isSubmitting },
   } = useForm<DictionaryEntryFormValues>({
     resolver: zodResolver(dictionaryEntrySchema),
-    defaultValues: {
-      type: "dictionary",
-      slug: "",
-      title_uk: "",
-      title_en: "",
-      description_uk: "",
-      description_en: "",
-      category_id: "",
-      external_url: "",
-      tags: [],
-      published: true,
-      canonical_url_uk: "",
-      canonical_url_en: "",
-      blocks_uk: [],
-      blocks_en: [],
+    defaultValues: () => {
+      const saved = loadDraft<DictionaryEntryFormValues>(draftKey);
+      if (saved && saved.data) {
+        return saved.data;
+      }
+      return {
+        type: "dictionary",
+        slug: "",
+        title_uk: "",
+        title_en: "",
+        description_uk: "",
+        description_en: "",
+        category_id: "",
+        external_url: "",
+        tags: [],
+        published: true,
+        canonical_url_uk: "",
+        canonical_url_en: "",
+        blocks_uk: [],
+        blocks_en: [],
+      };
     },
   });
 
@@ -109,28 +121,11 @@ export const DictionaryEditor = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  // Restore draft for new dictionary term
+  // Load existing dictionary entry ONLY IF no unsaved local draft exists
   useEffect(() => {
-    if (!isEditing && !isInitializedRef.current) {
-      const saved = loadDraft<DictionaryEntryFormValues>(draftKey);
-      if (saved && saved.data) {
-        reset(saved.data);
-        setDraftSavedAt(saved.savedAt);
-        setHasDraftRestored(true);
-      }
-      isInitializedRef.current = true;
-    }
-  }, [isEditing, draftKey, reset]);
-
-  // Load existing dictionary entry or restore draft for existing
-  useEffect(() => {
-    if (existingEntry && isEditing && !isInitializedRef.current) {
-      const saved = loadDraft<DictionaryEntryFormValues>(draftKey);
-      if (saved && saved.data) {
-        reset(saved.data);
-        setDraftSavedAt(saved.savedAt);
-        setHasDraftRestored(true);
-      } else {
+    if (existingEntry && isEditing) {
+      const existingDraft = loadDraft<DictionaryEntryFormValues>(draftKey);
+      if (!existingDraft || !existingDraft.data) {
         reset({
           type: "dictionary",
           slug: existingEntry.slug ?? "",
@@ -147,13 +142,11 @@ export const DictionaryEditor = () => {
           blocks_en: existingEntry.blocks_en ?? [],
         });
       }
-      isInitializedRef.current = true;
     }
   }, [existingEntry, isEditing, draftKey, reset]);
 
-  // Flush save on window unload / visibility change
+  // Flush save on window unload / visibility change / unmount
   const flushSave = useCallback(() => {
-    if (!isInitializedRef.current) return;
     const values = getValues();
     saveDraft(draftKey, values);
   }, [draftKey, getValues]);
@@ -170,17 +163,19 @@ export const DictionaryEditor = () => {
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
 
     return () => {
+      flushSave();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
     };
   }, [flushSave]);
 
   // Continuous Autosave on form changes
   useEffect(() => {
     const subscription = watch((value) => {
-      if (!isInitializedRef.current) return;
       if (!value) return;
 
       const hasContent = Boolean(
@@ -196,6 +191,7 @@ export const DictionaryEditor = () => {
       if (hasContent || isEditing) {
         saveDraft(draftKey, value as DictionaryEntryFormValues);
         setDraftSavedAt(Date.now());
+        setHasDraftRestored(true);
       }
     });
 

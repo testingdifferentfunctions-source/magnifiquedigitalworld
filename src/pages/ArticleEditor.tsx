@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useArticle, useCreateArticle, useUpdateArticle, useDeleteArticle } from '@/hooks/useArticles';
@@ -19,9 +19,9 @@ import { ArrowLeft, Save, Trash2, Clock, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { articleSchema, sanitizeUrl, sanitizeHtml } from '@/lib/validation';
 import { getAdminRoute } from '@/lib/adminPath';
-import { saveDraft, loadDraft, clearDraft, formatDraftTime } from '@/lib/autosave';
+import { useLocalStorageDraft } from '@/hooks/useLocalStorageDraft';
 
-interface ArticleDraftData {
+export interface ArticleDraftData {
   titleUk: string;
   descriptionUk: string;
   contentUk: string;
@@ -38,6 +38,23 @@ interface ArticleDraftData {
   originalSourceUrl: string;
 }
 
+const DEFAULT_ARTICLE_DRAFT: ArticleDraftData = {
+  titleUk: '',
+  descriptionUk: '',
+  contentUk: '',
+  titleEn: '',
+  descriptionEn: '',
+  contentEn: '',
+  imageUrl: '',
+  categoryId: '',
+  published: false,
+  showTestButton: false,
+  tags: [],
+  canonicalUrlUk: '',
+  canonicalUrlEn: '',
+  originalSourceUrl: '',
+};
+
 const ArticleEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -48,35 +65,29 @@ const ArticleEditor = () => {
   const updateArticle = useUpdateArticle();
   const deleteArticle = useDeleteArticle();
 
-  // Ukrainian (base) fields
-  const [titleUk, setTitleUk] = useState('');
-  const [descriptionUk, setDescriptionUk] = useState('');
-  const [contentUk, setContentUk] = useState('');
-  // English fields
-  const [titleEn, setTitleEn] = useState('');
-  const [descriptionEn, setDescriptionEn] = useState('');
-  const [contentEn, setContentEn] = useState('');
+  const isEditing = Boolean(id);
+  const draftKey = isEditing ? `draft_article_edit_${id}` : 'draft_article_new';
 
-  const [imageUrl, setImageUrl] = useState('');
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [published, setPublished] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
-  const [canonicalUrlUk, setCanonicalUrlUk] = useState('');
-  const [canonicalUrlEn, setCanonicalUrlEn] = useState('');
-  const [originalSourceUrl, setOriginalSourceUrl] = useState('');
-  const [showTestButton, setShowTestButton] = useState(false);
+  // Robust localStorage draft hook with lazy initialization, instant sync, & browser event handling
+  const {
+    value: form,
+    setField,
+    clearDraft,
+    savedAt,
+    hasDraft,
+    resetValue,
+    hydrateFromBackend,
+    formatSavedTime,
+  } = useLocalStorageDraft<ArticleDraftData>({
+    key: draftKey,
+    defaultValue: DEFAULT_ARTICLE_DRAFT,
+  });
+
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Autosave & draft tracking
-  const isEditing = !!id;
-  const draftKey = isEditing ? `draft_article_edit_${id}` : `draft_article_new`;
-  const isInitializedRef = useRef(false);
-  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
-  const [hasDraftRestored, setHasDraftRestored] = useState(false);
-
   // Selected Category subcategories
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedCategory = categories.find((c) => c.id === form.categoryId);
   const availableSubcategories = selectedCategory?.subcategories || [];
 
   useEffect(() => {
@@ -85,222 +96,50 @@ const ArticleEditor = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  // Restore draft for new article
+  // If editing an existing article, hydrate from database ONLY if user doesn't already have an unsaved local draft
   useEffect(() => {
-    if (!isEditing && !isInitializedRef.current) {
-      const saved = loadDraft<ArticleDraftData>(draftKey);
-      if (saved && saved.data) {
-        if (saved.data.titleUk !== undefined) setTitleUk(saved.data.titleUk);
-        if (saved.data.descriptionUk !== undefined) setDescriptionUk(saved.data.descriptionUk);
-        if (saved.data.contentUk !== undefined) setContentUk(saved.data.contentUk);
-        if (saved.data.titleEn !== undefined) setTitleEn(saved.data.titleEn);
-        if (saved.data.descriptionEn !== undefined) setDescriptionEn(saved.data.descriptionEn);
-        if (saved.data.contentEn !== undefined) setContentEn(saved.data.contentEn);
-        if (saved.data.imageUrl !== undefined) setImageUrl(saved.data.imageUrl);
-        if (saved.data.categoryId !== undefined) setCategoryId(saved.data.categoryId);
-        if (saved.data.published !== undefined) setPublished(saved.data.published);
-        if (saved.data.tags !== undefined) setTags(saved.data.tags);
-        if (saved.data.canonicalUrlUk !== undefined) setCanonicalUrlUk(saved.data.canonicalUrlUk);
-        if (saved.data.canonicalUrlEn !== undefined) setCanonicalUrlEn(saved.data.canonicalUrlEn);
-        if (saved.data.originalSourceUrl !== undefined) setOriginalSourceUrl(saved.data.originalSourceUrl);
-        if (saved.data.showTestButton !== undefined) setShowTestButton(saved.data.showTestButton);
-        setDraftSavedAt(saved.savedAt);
-        setHasDraftRestored(true);
-      }
-      isInitializedRef.current = true;
+    if (existingArticle && isEditing) {
+      hydrateFromBackend({
+        titleUk: existingArticle.title_uk ?? existingArticle.title ?? '',
+        descriptionUk: existingArticle.description_uk ?? existingArticle.description ?? '',
+        contentUk: existingArticle.content_uk ?? existingArticle.content ?? '',
+        titleEn: existingArticle.title_en ?? '',
+        descriptionEn: existingArticle.description_en ?? '',
+        contentEn: existingArticle.content_en ?? '',
+        imageUrl: existingArticle.image_url || '',
+        categoryId: existingArticle.category_id || '',
+        published: Boolean(existingArticle.published),
+        showTestButton: Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton),
+        tags: existingArticle.tags || [],
+        canonicalUrlUk: existingArticle.canonical_url_uk ?? existingArticle.original_source_url ?? '',
+        canonicalUrlEn: existingArticle.canonical_url_en ?? '',
+        originalSourceUrl: existingArticle.original_source_url || '',
+      });
     }
-  }, [isEditing, draftKey]);
-
-  // Populate or restore draft for existing article
-  useEffect(() => {
-    if (existingArticle && isEditing && !isInitializedRef.current) {
-      const saved = loadDraft<ArticleDraftData>(draftKey);
-      if (saved && saved.data) {
-        if (saved.data.titleUk !== undefined) setTitleUk(saved.data.titleUk);
-        if (saved.data.descriptionUk !== undefined) setDescriptionUk(saved.data.descriptionUk);
-        if (saved.data.contentUk !== undefined) setContentUk(saved.data.contentUk);
-        if (saved.data.titleEn !== undefined) setTitleEn(saved.data.titleEn);
-        if (saved.data.descriptionEn !== undefined) setDescriptionEn(saved.data.descriptionEn);
-        if (saved.data.contentEn !== undefined) setContentEn(saved.data.contentEn);
-        if (saved.data.imageUrl !== undefined) setImageUrl(saved.data.imageUrl);
-        if (saved.data.categoryId !== undefined) setCategoryId(saved.data.categoryId);
-        if (saved.data.published !== undefined) setPublished(saved.data.published);
-        if (saved.data.tags !== undefined) setTags(saved.data.tags);
-        if (saved.data.canonicalUrlUk !== undefined) setCanonicalUrlUk(saved.data.canonicalUrlUk);
-        if (saved.data.canonicalUrlEn !== undefined) setCanonicalUrlEn(saved.data.canonicalUrlEn);
-        if (saved.data.originalSourceUrl !== undefined) setOriginalSourceUrl(saved.data.originalSourceUrl);
-        if (saved.data.showTestButton !== undefined) setShowTestButton(saved.data.showTestButton);
-        setDraftSavedAt(saved.savedAt);
-        setHasDraftRestored(true);
-      } else {
-        setTitleUk(existingArticle.title_uk ?? existingArticle.title ?? '');
-        setDescriptionUk(existingArticle.description_uk ?? existingArticle.description ?? '');
-        setContentUk(existingArticle.content_uk ?? existingArticle.content ?? '');
-        setTitleEn(existingArticle.title_en ?? '');
-        setDescriptionEn(existingArticle.description_en ?? '');
-        setContentEn(existingArticle.content_en ?? '');
-        setImageUrl(existingArticle.image_url);
-        setCategoryId(existingArticle.category_id || '');
-        setPublished(existingArticle.published);
-        setShowTestButton(Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton));
-        setTags(existingArticle.tags || []);
-        setCanonicalUrlUk(existingArticle.canonical_url_uk ?? existingArticle.original_source_url ?? '');
-        setCanonicalUrlEn(existingArticle.canonical_url_en ?? '');
-        setOriginalSourceUrl(existingArticle.original_source_url || '');
-      }
-      isInitializedRef.current = true;
-    }
-  }, [existingArticle, isEditing, draftKey]);
-
-  // Flush save handler for visibility change / beforeunload
-  const flushSave = useCallback(() => {
-    if (!isInitializedRef.current) return;
-    const dataToSave: ArticleDraftData = {
-      titleUk,
-      descriptionUk,
-      contentUk,
-      titleEn,
-      descriptionEn,
-      contentEn,
-      imageUrl,
-      categoryId,
-      published,
-      showTestButton,
-      tags,
-      canonicalUrlUk,
-      canonicalUrlEn,
-      originalSourceUrl,
-    };
-    saveDraft(draftKey, dataToSave);
-  }, [
-    titleUk,
-    descriptionUk,
-    contentUk,
-    titleEn,
-    descriptionEn,
-    contentEn,
-    imageUrl,
-    categoryId,
-    published,
-    showTestButton,
-    tags,
-    canonicalUrlUk,
-    canonicalUrlEn,
-    originalSourceUrl,
-    draftKey,
-  ]);
-
-  // Page lifecycle listeners (tab switch, refresh, close)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        flushSave();
-      }
-    };
-    const handleBeforeUnload = () => {
-      flushSave();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [flushSave]);
-
-  // Continuous Autosave on field state changes
-  useEffect(() => {
-    if (!isInitializedRef.current) return;
-
-    const hasAnyContent = Boolean(
-      titleUk ||
-      descriptionUk ||
-      contentUk ||
-      titleEn ||
-      descriptionEn ||
-      contentEn ||
-      imageUrl ||
-      categoryId ||
-      tags.length > 0
-    );
-
-    if (hasAnyContent || isEditing) {
-      const dataToSave: ArticleDraftData = {
-        titleUk,
-        descriptionUk,
-        contentUk,
-        titleEn,
-        descriptionEn,
-        contentEn,
-        imageUrl,
-        categoryId,
-        published,
-        showTestButton,
-        tags,
-        canonicalUrlUk,
-        canonicalUrlEn,
-        originalSourceUrl,
-      };
-      saveDraft(draftKey, dataToSave);
-      setDraftSavedAt(Date.now());
-    }
-  }, [
-    titleUk,
-    descriptionUk,
-    contentUk,
-    titleEn,
-    descriptionEn,
-    contentEn,
-    imageUrl,
-    categoryId,
-    published,
-    showTestButton,
-    tags,
-    canonicalUrlUk,
-    canonicalUrlEn,
-    originalSourceUrl,
-    draftKey,
-    isEditing,
-  ]);
+  }, [existingArticle, isEditing, hydrateFromBackend]);
 
   const handleDiscardDraft = () => {
     if (!confirm('Ви впевнені, що хочете очистити чернетку? Незбережені зміни будуть видалені.')) return;
-    clearDraft(draftKey);
-    setDraftSavedAt(null);
-    setHasDraftRestored(false);
 
     if (existingArticle && isEditing) {
-      setTitleUk(existingArticle.title_uk ?? existingArticle.title ?? '');
-      setDescriptionUk(existingArticle.description_uk ?? existingArticle.description ?? '');
-      setContentUk(existingArticle.content_uk ?? existingArticle.content ?? '');
-      setTitleEn(existingArticle.title_en ?? '');
-      setDescriptionEn(existingArticle.description_en ?? '');
-      setContentEn(existingArticle.content_en ?? '');
-      setImageUrl(existingArticle.image_url);
-      setCategoryId(existingArticle.category_id || '');
-      setPublished(existingArticle.published);
-      setShowTestButton(Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton));
-      setTags(existingArticle.tags || []);
-      setCanonicalUrlUk(existingArticle.canonical_url_uk ?? existingArticle.original_source_url ?? '');
-      setCanonicalUrlEn(existingArticle.canonical_url_en ?? '');
-      setOriginalSourceUrl(existingArticle.original_source_url || '');
+      resetValue({
+        titleUk: existingArticle.title_uk ?? existingArticle.title ?? '',
+        descriptionUk: existingArticle.description_uk ?? existingArticle.description ?? '',
+        contentUk: existingArticle.content_uk ?? existingArticle.content ?? '',
+        titleEn: existingArticle.title_en ?? '',
+        descriptionEn: existingArticle.description_en ?? '',
+        contentEn: existingArticle.content_en ?? '',
+        imageUrl: existingArticle.image_url || '',
+        categoryId: existingArticle.category_id || '',
+        published: Boolean(existingArticle.published),
+        showTestButton: Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton),
+        tags: existingArticle.tags || [],
+        canonicalUrlUk: existingArticle.canonical_url_uk ?? existingArticle.original_source_url ?? '',
+        canonicalUrlEn: existingArticle.canonical_url_en ?? '',
+        originalSourceUrl: existingArticle.original_source_url || '',
+      });
     } else {
-      setTitleUk('');
-      setDescriptionUk('');
-      setContentUk('');
-      setTitleEn('');
-      setDescriptionEn('');
-      setContentEn('');
-      setImageUrl('');
-      setCategoryId('');
-      setPublished(false);
-      setShowTestButton(false);
-      setTags([]);
-      setCanonicalUrlUk('');
-      setCanonicalUrlEn('');
-      setOriginalSourceUrl('');
+      resetValue(DEFAULT_ARTICLE_DRAFT);
     }
     toast.success('Чернетку очищено');
   };
@@ -318,20 +157,20 @@ const ArticleEditor = () => {
   if (!isAdmin) return null;
 
   const validateForm = (): { isValid: boolean; firstError?: string } => {
-    const sanitizedImageUrl = sanitizeUrl(imageUrl);
-    const sanitizedCanonicalUk = sanitizeUrl(canonicalUrlUk);
-    const sanitizedCanonicalEn = sanitizeUrl(canonicalUrlEn);
+    const sanitizedImageUrl = sanitizeUrl(form.imageUrl);
+    const sanitizedCanonicalUk = sanitizeUrl(form.canonicalUrlUk);
+    const sanitizedCanonicalEn = sanitizeUrl(form.canonicalUrlEn);
 
     // Ukrainian is required (base language)
     const result = articleSchema.safeParse({
-      title: titleUk.trim(),
-      description: descriptionUk.trim(),
-      content: contentUk,
+      title: form.titleUk.trim(),
+      description: form.descriptionUk.trim(),
+      content: form.contentUk,
       image_url: sanitizedImageUrl || undefined,
-      category_id: categoryId || null,
-      published,
-      show_test_button: showTestButton,
-      showTestButton,
+      category_id: form.categoryId || null,
+      published: form.published,
+      show_test_button: form.showTestButton,
+      showTestButton: form.showTestButton,
       canonical_url_uk: sanitizedCanonicalUk || undefined,
       canonical_url_en: sanitizedCanonicalEn || undefined,
       original_source_url: sanitizedCanonicalUk || sanitizedCanonicalEn || undefined,
@@ -362,48 +201,43 @@ const ArticleEditor = () => {
 
     setSaving(true);
     try {
-      const sanitizedImageUrl = sanitizeUrl(imageUrl);
-      const sanitizedCanonicalUk = sanitizeUrl(canonicalUrlUk);
-      const sanitizedCanonicalEn = sanitizeUrl(canonicalUrlEn);
+      const sanitizedImageUrl = sanitizeUrl(form.imageUrl);
+      const sanitizedCanonicalUk = sanitizeUrl(form.canonicalUrlUk);
+      const sanitizedCanonicalEn = sanitizeUrl(form.canonicalUrlEn);
 
       const articleData = {
         // Legacy columns kept in sync with Ukrainian (base) content
-        title: titleUk.trim(),
-        description: descriptionUk.trim(),
-        content: sanitizeHtml(contentUk),
+        title: form.titleUk.trim(),
+        description: form.descriptionUk.trim(),
+        content: sanitizeHtml(form.contentUk),
         // Per-language fields
-        title_uk: titleUk.trim(),
-        description_uk: descriptionUk.trim(),
-        content_uk: sanitizeHtml(contentUk),
-        title_en: titleEn.trim() || null,
-        description_en: descriptionEn.trim() || null,
-        content_en: contentEn.trim() ? sanitizeHtml(contentEn) : null,
+        title_uk: form.titleUk.trim(),
+        description_uk: form.descriptionUk.trim(),
+        content_uk: sanitizeHtml(form.contentUk),
+        title_en: form.titleEn.trim() || null,
+        description_en: form.descriptionEn.trim() || null,
+        content_en: form.contentEn.trim() ? sanitizeHtml(form.contentEn) : null,
         image_url: sanitizedImageUrl || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop',
-        category_id: categoryId ? (isValidUUID(categoryId) ? categoryId : toDeterministicUUID(categoryId)) : null,
-        published,
-        show_test_button: showTestButton,
-        showTestButton: showTestButton,
-        tags,
+        category_id: form.categoryId ? (isValidUUID(form.categoryId) ? form.categoryId : toDeterministicUUID(form.categoryId)) : null,
+        published: form.published,
+        show_test_button: form.showTestButton,
+        tags: form.tags,
         canonical_url_uk: sanitizedCanonicalUk || null,
         canonical_url_en: sanitizedCanonicalEn || null,
-        original_source_url: sanitizedCanonicalUk || sanitizedCanonicalEn || originalSourceUrl.trim() || null,
+        original_source_url: sanitizedCanonicalUk || sanitizedCanonicalEn || form.originalSourceUrl.trim() || null,
         reads: existingArticle?.reads || 0,
         likes: existingArticle?.likes || 0,
         impressions: existingArticle?.impressions || 0,
         share_count: existingArticle?.share_count || 0,
       };
 
-      if (isEditing) {
+      if (isEditing && id) {
         await updateArticle.mutateAsync({ id, ...articleData });
-        clearDraft(draftKey);
-        setDraftSavedAt(null);
-        setHasDraftRestored(false);
+        clearDraft();
         toast.success('Статтю оновлено');
       } else {
         await createArticle.mutateAsync(articleData);
-        clearDraft(draftKey);
-        setDraftSavedAt(null);
-        setHasDraftRestored(false);
+        clearDraft();
         toast.success('Статтю створено');
         navigate(getAdminRoute());
       }
@@ -419,9 +253,7 @@ const ArticleEditor = () => {
 
     try {
       await deleteArticle.mutateAsync(id!);
-      clearDraft(draftKey);
-      setDraftSavedAt(null);
-      setHasDraftRestored(false);
+      clearDraft();
       toast.success('Статтю видалено');
       navigate(getAdminRoute());
     } catch {
@@ -438,15 +270,15 @@ const ArticleEditor = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Назад
             </Button>
-            {draftSavedAt && (
+            {savedAt && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md border border-border/40">
                 <Clock className="w-3.5 h-3.5 text-primary" />
-                <span>Автозбережено: {formatDraftTime(draftSavedAt)}</span>
+                <span>Автозбережено: {formatSavedTime()}</span>
               </div>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {(draftSavedAt || hasDraftRestored) && (
+            {(savedAt || hasDraft) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -485,9 +317,9 @@ const ArticleEditor = () => {
                 <Label htmlFor="title-uk">Заголовок (UA)</Label>
                 <Input
                   id="title-uk"
-                  value={titleUk}
+                  value={form.titleUk}
                   onChange={(e) => {
-                    setTitleUk(e.target.value);
+                    setField('titleUk', e.target.value);
                     if (errors.title) setErrors({ ...errors, title: '' });
                   }}
                   placeholder="Введіть заголовок статті"
@@ -501,9 +333,9 @@ const ArticleEditor = () => {
                 <Label htmlFor="description-uk">Короткий опис (UA)</Label>
                 <Textarea
                   id="description-uk"
-                  value={descriptionUk}
+                  value={form.descriptionUk}
                   onChange={(e) => {
-                    setDescriptionUk(e.target.value);
+                    setField('descriptionUk', e.target.value);
                     if (errors.description) setErrors({ ...errors, description: '' });
                   }}
                   placeholder="Короткий опис для картки статті"
@@ -512,12 +344,16 @@ const ArticleEditor = () => {
                   rows={2}
                 />
                 {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-                <p className="text-xs text-muted-foreground">{descriptionUk.length}/500</p>
+                <p className="text-xs text-muted-foreground">{form.descriptionUk.length}/500</p>
               </div>
 
               <div className="space-y-2">
                 <Label>Вміст статті (UA)</Label>
-                <RichTextEditor value={contentUk} onChange={setContentUk} maxLength={50000} />
+                <RichTextEditor
+                  value={form.contentUk}
+                  onChange={(val) => setField('contentUk', val)}
+                  maxLength={50000}
+                />
               </div>
             </section>
 
@@ -533,8 +369,8 @@ const ArticleEditor = () => {
                 <Label htmlFor="title-en">Title (EN)</Label>
                 <Input
                   id="title-en"
-                  value={titleEn}
-                  onChange={(e) => setTitleEn(e.target.value)}
+                  value={form.titleEn}
+                  onChange={(e) => setField('titleEn', e.target.value)}
                   placeholder="Enter English title"
                   maxLength={200}
                   className="bg-background border-border"
@@ -545,19 +381,23 @@ const ArticleEditor = () => {
                 <Label htmlFor="description-en">Short description (EN)</Label>
                 <Textarea
                   id="description-en"
-                  value={descriptionEn}
-                  onChange={(e) => setDescriptionEn(e.target.value)}
+                  value={form.descriptionEn}
+                  onChange={(e) => setField('descriptionEn', e.target.value)}
                   placeholder="Card description in English"
                   maxLength={500}
                   className="bg-background border-border"
                   rows={2}
                 />
-                <p className="text-xs text-muted-foreground">{descriptionEn.length}/500</p>
+                <p className="text-xs text-muted-foreground">{form.descriptionEn.length}/500</p>
               </div>
 
               <div className="space-y-2">
                 <Label>Article content (EN)</Label>
-                <RichTextEditor value={contentEn} onChange={setContentEn} maxLength={50000} />
+                <RichTextEditor
+                  value={form.contentEn}
+                  onChange={(val) => setField('contentEn', val)}
+                  maxLength={50000}
+                />
                 <p className="text-xs text-muted-foreground">
                   If left blank, Ukrainian text will be shown to English visitors.
                 </p>
@@ -569,9 +409,9 @@ const ArticleEditor = () => {
             <div className="space-y-2">
               <Label>Зображення статті</Label>
               <ImageDropzone
-                value={imageUrl}
+                value={form.imageUrl}
                 onChange={(url) => {
-                  setImageUrl(url);
+                  setField('imageUrl', url);
                   if (errors.image_url) setErrors({ ...errors, image_url: '' });
                 }}
               />
@@ -580,7 +420,7 @@ const ArticleEditor = () => {
 
             <div className="space-y-2">
               <Label htmlFor="category">Розділ (Головна категорія)</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
+              <Select value={form.categoryId} onValueChange={(cat) => setField('categoryId', cat)}>
                 <SelectTrigger className="bg-background border-border">
                   <SelectValue placeholder="Оберіть розділ" />
                 </SelectTrigger>
@@ -598,29 +438,25 @@ const ArticleEditor = () => {
             {availableSubcategories.length > 0 && (
               <div className="space-y-1.5 p-3 rounded-lg bg-muted/20 border border-border">
                 <Label className="text-xs font-semibold text-muted-foreground">
-                  Швидкі підкатегорії розділу (клікніть, щоб додати у теги):
+                  Підкатегорії (клікніть, щоб додати у теги):
                 </Label>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {availableSubcategories.map((sub) => {
-                    const isSelected = tags.includes(sub.name);
+                    const isSelected = form.tags.includes(sub.name);
                     return (
                       <button
                         key={sub.id}
                         type="button"
                         onClick={() => {
                           if (isSelected) {
-                            setTags(tags.filter((t) => t !== sub.name));
+                            setField('tags', form.tags.filter((t) => t !== sub.name));
                           } else {
-                            if (tags.length < 5) {
-                              setTags([...tags, sub.name]);
-                            } else {
-                              toast.info('Максимум 5 тегів');
-                            }
+                            setField('tags', [...form.tags, sub.name]);
                           }
                         }}
                         className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
                           isSelected
-                            ? 'bg-[#A07DFA] text-white border-[#A07DFA] font-semibold'
+                            ? 'bg-primary text-primary-foreground border-primary'
                             : 'bg-background hover:bg-muted text-foreground border-border'
                         }`}
                       >
@@ -634,89 +470,107 @@ const ArticleEditor = () => {
             )}
 
             <div className="space-y-2">
-              <Label>Теги (підтеми)</Label>
-              <TagInput
-                value={tags}
-                onChange={setTags}
-                maxTags={5}
-                maxTagsHelperText="Maximum 5 tags allowed"
-                placeholder="Введіть тег та натисніть Enter"
+              <Label>Теги</Label>
+              <TagInput tags={form.tags} onChange={(t) => setField('tags', t)} placeholder="Введіть теги..." />
+            </div>
+
+            <Separator />
+
+            {/* SEO & Canonical URLs */}
+            <section className="space-y-4">
+              <h3 className="text-base font-semibold">SEO та Канонічні URL (Canonical Links)</h3>
+              <p className="text-xs text-muted-foreground">
+                Вкажіть канонічні посилання для уникнення дублювання контенту в пошукових системах Google.
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="canonical-uk">Канонічний URL (UA)</Label>
+                <Input
+                  id="canonical-uk"
+                  value={form.canonicalUrlUk}
+                  onChange={(e) => {
+                    setField('canonicalUrlUk', e.target.value);
+                    if (errors.canonical_url_uk) setErrors({ ...errors, canonical_url_uk: '' });
+                  }}
+                  placeholder="https://example.com/original-article-ua"
+                  className={`bg-background border-border ${errors.canonical_url_uk ? 'border-destructive' : ''}`}
+                />
+                {errors.canonical_url_uk && (
+                  <p className="text-sm text-destructive">{errors.canonical_url_uk}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="canonical-en">Canonical URL (EN)</Label>
+                <Input
+                  id="canonical-en"
+                  value={form.canonicalUrlEn}
+                  onChange={(e) => {
+                    setField('canonicalUrlEn', e.target.value);
+                    if (errors.canonical_url_en) setErrors({ ...errors, canonical_url_en: '' });
+                  }}
+                  placeholder="https://example.com/original-article-en"
+                  className={`bg-background border-border ${errors.canonical_url_en ? 'border-destructive' : ''}`}
+                />
+                {errors.canonical_url_en && (
+                  <p className="text-sm text-destructive">{errors.canonical_url_en}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="source-url">Першоджерело / Оригінальне посилання (Source URL)</Label>
+                <Input
+                  id="source-url"
+                  value={form.originalSourceUrl}
+                  onChange={(e) => {
+                    setField('originalSourceUrl', e.target.value);
+                    if (errors.original_source_url) setErrors({ ...errors, original_source_url: '' });
+                  }}
+                  placeholder="https://original-publisher.com/story-123"
+                  className={`bg-background border-border ${errors.original_source_url ? 'border-destructive' : ''}`}
+                />
+                {errors.original_source_url && (
+                  <p className="text-sm text-destructive">{errors.original_source_url}</p>
+                )}
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* Test button feature toggle */}
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/40 border border-border">
+              <div className="space-y-0.5">
+                <Label htmlFor="show-test-button" className="text-base font-semibold cursor-pointer">
+                  Кнопка &quot;Пройти тест&quot; (Interactive Test)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Відображати інтерактивну кнопку для перевірки знань наприкінці статті
+                </p>
+              </div>
+              <Switch
+                id="show-test-button"
+                checked={form.showTestButton}
+                onCheckedChange={(checked) => setField('showTestButton', checked)}
               />
             </div>
 
-            <Separator />
-
-            {/* SEO Settings */}
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-base font-semibold text-foreground">SEO Налаштування / SEO Settings</h4>
-                <p className="text-xs text-muted-foreground">
-                  Вкажіть канонічні посилання для української та англійської версій статті
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="canonical-url-uk">Canonical URL (UA)</Label>
-                  <Input
-                    id="canonical-url-uk"
-                    type="url"
-                    value={canonicalUrlUk}
-                    onChange={(e) => {
-                      setCanonicalUrlUk(e.target.value);
-                      if (errors.canonical_url_uk) setErrors({ ...errors, canonical_url_uk: '' });
-                    }}
-                    placeholder="https://example.com/ua/article-slug"
-                    className={`bg-background border-border ${errors.canonical_url_uk ? 'border-destructive' : ''}`}
-                  />
-                  {errors.canonical_url_uk && <p className="text-sm text-destructive">{errors.canonical_url_uk}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="canonical-url-en">Canonical URL (EN)</Label>
-                  <Input
-                    id="canonical-url-en"
-                    type="url"
-                    value={canonicalUrlEn}
-                    onChange={(e) => {
-                      setCanonicalUrlEn(e.target.value);
-                      if (errors.canonical_url_en) setErrors({ ...errors, canonical_url_en: '' });
-                    }}
-                    placeholder="https://example.com/en/article-slug"
-                    className={`bg-background border-border ${errors.canonical_url_en ? 'border-destructive' : ''}`}
-                  />
-                  {errors.canonical_url_en && <p className="text-sm text-destructive">{errors.canonical_url_en}</p>}
-                </div>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="published"
+                checked={form.published}
+                onCheckedChange={(checked) => setField('published', checked)}
+              />
+              <Label htmlFor="published">Опублікувати статтю</Label>
             </div>
 
-            <Separator />
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border">
-                <div className="space-y-0.5 pr-4">
-                  <Label htmlFor="show-test-button" className="text-base font-semibold cursor-pointer">
-                    Додати кнопку &quot;Тестувати&quot;
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Відображає кнопку &quot;Тестувати&quot; поруч із кнопкою &quot;Поділитися&quot; внизу статті для швидкого переходу до інтерактивного онлайн-редактора коду.
-                  </p>
-                </div>
-                <Switch
-                  id="show-test-button"
-                  checked={showTestButton}
-                  onCheckedChange={setShowTestButton}
-                />
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <Switch
-                  id="published"
-                  checked={published}
-                  onCheckedChange={setPublished}
-                />
-                <Label htmlFor="published" className="cursor-pointer font-medium">Опублікувати статтю</Label>
-              </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => navigate(getAdminRoute())}>
+                Скасувати
+              </Button>
+              <Button onClick={handleSave} disabled={saving}>
+                <Save className="w-4 h-4 mr-2" />
+                {saving ? 'Збереження...' : 'Зберегти'}
+              </Button>
             </div>
           </CardContent>
         </Card>
