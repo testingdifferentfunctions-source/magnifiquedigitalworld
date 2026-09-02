@@ -50,13 +50,13 @@ const ResetRequest = () => {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetError) {
-        toast.error(t('reset.error'));
+        toast.error(resetError.message || t('reset.error'));
       } else {
         setSent(true);
         toast.success(t('reset.sent'));
       }
-    } catch {
-      toast.error(t('reset.error'));
+    } catch (err: any) {
+      toast.error(err?.message || t('reset.error'));
     } finally {
       setLoading(false);
     }

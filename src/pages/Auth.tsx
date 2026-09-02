@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
-import { emailSchema, passwordSchema } from '@/lib/validation';
-import { ShieldCheck, ArrowLeft, KeyRound, Lock } from 'lucide-react';
+import { emailSchema } from '@/lib/validation';
+import { ShieldCheck, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 import logo from '@/assets/logo.svg';
 import { getAdminRoute } from '@/lib/adminPath';
 
@@ -28,9 +28,9 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [blocked, setBlocked] = useState(false);
 
   // 2FA Challenge state
   const [mfaFactorId, setMfaFactorId] = useState('');
@@ -42,16 +42,30 @@ const Auth = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
+  // Clear legacy auth attempt lockout from localStorage on mount
+  useEffect(() => {
+    try {
+      localStorage.removeItem('auth-attempts');
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    setServerError(null);
     try {
       const { error } = await signInWithGoogle();
       if (error) {
-        toast.error(error.message || t('auth.error'));
+        const msg = error.message || t('auth.error');
+        setServerError(msg);
+        toast.error(msg);
         setGoogleLoading(false);
       }
-    } catch {
-      toast.error(t('auth.general_error'));
+    } catch (err: any) {
+      const msg = err?.message || t('auth.general_error');
+      setServerError(msg);
+      toast.error(msg);
       setGoogleLoading(false);
     }
   };
@@ -76,14 +90,6 @@ const Auth = () => {
     }
   }, [user, step, navigate]);
 
-  useEffect(() => {
-    const check = () => setBlocked(isBlocked());
-    check();
-    const id = setInterval(check, 30000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const validateFields = (): boolean => {
     const newErrors: { email?: string; password?: string } = {};
 
@@ -92,7 +98,7 @@ const Auth = () => {
       newErrors.email = emailResult.error.errors[0]?.message;
     }
 
-    if (password.length < 6) {
+    if (!password || password.length === 0) {
       newErrors.password = t('auth.enter_password');
     }
 
@@ -100,56 +106,9 @@ const Auth = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const MAX_ATTEMPTS = 4;
-  const BLOCK_DURATION_MS = 24 * 60 * 60 * 1000;
-  const STORAGE_KEY = 'auth-attempts';
-
-  const getAttemptsState = (): { count: number; blockedUntil: number | null } => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { count: 0, blockedUntil: null };
-      const parsed = JSON.parse(raw);
-      return { count: parsed.count ?? 0, blockedUntil: parsed.blockedUntil ?? null };
-    } catch {
-      return { count: 0, blockedUntil: null };
-    }
-  };
-
-  const isBlocked = (): boolean => {
-    const { blockedUntil } = getAttemptsState();
-    if (blockedUntil && blockedUntil > Date.now()) return true;
-    if (blockedUntil && blockedUntil <= Date.now()) {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-    return false;
-  };
-
-  const recordFailedAttempt = () => {
-    const { count } = getAttemptsState();
-    const newCount = count + 1;
-    if (newCount >= MAX_ATTEMPTS) {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          count: newCount,
-          blockedUntil: Date.now() + BLOCK_DURATION_MS,
-        })
-      );
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ count: newCount, blockedUntil: null }));
-    }
-    return newCount;
-  };
-
-  const clearAttempts = () => localStorage.removeItem(STORAGE_KEY);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (isBlocked()) {
-      toast.error(t('auth.too_many_attempts'));
-      return;
-    }
+    setServerError(null);
 
     if (!validateFields()) {
       return;
@@ -164,18 +123,10 @@ const Auth = () => {
       });
 
       if (error) {
-        const attempts = recordFailedAttempt();
-        if (attempts >= MAX_ATTEMPTS) setBlocked(true);
-        const left = MAX_ATTEMPTS - attempts;
-        if (left <= 0) {
-          toast.error(t('auth.too_many_attempts'));
-        } else if (error.message.includes('Invalid login credentials')) {
-          toast.error(
-            `${t('auth.invalid_credentials')} (${t('auth.attempts_left').replace('{n}', String(left))})`
-          );
-        } else {
-          toast.error(t('auth.error'));
-        }
+        // Output raw Supabase error message directly to the UI without blocking
+        const rawMessage = error.message || t('auth.error');
+        setServerError(rawMessage);
+        toast.error(rawMessage);
         setLoading(false);
         return;
       }
@@ -208,11 +159,12 @@ const Auth = () => {
       }
 
       // If no 2FA required, proceed to application
-      clearAttempts();
       toast.success(t('auth.success'));
       navigate(getAdminRoute());
-    } catch {
-      toast.error(t('auth.general_error'));
+    } catch (err: any) {
+      const rawErrorMsg = err?.message || t('auth.general_error');
+      setServerError(rawErrorMsg);
+      toast.error(rawErrorMsg);
     } finally {
       setLoading(false);
     }
@@ -223,6 +175,7 @@ const Auth = () => {
     if (otpCode.length !== 6 || !mfaFactorId || !mfaChallengeId) return;
 
     setMfaVerifying(true);
+    setServerError(null);
     try {
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId: mfaFactorId,
@@ -231,17 +184,20 @@ const Auth = () => {
       });
 
       if (verifyError) {
-        toast.error(t('auth.mfa_invalid'));
+        const msg = verifyError.message || t('auth.mfa_invalid');
+        setServerError(msg);
+        toast.error(msg);
         setOtpCode('');
         setMfaVerifying(false);
         return;
       }
 
-      clearAttempts();
       toast.success(t('auth.success'));
       navigate(getAdminRoute());
-    } catch {
-      toast.error(t('auth.mfa_invalid'));
+    } catch (err: any) {
+      const msg = err?.message || t('auth.mfa_invalid');
+      setServerError(msg);
+      toast.error(msg);
     } finally {
       setMfaVerifying(false);
     }
@@ -254,6 +210,7 @@ const Auth = () => {
     setMfaFactorId('');
     setMfaChallengeId('');
     setPassword('');
+    setServerError(null);
   };
 
   return (
@@ -286,6 +243,13 @@ const Auth = () => {
         </CardHeader>
 
         <CardContent>
+          {serverError && (
+            <div className="mb-4 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-sm flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span className="break-words font-medium">{serverError}</span>
+            </div>
+          )}
+
           {step === 'credentials' ? (
             <>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -298,6 +262,7 @@ const Auth = () => {
                     onChange={(e) => {
                       setEmail(e.target.value);
                       if (errors.email) setErrors({ ...errors, email: undefined });
+                      if (serverError) setServerError(null);
                     }}
                     placeholder="your@email.com"
                     required
@@ -316,6 +281,7 @@ const Auth = () => {
                     onChange={(e) => {
                       setPassword(e.target.value);
                       if (errors.password) setErrors({ ...errors, password: undefined });
+                      if (serverError) setServerError(null);
                     }}
                     placeholder="••••••••"
                     required
@@ -327,12 +293,8 @@ const Auth = () => {
                     <p className="text-sm text-destructive">{errors.password}</p>
                   )}
                 </div>
-                <Button type="submit" className="w-full font-semibold" disabled={loading || blocked}>
-                  {blocked
-                    ? t('auth.too_many_attempts')
-                    : loading
-                    ? t('auth.loading')
-                    : t('auth.submit')}
+                <Button type="submit" className="w-full font-semibold" disabled={loading}>
+                  {loading ? t('auth.loading') : t('auth.submit')}
                 </Button>
                 <Button
                   type="button"
@@ -379,6 +341,7 @@ const Auth = () => {
                     value={otpCode}
                     onChange={(val) => {
                       setOtpCode(val);
+                      if (serverError) setServerError(null);
                       if (val.length === 6) {
                         // Auto trigger verify when 6 digits are typed
                         setTimeout(() => {
