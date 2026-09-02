@@ -3,9 +3,11 @@ import { writeFileSync } from "fs";
 import { resolve } from "path";
 
 const BASE_URL = "https://byte-scribe-studio.lovable.app";
-const SUPABASE_URL = "https://xpncqrkmzsufwahmozis.supabase.co";
+const SUPABASE_URL =
+  process.env.VITE_SUPABASE_URL || "https://yhksgkoynkzqusavurgn.supabase.co";
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwbmNxcmttenN1ZndhaG1vemlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0MzU0OTUsImV4cCI6MjA4MzAxMTQ5NX0.UvvLb2lz6yIPy4M392E3sjr7rjWhjhNVPprhQGm-gHY";
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  "sb_publishable_0LmZb76isoJV6kxWPcsNxA_bFx2QPNn";
 
 interface SitemapEntry {
   path: string;

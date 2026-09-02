@@ -8,7 +8,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://xpncqrkmzsufwahmozis.supabase.co https://*.lovable.app https://storage.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://yhksgkoynkzqusavurgn.supabase.co https://*.supabase.co wss://yhksgkoynkzqusavurgn.supabase.co wss://*.supabase.co https://*.lovable.app https://storage.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
         },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
