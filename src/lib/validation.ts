@@ -59,6 +59,18 @@ export const articleSchema = z.object({
     .optional()
     .nullable()
     .or(z.literal('')),
+  image_url_uk: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  image_url_en: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   category_id: z
     .string()
     .nullable()

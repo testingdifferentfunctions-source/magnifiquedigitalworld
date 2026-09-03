@@ -4,6 +4,7 @@ import { Article } from "@/data/articles";
 import { shareArticle } from "@/lib/share";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getStoragePublicUrl, getSignedStorageUrl } from "@/lib/storage";
+import { getLocalizedImageUrl } from "@/lib/localize";
 
 interface ArticleCardProps {
   article: Article;
@@ -11,15 +12,15 @@ interface ArticleCardProps {
 }
 
 const ArticleCard = ({ article, index = 0 }: ArticleCardProps) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     shareArticle(article.id, article.title);
   };
 
-  const rawImage = article.image || (article as any).image_url;
-  const imageSrc = getStoragePublicUrl(rawImage) || rawImage;
+  const rawImage = getLocalizedImageUrl(article as any, language) || article.image || (article as any).image_url;
+  const imageSrc = rawImage ? (getStoragePublicUrl(rawImage) || rawImage) : null;
 
   return (
     <Link to={`/article/${article.id}`} className="h-full block">

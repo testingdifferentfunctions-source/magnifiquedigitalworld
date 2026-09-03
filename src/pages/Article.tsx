@@ -5,7 +5,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useMode } from "@/hooks/useMode";
 import { useCategoriesTranslations } from "@/hooks/useCategoryTranslation";
-import { localizeArticle } from "@/lib/localize";
+import { localizeArticle, getLocalizedImageUrl } from "@/lib/localize";
 import PageLayout from "@/components/PageLayout";
 import SEO from "@/components/SEO";
 import LikeButton from "@/components/LikeButton";
@@ -192,13 +192,16 @@ const Article = () => {
     ? (article.canonical_url_en || article.canonical_url_uk || article.original_source_url)
     : (article.canonical_url_uk || article.canonical_url_en || article.original_source_url);
 
+  const localizedImg = article ? (getLocalizedImageUrl(article as any, language) || article.image_url) : "";
+  const resolvedImageUrl = localizedImg ? (getStoragePublicUrl(localizedImg) || localizedImg) : undefined;
+
   return (
     <PageLayout>
       <SEO
         title={`${displayTitle} — Magnifique numérique`}
         description={seoDescription}
         path={`/article/${article.id}`}
-        image={getStoragePublicUrl(article.image_url) || article.image_url}
+        image={resolvedImageUrl}
         type="article"
         canonicalUrl={canonicalUrl}
         jsonLd={{
@@ -206,7 +209,7 @@ const Article = () => {
           "@type": "Article",
           headline: displayTitle,
           description: seoDescription,
-          image: getStoragePublicUrl(article.image_url) || article.image_url,
+          image: resolvedImageUrl,
           datePublished: article.created_at,
           dateModified: article.updated_at,
           inLanguage: language === 'en' ? 'en' : 'uk',
@@ -256,17 +259,17 @@ const Article = () => {
           </div>
         </div>
 
-        {article.image_url ? (
+        {resolvedImageUrl ? (
           <div className="aspect-video overflow-hidden rounded-xl mb-8 bg-muted">
             <img
-              src={getStoragePublicUrl(article.image_url) || article.image_url}
+              src={resolvedImageUrl}
               alt={displayTitle}
               className="w-full h-full object-cover"
               onError={async (e) => {
                 const target = e.currentTarget;
-                if (!target.dataset.triedSigned && article.image_url) {
+                if (!target.dataset.triedSigned && localizedImg) {
                   target.dataset.triedSigned = 'true';
-                  const signed = await getSignedStorageUrl(article.image_url);
+                  const signed = await getSignedStorageUrl(localizedImg);
                   if (signed) {
                     target.src = signed;
                     return;

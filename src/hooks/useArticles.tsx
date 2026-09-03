@@ -15,6 +15,8 @@ export interface Article {
   content_uk: string | null;
   content_en: string | null;
   image_url: string;
+  image_url_uk?: string | null;
+  image_url_en?: string | null;
   category_id: string | null;
   reads: number;
   likes: number;
@@ -33,7 +35,7 @@ export interface Article {
 
 /**
  * Normalizes article row from Supabase so both localized fields
- * (title_uk, description_uk, content_uk) and legacy accessor getters (title, description, content)
+ * (title_uk, description_uk, content_uk, image_url_uk, image_url_en) and legacy accessor getters (title, description, content, image_url)
  * are populated for frontend components without sending un-suffixed fields back to database.
  */
 export const mapArticleRow = (row: any): Article => {
@@ -41,13 +43,17 @@ export const mapArticleRow = (row: any): Article => {
   const title = row.title_uk || row.title_en || row.title || '';
   const description = row.description_uk || row.description_en || row.description || '';
   const content = row.content_uk || row.content_en || row.content || '';
-  const image_url = getStoragePublicUrl(row.image_url) || row.image_url || '';
+  const image_url_uk = getStoragePublicUrl(row.image_url_uk) || row.image_url_uk || (row.image_url ? getStoragePublicUrl(row.image_url) || row.image_url : null);
+  const image_url_en = getStoragePublicUrl(row.image_url_en) || row.image_url_en || null;
+  const image_url = image_url_uk || image_url_en || '';
   return {
     ...row,
     title,
     description,
     content,
     image_url,
+    image_url_uk,
+    image_url_en,
     title_uk: row.title_uk ?? title,
     description_uk: row.description_uk ?? description,
     content_uk: row.content_uk ?? content,
@@ -137,7 +143,8 @@ export const sanitizeArticlePayload = (article: Partial<Article>): Record<string
     'description_en',
     'content_uk',
     'content_en',
-    'image_url',
+    'image_url_uk',
+    'image_url_en',
     'category_id',
     'reads',
     'likes',
@@ -188,11 +195,19 @@ export const sanitizeArticlePayload = (article: Partial<Article>): Record<string
   payload.description_en = descEn || null;
   payload.content_en = contentEn || null;
 
-  // Image URL handling: preserve exact string or empty string (never inject hardcoded templates)
-  if (typeof payload.image_url === 'string') {
-    payload.image_url = payload.image_url.trim();
+  // Localized preview image handling (preserves exact URLs or null; never uses hardcoded placeholders)
+  if (typeof payload.image_url_uk === 'string') {
+    payload.image_url_uk = payload.image_url_uk.trim() || null;
+  } else if (!payload.image_url_uk && typeof rawArticle.image_url === 'string' && rawArticle.image_url.trim()) {
+    payload.image_url_uk = rawArticle.image_url.trim();
   } else {
-    payload.image_url = '';
+    payload.image_url_uk = payload.image_url_uk || null;
+  }
+
+  if (typeof payload.image_url_en === 'string') {
+    payload.image_url_en = payload.image_url_en.trim() || null;
+  } else {
+    payload.image_url_en = payload.image_url_en || null;
   }
 
   // Category ID must be valid UUID or null (never empty string)
@@ -208,10 +223,11 @@ export const sanitizeArticlePayload = (article: Partial<Article>): Record<string
   payload.published = Boolean(payload.published);
   payload.tags = Array.isArray(payload.tags) ? payload.tags.filter((t) => typeof t === 'string' && t.trim().length > 0) : [];
 
-  // CRITICAL: Explicitly remove/delete un-suffixed base keys so Supabase / PostgREST doesn't throw PGRST204
+  // CRITICAL: Explicitly remove un-suffixed base keys to prevent PostgREST PGRST204 errors
   delete (payload as any).title;
   delete (payload as any).description;
   delete (payload as any).content;
+  delete (payload as any).image_url;
 
   return payload;
 };
@@ -225,6 +241,7 @@ export const useCreateArticle = () => {
       delete (sanitized as any).title;
       delete (sanitized as any).description;
       delete (sanitized as any).content;
+      delete (sanitized as any).image_url;
       console.log('[useCreateArticle] Submitting payload to Supabase articles table:', sanitized);
 
       const { data, error } = await supabase
@@ -263,6 +280,7 @@ export const useUpdateArticle = () => {
       delete (sanitized as any).title;
       delete (sanitized as any).description;
       delete (sanitized as any).content;
+      delete (sanitized as any).image_url;
       console.log('[useUpdateArticle] Submitting payload to Supabase articles table for ID', id, ':', sanitized);
 
       const { data, error } = await supabase

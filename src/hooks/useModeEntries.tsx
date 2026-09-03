@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { parseBlocks, type ContentBlock } from "@/lib/blocks";
-import type { Lang } from "@/lib/localize";
+import { getLocalizedImageUrl, type Lang } from "@/lib/localize";
 import { getFallbackEntries, getFallbackEntryById } from "@/data/modeItems";
 import type { AppMode } from "@/hooks/useMode";
 import { mapArticleRow, type Article } from "@/hooks/useArticles";
 import { generateEntryEmbedding } from "@/lib/semanticSearch";
 import { logAnalyticsEvent } from "@/lib/analytics";
+import { getStoragePublicUrl } from "@/lib/storage";
 
 export type ModeEntryType = "news" | "resource" | "component" | "template" | "palette" | "dictionary" | "design" | "research";
 
@@ -28,6 +29,8 @@ export interface ModeEntry {
   blocks_en: ContentBlock[];
   tags: string[];
   image_url: string | null;
+  image_url_uk?: string | null;
+  image_url_en?: string | null;
   image_source_url: string | null;
   external_url: string | null;
   sources?: SourceItem[] | null;
@@ -58,8 +61,15 @@ const mapRow = (row: any): ModeEntry => {
     }
   }
 
+  const image_url_uk = getStoragePublicUrl(row.image_url_uk) || row.image_url_uk || (row.image_url ? getStoragePublicUrl(row.image_url) || row.image_url : null);
+  const image_url_en = getStoragePublicUrl(row.image_url_en) || row.image_url_en || null;
+  const image_url = image_url_uk || image_url_en || (row.image_url ? getStoragePublicUrl(row.image_url) || row.image_url : null);
+
   return {
     ...row,
+    image_url,
+    image_url_uk,
+    image_url_en,
     blocks_uk: parseBlocks(row.blocks_uk),
     blocks_en: parseBlocks(row.blocks_en),
     tags: row.tags ?? [],
@@ -81,11 +91,14 @@ export const localizeEntry = (entry: ModeEntry, language: Lang) => {
       ? [{ title: language === "en" ? "Primary Source" : "Офіційне джерело", url: entry.external_url }]
       : [];
 
+  const imageUrl = getLocalizedImageUrl(entry, language);
+
   return {
     title: pick(entry.title_en, entry.title_uk),
     description: pick(entry.description_en, entry.description_uk),
     blocks: blocks || [],
     sources: resolvedSources,
+    imageUrl,
   };
 };
 
@@ -184,6 +197,8 @@ export const sanitizeModeEntryPayload = (entry: Record<string, any>): Record<str
     'blocks_en',
     'tags',
     'image_url',
+    'image_url_uk',
+    'image_url_en',
     'image_source_url',
     'external_url',
     'category_id',
@@ -225,6 +240,17 @@ export const sanitizeModeEntryPayload = (entry: Record<string, any>): Record<str
   }
   if (payload.slug !== undefined) {
     payload.slug = typeof payload.slug === 'string' && payload.slug.trim() ? payload.slug.trim() : null;
+  }
+
+  // Localized preview image fields
+  if (payload.image_url_uk !== undefined) {
+    payload.image_url_uk = typeof payload.image_url_uk === 'string' && payload.image_url_uk.trim() ? payload.image_url_uk.trim() : null;
+  }
+  if (payload.image_url_en !== undefined) {
+    payload.image_url_en = typeof payload.image_url_en === 'string' && payload.image_url_en.trim() ? payload.image_url_en.trim() : null;
+  }
+  if (!payload.image_url) {
+    payload.image_url = payload.image_url_uk || payload.image_url_en || null;
   }
 
   // Category ID must be valid UUID or null
@@ -283,11 +309,26 @@ export const useCreateModeEntry = () => {
 
       console.log('[useCreateModeEntry] Submitting payload to Supabase mode_entries:', sanitized);
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("mode_entries")
         .insert(sanitized as any)
         .select()
         .single();
+
+      // Resilience: If database schema cache on remote Supabase doesn't have image_url_uk/en yet, retry cleanly
+      if (error && (error.code === 'PGRST204' || error.message?.includes('image_url_uk') || error.message?.includes('image_url_en'))) {
+        console.warn('[useCreateModeEntry] Remote table schema missing image_url_uk/en, retrying with fallback image_url:', error.message);
+        const fallback = { ...sanitized };
+        delete fallback.image_url_uk;
+        delete fallback.image_url_en;
+        const retryResult = await supabase
+          .from("mode_entries")
+          .insert(fallback as any)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) {
         console.error('[useCreateModeEntry] Supabase insert error:', {
@@ -341,12 +382,28 @@ export const useUpdateModeEntry = () => {
 
       console.log('[useUpdateModeEntry] Submitting update to Supabase mode_entries for ID', id, ':', sanitized);
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("mode_entries")
         .update(sanitized as any)
         .eq("id", id)
         .select()
         .single();
+
+      // Resilience: If database schema cache on remote Supabase doesn't have image_url_uk/en yet, retry cleanly
+      if (error && (error.code === 'PGRST204' || error.message?.includes('image_url_uk') || error.message?.includes('image_url_en'))) {
+        console.warn('[useUpdateModeEntry] Remote table schema missing image_url_uk/en, retrying with fallback image_url:', error.message);
+        const fallback = { ...sanitized };
+        delete fallback.image_url_uk;
+        delete fallback.image_url_en;
+        const retryResult = await supabase
+          .from("mode_entries")
+          .update(fallback as any)
+          .eq("id", id)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) {
         console.error('[useUpdateModeEntry] Supabase update error:', {

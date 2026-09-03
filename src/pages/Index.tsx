@@ -18,7 +18,7 @@ import CategoryPills, { PillItem } from "@/components/CategoryPills";
 import { useArticles, useIncrementImpressions } from "@/hooks/useArticles";
 import { useCategories, getSubcategoryTranslation } from "@/hooks/useCategories";
 import { useLanguage } from "@/hooks/useLanguage";
-import { localizeArticle } from "@/lib/localize";
+import { localizeArticle, getLocalizedImageUrl } from "@/lib/localize";
 import {
   useMode,
   MODE_ACCENTS,
@@ -655,7 +655,7 @@ const Index = () => {
                   id: entry.id,
                   title: loc.title,
                   description: loc.description,
-                  image: entry.image_url,
+                  image: (loc as any).imageUrl || getLocalizedImageUrl(entry, language) || entry.image_url,
                   likes: entry.likes,
                   url: entry.external_url,
                   tags: entry.tags,
@@ -695,7 +695,10 @@ const Index = () => {
                   id: article.id,
                   title: loc.title,
                   description: loc.description,
-                  image: article.image_url,
+                  image: loc.imageUrl || getLocalizedImageUrl(article, language) || article.image_url,
+                  image_url: loc.imageUrl || getLocalizedImageUrl(article, language) || article.image_url,
+                  image_url_uk: article.image_url_uk,
+                  image_url_en: article.image_url_en,
                   likes: article.likes,
                   reads: article.reads,
                   category: article.category_id || "",
@@ -719,7 +722,7 @@ const Index = () => {
                 id: entry.id,
                 title: loc.title,
                 description: loc.description,
-                image: entry.image_url ?? undefined,
+                image: ((loc as any).imageUrl || getLocalizedImageUrl(entry, language) || entry.image_url) ?? undefined,
                 likes: entry.likes,
                 url: entry.external_url ?? undefined,
               };
@@ -841,7 +844,7 @@ const Index = () => {
                   id: entry.id,
                   title: loc.title,
                   description: loc.description,
-                  image: entry.image_url,
+                  image: (loc as any).imageUrl || getLocalizedImageUrl(entry, language) || entry.image_url,
                   likes: entry.likes,
                   url: entry.external_url,
                   tags: entry.tags,
@@ -875,7 +878,7 @@ const Index = () => {
                   id: entry.id,
                   title: loc.title,
                   description: loc.description,
-                  image: entry.image_url,
+                  image: (loc as any).imageUrl || getLocalizedImageUrl(entry, language) || entry.image_url,
                   likes: entry.likes,
                   url: entry.external_url,
                   tags: entry.tags,

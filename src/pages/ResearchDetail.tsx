@@ -17,6 +17,7 @@ import { blocksToPlainText, extractHeadings } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
 import { ItemTagsList } from "@/components/ItemTagBadge";
 import { logAnalyticsEvent } from "@/lib/analytics";
+import { getLocalizedImageUrl } from "@/lib/localize";
 
 const ResearchDetail = () => {
   const { id = "" } = useParams();
@@ -120,13 +121,15 @@ const ResearchDetail = () => {
     ? (entry.canonical_url_en || entry.canonical_url_uk || undefined)
     : (entry.canonical_url_uk || entry.canonical_url_en || undefined);
 
+  const displayImage = loc.imageUrl || (entry ? getLocalizedImageUrl(entry, language) : "") || entry?.image_url;
+
   return (
     <PageLayout>
       <SEO
         title={`${loc.title} — ${language === "en" ? "Research" : "Дослідження"}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/research/${entry.id}`}
-        image={entry.image_url ?? undefined}
+        image={displayImage || undefined}
         type="article"
         canonicalUrl={canonicalUrl}
       />
@@ -174,10 +177,10 @@ const ResearchDetail = () => {
         </header>
 
         {/* Main Cover Image */}
-        {entry.image_url && (
+        {displayImage && (
           <div className="mb-10 rounded-2xl overflow-hidden border border-[#222B2C] bg-[#0C1011] shadow-xl">
             <img
-              src={entry.image_url}
+              src={displayImage}
               alt={loc.title}
               className="w-full max-h-[460px] object-cover"
             />

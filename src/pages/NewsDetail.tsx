@@ -11,6 +11,7 @@ import { blocksToPlainText, extractHeadings } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
 import { ItemTagsList } from "@/components/ItemTagBadge";
 import { logAnalyticsEvent } from "@/lib/analytics";
+import { getLocalizedImageUrl } from "@/lib/localize";
 
 const NewsDetail = () => {
   const { id = "" } = useParams();
@@ -85,13 +86,15 @@ const NewsDetail = () => {
     ? (entry.canonical_url_en || entry.canonical_url_uk || undefined)
     : (entry.canonical_url_uk || entry.canonical_url_en || undefined);
 
+  const displayImage = loc.imageUrl || (entry ? getLocalizedImageUrl(entry, language) : "") || entry?.image_url;
+
   return (
     <PageLayout>
       <SEO
         title={`${loc.title} — ${language === "en" ? "News" : "Новини"}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/news/${entry.id}`}
-        image={entry.image_url ?? undefined}
+        image={displayImage || undefined}
         type="article"
         canonicalUrl={canonicalUrl}
       />
@@ -187,9 +190,9 @@ const NewsDetail = () => {
         {/* 3. MEDIA PREVIEW: Below the tags/header, a large, full-width cover image */}
         <figure id="news-detail-media" className="mb-10">
           <div className="aspect-[16/9] sm:aspect-[21/9] w-full overflow-hidden rounded-2xl bg-[#050C0B] border border-[#182B28] flex items-center justify-center shadow-md">
-            {entry.image_url ? (
+            {displayImage ? (
               <img
-                src={entry.image_url}
+                src={displayImage}
                 alt={loc.title}
                 loading="eager"
                 className="w-full h-full object-cover"

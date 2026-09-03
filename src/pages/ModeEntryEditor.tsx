@@ -17,6 +17,7 @@ import BlockEditor from "@/components/BlockEditor";
 import PaletteColorEditor from "@/components/PaletteColorEditor";
 import DesignEntryEditor from "@/components/DesignEntryEditor";
 import TagInput from "@/components/TagInput";
+import ImageDropzone from "@/components/ImageDropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -69,6 +70,8 @@ const modeEntrySchema = z.object({
     .max(1000, { message: "Опис занадто довгий" }),
   description_en: z.string().trim().max(1000).optional().nullable().or(z.literal("")),
   image_url: z.string().trim().optional().nullable().or(z.literal("")),
+  image_url_uk: z.string().trim().optional().nullable().or(z.literal("")),
+  image_url_en: z.string().trim().optional().nullable().or(z.literal("")),
   image_source_url: z.string().trim().optional().nullable().or(z.literal("")),
   external_url: z.string().trim().optional().nullable().or(z.literal("")),
   sources: z
@@ -146,6 +149,8 @@ const ModeEntryEditor = () => {
         description_uk: "",
         description_en: "",
         image_url: "",
+        image_url_uk: "",
+        image_url_en: "",
         image_source_url: "",
         external_url: "",
         sources: [],
@@ -185,6 +190,8 @@ const ModeEntryEditor = () => {
           description_uk: existingEntry.description_uk ?? "",
           description_en: existingEntry.description_en ?? "",
           image_url: existingEntry.image_url ?? "",
+          image_url_uk: existingEntry.image_url_uk ?? existingEntry.image_url ?? "",
+          image_url_en: existingEntry.image_url_en ?? "",
           image_source_url: existingEntry.image_source_url ?? "",
           external_url: existingEntry.external_url ?? "",
           sources: (existingEntry.sources as any[]) || [],
@@ -238,6 +245,8 @@ const ModeEntryEditor = () => {
         value.title_en ||
         value.description_en ||
         value.image_url ||
+        value.image_url_uk ||
+        value.image_url_en ||
         (value.tags && value.tags.length > 0) ||
         (value.blocks_uk && (value.blocks_uk as any[]).length > 0) ||
         (value.blocks_en && (value.blocks_en as any[]).length > 0)
@@ -268,6 +277,8 @@ const ModeEntryEditor = () => {
         description_uk: existingEntry.description_uk ?? "",
         description_en: existingEntry.description_en ?? "",
         image_url: existingEntry.image_url ?? "",
+        image_url_uk: existingEntry.image_url_uk ?? existingEntry.image_url ?? "",
+        image_url_en: existingEntry.image_url_en ?? "",
         image_source_url: existingEntry.image_source_url ?? "",
         external_url: existingEntry.external_url ?? "",
         sources: (existingEntry.sources as any[]) || [],
@@ -287,6 +298,8 @@ const ModeEntryEditor = () => {
         description_uk: "",
         description_en: "",
         image_url: "",
+        image_url_uk: "",
+        image_url_en: "",
         image_source_url: "",
         external_url: "",
         sources: [],
@@ -349,6 +362,11 @@ const ModeEntryEditor = () => {
         values.type === "component" ||
         values.type === "template" ||
         values.type === "dictionary";
+      const isDesign = values.type === "design";
+
+      const imageUrlUk = sanitizeUrl(values.image_url_uk || values.image_url || "") || null;
+      const imageUrlEn = sanitizeUrl(values.image_url_en || "") || null;
+      const finalImageUrl = imageUrlUk || imageUrlEn || null;
 
       const payload = {
         type: values.type,
@@ -357,7 +375,9 @@ const ModeEntryEditor = () => {
         title_en: values.title_en?.trim() || null,
         description_uk: values.description_uk.trim(),
         description_en: values.description_en?.trim() || null,
-        image_url: isCodeOnly ? null : (sanitizeUrl(values.image_url || "") || null),
+        image_url: isCodeOnly ? null : finalImageUrl,
+        image_url_uk: isCodeOnly ? null : (isDesign ? finalImageUrl : imageUrlUk),
+        image_url_en: isCodeOnly ? null : (isDesign ? null : imageUrlEn),
         image_source_url: isCodeOnly ? null : (sanitizeUrl(values.image_source_url || "") || null),
         external_url: sanitizeUrl(values.external_url || "") || null,
         tags: Array.isArray(values.tags) ? values.tags : [],
@@ -594,57 +614,121 @@ const ModeEntryEditor = () => {
 
               {/* Cover Image & Source (Hidden for Components and Snippets) */}
               {!isCodeMode && (
-                <div className="space-y-3">
-                  <Label htmlFor="image_url">Обкладинка / Зображення</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="image_url"
-                      placeholder="https://images.unsplash.com/..."
-                      {...register("image_url")}
-                    />
-                    <label className="cursor-pointer">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={isUploadingImage}
-                        asChild
-                      >
-                        <span>
-                          <Upload className="w-4 h-4 mr-2" />
-                          {isUploadingImage ? "Завантаження..." : "Завантажити"}
-                        </span>
-                      </Button>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(file);
-                        }}
-                      />
-                    </label>
-                  </div>
+                <>
+                  {watchedType === "design" ? (
+                    <div className="space-y-3">
+                      <Label htmlFor="image_url">Обкладинка / Зображення (Design)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="image_url"
+                          placeholder="https://images.unsplash.com/..."
+                          {...register("image_url")}
+                        />
+                        <label className="cursor-pointer">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isUploadingImage}
+                            asChild
+                          >
+                            <span>
+                              <Upload className="w-4 h-4 mr-2" />
+                              {isUploadingImage ? "Завантаження..." : "Завантажити"}
+                            </span>
+                          </Button>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleImageUpload(file);
+                            }}
+                          />
+                        </label>
+                      </div>
 
-                  {watchedImageUrl && (
-                    <div className="mt-2 aspect-video max-w-sm rounded-lg overflow-hidden border border-border bg-muted">
-                      <img
-                        src={watchedImageUrl}
-                        alt="Прев'ю обкладинки"
-                        className="w-full h-full object-cover"
-                      />
+                      {watchedImageUrl && (
+                        <div className="mt-2 aspect-video max-w-sm rounded-lg overflow-hidden border border-border bg-muted">
+                          <img
+                            src={watchedImageUrl}
+                            alt="Прев'ю обкладинки"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-2 pt-2">
+                        <Label htmlFor="image_source_url">Посилання на джерело зображення</Label>
+                        <Input
+                          id="image_source_url"
+                          placeholder="https://unsplash.com/..."
+                          {...register("image_source_url")}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Preview Image (Ukrainian) */}
+                        <div className="space-y-2">
+                          <Label className="font-medium text-sm flex items-center justify-between">
+                            <span>Preview Image (Ukrainian)</span>
+                            <span className="text-xs text-muted-foreground">Прев'ю (Українська)</span>
+                          </Label>
+                          <Controller
+                            control={control}
+                            name="image_url_uk"
+                            render={({ field }) => (
+                              <ImageDropzone
+                                value={field.value || watch("image_url") || ""}
+                                onChange={(url) => {
+                                  field.onChange(url);
+                                  setValue("image_url", url, { shouldDirty: true });
+                                }}
+                              />
+                            )}
+                          />
+                          {errors.image_url_uk && (
+                            <p className="text-xs text-destructive">{errors.image_url_uk.message}</p>
+                          )}
+                        </div>
+
+                        {/* Preview Image (English) */}
+                        <div className="space-y-2">
+                          <Label className="font-medium text-sm flex items-center justify-between">
+                            <span>Preview Image (English)</span>
+                            <span className="text-xs text-muted-foreground">Прев'ю (English)</span>
+                          </Label>
+                          <Controller
+                            control={control}
+                            name="image_url_en"
+                            render={({ field }) => (
+                              <ImageDropzone
+                                value={field.value || ""}
+                                onChange={(url) => {
+                                  field.onChange(url);
+                                }}
+                              />
+                            )}
+                          />
+                          {errors.image_url_en && (
+                            <p className="text-xs text-destructive">{errors.image_url_en.message}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <Label htmlFor="image_source_url">Посилання на джерело зображення (опціонально)</Label>
+                        <Input
+                          id="image_source_url"
+                          placeholder="https://unsplash.com/..."
+                          {...register("image_source_url")}
+                        />
+                      </div>
                     </div>
                   )}
-
-                  <div className="space-y-2 pt-2">
-                    <Label htmlFor="image_source_url">Посилання на джерело зображення</Label>
-                    <Input
-                      id="image_source_url"
-                      placeholder="https://unsplash.com/..."
-                      {...register("image_source_url")}
-                    />
-                  </div>
-                </div>
+                </>
               )}
 
               {/* Category & Subcategories Selector */}

@@ -11,6 +11,7 @@ import { blocksToPlainText } from "@/lib/blocks";
 import { getLikedEntries, setEntryLiked, shareEntry } from "@/lib/shareEntry";
 import { ItemTagsList } from "@/components/ItemTagBadge";
 import { logAnalyticsEvent } from "@/lib/analytics";
+import { getLocalizedImageUrl } from "@/lib/localize";
 
 const ResourceDetail = () => {
   const { id = "" } = useParams();
@@ -71,13 +72,15 @@ const ResourceDetail = () => {
     ? (entry.canonical_url_en || entry.canonical_url_uk || undefined)
     : (entry.canonical_url_uk || entry.canonical_url_en || undefined);
 
+  const displayImage = loc.imageUrl || (entry ? getLocalizedImageUrl(entry, language) : "") || entry?.image_url;
+
   return (
     <PageLayout>
       <SEO
         title={`${loc.title} — ${language === "en" ? "Resources" : "Ресурси"}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/resource/${entry.id}`}
-        image={entry.image_url ?? undefined}
+        image={displayImage || undefined}
         type="article"
         canonicalUrl={canonicalUrl}
       />
@@ -157,9 +160,9 @@ const ResourceDetail = () => {
         {/* Media: Large full-width rounded cover image + source link */}
         <figure className="mb-10">
           <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-zinc-900 border border-border flex items-center justify-center">
-            {entry.image_url ? (
+            {displayImage ? (
               <img
-                src={entry.image_url}
+                src={displayImage}
                 alt={loc.title}
                 loading="lazy"
                 className="w-full h-full object-cover"

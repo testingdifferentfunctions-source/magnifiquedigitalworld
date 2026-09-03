@@ -29,7 +29,9 @@ export interface ArticleDraftData {
   titleEn: string;
   descriptionEn: string;
   contentEn: string;
-  imageUrl: string;
+  imageUrlUk: string;
+  imageUrlEn: string;
+  imageUrl?: string;
   categoryId: string;
   published: boolean;
   showTestButton: boolean;
@@ -46,7 +48,8 @@ const DEFAULT_ARTICLE_DRAFT: ArticleDraftData = {
   titleEn: '',
   descriptionEn: '',
   contentEn: '',
-  imageUrl: '',
+  imageUrlUk: '',
+  imageUrlEn: '',
   categoryId: '',
   published: false,
   showTestButton: false,
@@ -115,7 +118,8 @@ const ArticleEditor = () => {
         titleEn: existingArticle.title_en ?? '',
         descriptionEn: existingArticle.description_en ?? '',
         contentEn: existingArticle.content_en ?? '',
-        imageUrl: getStoragePublicUrl(existingArticle.image_url) || existingArticle.image_url || '',
+        imageUrlUk: existingArticle.image_url_uk || getStoragePublicUrl(existingArticle.image_url) || existingArticle.image_url || '',
+        imageUrlEn: existingArticle.image_url_en || '',
         categoryId: existingArticle.category_id || '',
         published: Boolean(existingArticle.published),
         showTestButton: Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton),
@@ -138,7 +142,8 @@ const ArticleEditor = () => {
         titleEn: existingArticle.title_en ?? '',
         descriptionEn: existingArticle.description_en ?? '',
         contentEn: existingArticle.content_en ?? '',
-        imageUrl: getStoragePublicUrl(existingArticle.image_url) || existingArticle.image_url || '',
+        imageUrlUk: existingArticle.image_url_uk || getStoragePublicUrl(existingArticle.image_url) || existingArticle.image_url || '',
+        imageUrlEn: existingArticle.image_url_en || '',
         categoryId: existingArticle.category_id || '',
         published: Boolean(existingArticle.published),
         showTestButton: Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton),
@@ -166,8 +171,12 @@ const ArticleEditor = () => {
   if (!isAdmin) return null;
 
   const validateForm = (): { isValid: boolean; firstError?: string } => {
-    const resolvedImageUrl = getStoragePublicUrl(form.imageUrl) || form.imageUrl;
-    const sanitizedImageUrl = sanitizeUrl(resolvedImageUrl);
+    const resolvedImageUrlUk = getStoragePublicUrl(form.imageUrlUk || form.imageUrl || '') || form.imageUrlUk || form.imageUrl || '';
+    const sanitizedImageUrlUk = sanitizeUrl(resolvedImageUrlUk);
+
+    const resolvedImageUrlEn = getStoragePublicUrl(form.imageUrlEn || '') || form.imageUrlEn || '';
+    const sanitizedImageUrlEn = sanitizeUrl(resolvedImageUrlEn);
+
     const sanitizedCanonicalUk = sanitizeUrl(form.canonicalUrlUk);
     const sanitizedCanonicalEn = sanitizeUrl(form.canonicalUrlEn);
 
@@ -176,7 +185,9 @@ const ArticleEditor = () => {
       title: form.titleUk.trim(),
       description: form.descriptionUk.trim(),
       content: form.contentUk,
-      image_url: sanitizedImageUrl || undefined,
+      image_url: sanitizedImageUrlUk || undefined,
+      image_url_uk: sanitizedImageUrlUk || undefined,
+      image_url_en: sanitizedImageUrlEn || undefined,
       category_id: form.categoryId || null,
       published: form.published,
       show_test_button: form.showTestButton,
@@ -211,8 +222,11 @@ const ArticleEditor = () => {
 
     setSaving(true);
     try {
-      const resolvedImageUrl = getStoragePublicUrl(form.imageUrl) || form.imageUrl;
-      const sanitizedImageUrl = sanitizeUrl(resolvedImageUrl);
+      const resolvedImageUrlUk = getStoragePublicUrl(form.imageUrlUk || form.imageUrl || '') || form.imageUrlUk || form.imageUrl || '';
+      const sanitizedImageUrlUk = sanitizeUrl(resolvedImageUrlUk);
+
+      const resolvedImageUrlEn = getStoragePublicUrl(form.imageUrlEn || '') || form.imageUrlEn || '';
+      const sanitizedImageUrlEn = sanitizeUrl(resolvedImageUrlEn);
 
       // Clean category_id to ensure only valid UUID strings or null are sent
       const cleanCategoryId = form.categoryId && form.categoryId.trim() && isValidUUID(form.categoryId.trim())
@@ -227,7 +241,8 @@ const ArticleEditor = () => {
         title_en: form.titleEn.trim() || null,
         description_en: form.descriptionEn.trim() || null,
         content_en: form.contentEn.trim() ? sanitizeHtml(form.contentEn) : null,
-        image_url: sanitizedImageUrl || '',
+        image_url_uk: sanitizedImageUrlUk || null,
+        image_url_en: sanitizedImageUrlEn || null,
         category_id: cleanCategoryId,
         published: Boolean(form.published),
         tags: Array.isArray(form.tags) ? form.tags : [],
@@ -241,6 +256,7 @@ const ArticleEditor = () => {
       delete articleData.title;
       delete articleData.description;
       delete articleData.content;
+      delete articleData.image_url;
 
       console.log('[ArticleEditor] Saving article data:', articleData);
 
@@ -423,16 +439,43 @@ const ArticleEditor = () => {
 
             <Separator />
 
-            <div className="space-y-2">
-              <Label>Зображення статті</Label>
-              <ImageDropzone
-                value={form.imageUrl}
-                onChange={(url) => {
-                  setField('imageUrl', url);
-                  if (errors.image_url) setErrors({ ...errors, image_url: '' });
-                }}
-              />
-              {errors.image_url && <p className="text-sm text-destructive">{errors.image_url}</p>}
+            {/* Dual Localized Image Upload Zones */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Preview Image (Ukrainian) */}
+                <div className="space-y-2">
+                  <Label className="font-medium text-sm flex items-center justify-between">
+                    <span>Preview Image (Ukrainian)</span>
+                    <span className="text-xs text-muted-foreground">Прев'ю (Українська)</span>
+                  </Label>
+                  <ImageDropzone
+                    value={form.imageUrlUk || form.imageUrl || ''}
+                    onChange={(url) => {
+                      setField('imageUrlUk', url);
+                      if (errors.image_url_uk) setErrors({ ...errors, image_url_uk: '' });
+                      if (errors.image_url) setErrors({ ...errors, image_url: '' });
+                    }}
+                  />
+                  {errors.image_url_uk && <p className="text-sm text-destructive">{errors.image_url_uk}</p>}
+                  {errors.image_url && !errors.image_url_uk && <p className="text-sm text-destructive">{errors.image_url}</p>}
+                </div>
+
+                {/* Preview Image (English) */}
+                <div className="space-y-2">
+                  <Label className="font-medium text-sm flex items-center justify-between">
+                    <span>Preview Image (English)</span>
+                    <span className="text-xs text-muted-foreground">Прев'ю (English)</span>
+                  </Label>
+                  <ImageDropzone
+                    value={form.imageUrlEn || ''}
+                    onChange={(url) => {
+                      setField('imageUrlEn', url);
+                      if (errors.image_url_en) setErrors({ ...errors, image_url_en: '' });
+                    }}
+                  />
+                  {errors.image_url_en && <p className="text-sm text-destructive">{errors.image_url_en}</p>}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">

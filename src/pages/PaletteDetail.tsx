@@ -26,6 +26,7 @@ import {
 } from "@/lib/colors";
 import { ItemTagsList } from "@/components/ItemTagBadge";
 import { logAnalyticsEvent } from "@/lib/analytics";
+import { getLocalizedImageUrl } from "@/lib/localize";
 
 const PaletteDetail = () => {
   const { id = "" } = useParams();
@@ -101,13 +102,15 @@ const PaletteDetail = () => {
     ? (entry.canonical_url_en || entry.canonical_url_uk || undefined)
     : (entry.canonical_url_uk || entry.canonical_url_en || undefined);
 
+  const displayImage = loc.imageUrl || (entry ? getLocalizedImageUrl(entry, language) : "") || entry?.image_url;
+
   return (
     <PageLayout>
       <SEO
         title={`${loc.title} — ${t('detail.color_palette')}`}
         description={loc.description || blocksToPlainText(loc.blocks).slice(0, 155)}
         path={`/palette/${entry.id}`}
-        image={entry.image_url ?? undefined}
+        image={displayImage || undefined}
         type="article"
         canonicalUrl={canonicalUrl}
       />
@@ -194,9 +197,9 @@ const PaletteDetail = () => {
           {/* Website Preview Image */}
           <figure id="palette-preview-media" className="relative w-full rounded-2xl overflow-hidden bg-[#1E1E1E] border border-[#3E3E3E] shadow-2xl">
             <div className="aspect-[16/9] sm:aspect-[21/9] w-full flex items-center justify-center">
-              {entry.image_url ? (
+              {displayImage ? (
                 <img
-                  src={entry.image_url}
+                  src={displayImage}
                   alt={loc.title}
                   loading="eager"
                   className="w-full h-full object-cover"

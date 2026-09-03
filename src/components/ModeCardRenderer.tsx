@@ -8,7 +8,7 @@ import SnippetCard from "@/components/SnippetCard";
 import DictionaryCard from "@/components/DictionaryCard";
 import DesignCard from "@/components/DesignCard";
 import ResearchCard from "@/components/ResearchCard";
-import { localizeArticle } from "@/lib/localize";
+import { localizeArticle, getLocalizedImageUrl } from "@/lib/localize";
 import { localizeEntry, useToggleModeEntryLike } from "@/hooks/useModeEntries";
 import { shareEntry, getLikedEntries, setEntryLiked } from "@/lib/shareEntry";
 import type { AppMode } from "@/hooks/useMode";
@@ -43,7 +43,10 @@ export const ModeCardRenderer = ({
             id: item.id,
             title: loc.title,
             description: loc.description,
-            image: item.image_url || item.image || "",
+            image: loc.imageUrl || getLocalizedImageUrl(item, language) || item.image_url || item.image || "",
+            image_url: loc.imageUrl || getLocalizedImageUrl(item, language) || item.image_url || item.image || "",
+            image_url_uk: item.image_url_uk,
+            image_url_en: item.image_url_en,
             likes: item.likes || 0,
             reads: item.reads || 0,
             category: item.category_id || "",
@@ -62,7 +65,7 @@ export const ModeCardRenderer = ({
         id: item.id,
         title: loc.title,
         description: loc.description,
-        image: item.image_url ?? undefined,
+        image: ((loc as any).imageUrl || getLocalizedImageUrl(item, language) || item.image_url) ?? undefined,
         likes: item.likes || 0,
         url: item.external_url ?? undefined,
       };
@@ -164,7 +167,7 @@ export const ModeCardRenderer = ({
             id: item.id,
             title: loc.title,
             description: loc.description,
-            image: item.image_url,
+            image: (loc as any).imageUrl || getLocalizedImageUrl(item, language) || item.image_url,
             likes: item.likes || 0,
             url: item.external_url,
             tags: item.tags || [],
@@ -191,7 +194,7 @@ export const ModeCardRenderer = ({
             id: item.id,
             title: loc.title,
             description: loc.description,
-            image: item.image_url,
+            image: (loc as any).imageUrl || getLocalizedImageUrl(item, language) || item.image_url,
             likes: item.likes || 0,
             url: item.external_url,
             tags: item.tags || [],
@@ -221,7 +224,7 @@ export const ModeCardRenderer = ({
             id: item.id,
             title: loc.title,
             description: loc.description,
-            image: item.image_url,
+            image: (loc as any).imageUrl || getLocalizedImageUrl(item, language) || item.image_url,
             likes: item.likes || 0,
             url: item.external_url,
             tags: item.tags || [],
@@ -313,7 +316,10 @@ export const ModeCardRenderer = ({
             id: item.id,
             title: loc.title,
             description: loc.description,
-            image: item.image_url || item.image || "",
+            image: loc.imageUrl || getLocalizedImageUrl(item, language) || item.image_url || item.image || "",
+            image_url: loc.imageUrl || getLocalizedImageUrl(item, language) || item.image_url || item.image || "",
+            image_url_uk: item.image_url_uk,
+            image_url_en: item.image_url_en,
             likes: item.likes || 0,
             reads: item.reads || 0,
             category: item.category_id || "",
