@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import DOMPurify from 'dompurify';
@@ -20,7 +20,6 @@ import {
   Minus,
   Terminal,
   Palette,
-
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -30,61 +29,180 @@ interface RichTextEditorProps {
 }
 
 const DOMPURIFY_CONFIG = {
-  ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'img', 'a', 'span', 'div'],
-  ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'title', 'target', 'rel', 'style'],
+  ALLOWED_TAGS: [
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's',
+    'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+    'hr', 'img', 'a', 'span', 'div'
+  ],
+  ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'title', 'target', 'rel', 'style', 'loading', 'width', 'height'],
   ADD_ATTR: ['target', 'rel'],
-
 };
 
-const RichTextEditor = ({ value, onChange, maxLength = 50000 }: RichTextEditorProps) => {
+function saveSelection(containerEl: HTMLElement): { start: number; end: number } | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  if (!containerEl.contains(range.startContainer)) return null;
+
+  try {
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(containerEl);
+    preCaretRange.setEnd(range.startContainer, range.startOffset);
+    const start = preCaretRange.toString().length;
+
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    const end = preCaretRange.toString().length;
+
+    return { start, end };
+  } catch {
+    return null;
+  }
+}
+
+function restoreSelection(containerEl: HTMLElement, savedSel: { start: number; end: number } | null) {
+  if (!savedSel) return;
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  try {
+    let charIndex = 0;
+    const range = document.createRange();
+    range.setStart(containerEl, 0);
+    range.collapse(true);
+
+    const nodeStack: Node[] = [containerEl];
+    let node: Node | undefined;
+    let foundStart = false;
+    let stop = false;
+
+    while (!stop && (node = nodeStack.pop())) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const nextCharIndex = charIndex + (node.textContent?.length || 0);
+        if (!foundStart && savedSel.start >= charIndex && savedSel.start <= nextCharIndex) {
+          range.setStart(node, savedSel.start - charIndex);
+          foundStart = true;
+        }
+        if (foundStart && savedSel.end >= charIndex && savedSel.end <= nextCharIndex) {
+          range.setEnd(node, savedSel.end - charIndex);
+          stop = true;
+        }
+        charIndex = nextCharIndex;
+      } else {
+        let i = node.childNodes.length;
+        while (i--) {
+          nodeStack.push(node.childNodes[i]);
+        }
+      }
+    }
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+  } catch {
+    // Ignore selection restoration failure
+  }
+}
+
+const RichTextEditorComponent = ({ value, onChange, maxLength = 50000 }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  // Sync external value into the DOM only when it differs, to avoid resetting
-  // the caret on every keystroke.
+  const lastEmittedValueRef = useRef<string>(value || '');
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitializedRef = useRef<boolean>(false);
+  const [charCount, setCharCount] = useState<number>((value || '').length);
+
+  const flushPending = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (editorRef.current) {
+      const content = editorRef.current.innerHTML;
+      if (content !== lastEmittedValueRef.current) {
+        lastEmittedValueRef.current = content;
+        onChangeRef.current(content);
+      }
+    }
+  }, []);
+
+  // Sync external value into the DOM ONLY when it truly differs from what the user typed/emitted
   useEffect(() => {
     if (!editorRef.current) return;
-    const clean = DOMPurify.sanitize(value || '', DOMPURIFY_CONFIG);
-    if (editorRef.current.innerHTML !== clean) {
+
+    // Initial mount or first hydration
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+      const clean = DOMPurify.sanitize(value || '', DOMPURIFY_CONFIG);
       editorRef.current.innerHTML = clean;
+      lastEmittedValueRef.current = value || '';
+      setCharCount((value || '').length);
+      return;
+    }
+
+    // If external value matches what we already emitted or what innerHTML contains, do NOT touch DOM
+    if (value === lastEmittedValueRef.current) return;
+    if (editorRef.current.innerHTML === value) {
+      lastEmittedValueRef.current = value;
+      return;
+    }
+
+    const clean = DOMPurify.sanitize(value || '', DOMPURIFY_CONFIG);
+    if (editorRef.current.innerHTML === clean) {
+      lastEmittedValueRef.current = value;
+      return;
+    }
+
+    // Genuine external update (hydration, draft discard, clear button, etc.)
+    const isFocused = document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement);
+    const savedSel = isFocused ? saveSelection(editorRef.current) : null;
+
+    editorRef.current.innerHTML = clean;
+    lastEmittedValueRef.current = value || '';
+    setCharCount((value || '').length);
+
+    if (isFocused && savedSel) {
+      restoreSelection(editorRef.current, savedSel);
     }
   }, [value]);
 
   // Flush any pending content during tab switch, page refresh or unmount
   useEffect(() => {
-    const handleFlush = () => {
-      if (editorRef.current) {
-        onChangeRef.current(editorRef.current.innerHTML);
-      }
-    };
-
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        handleFlush();
+        flushPending();
       }
     };
 
     window.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleFlush);
-    window.addEventListener('pagehide', handleFlush);
+    window.addEventListener('beforeunload', flushPending);
+    window.addEventListener('pagehide', flushPending);
 
     return () => {
-      handleFlush();
+      flushPending();
       window.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleFlush);
-      window.removeEventListener('pagehide', handleFlush);
+      window.removeEventListener('beforeunload', flushPending);
+      window.removeEventListener('pagehide', flushPending);
     };
+  }, [flushPending]);
+
+  const execCommand = useCallback((command: string, cmdValue?: string) => {
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+    document.execCommand(command, false, cmdValue);
+    const content = editorRef.current.innerHTML;
+    lastEmittedValueRef.current = content;
+    setCharCount(content.length);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    onChangeRef.current(content);
   }, []);
 
-  const execCommand = useCallback((command: string, value?: string) => {
-    document.execCommand(command, false, value);
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
-  }, [onChange]);
-
   const insertHTML = useCallback((html: string) => {
+    if (!editorRef.current) return;
+    editorRef.current.focus();
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -95,18 +213,30 @@ const RichTextEditor = ({ value, onChange, maxLength = 50000 }: RichTextEditorPr
       selection.removeAllRanges();
       selection.addRange(range);
     }
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+    const content = editorRef.current.innerHTML;
+    lastEmittedValueRef.current = content;
+    setCharCount(content.length);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
-  }, [onChange]);
+    onChangeRef.current(content);
+  }, []);
 
   const handleInput = () => {
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML;
-      if (content.length <= maxLength) {
-        onChange(content);
-      }
+    if (!editorRef.current) return;
+    const content = editorRef.current.innerHTML;
+    lastEmittedValueRef.current = content;
+    setCharCount(content.length);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+    // Debounce the state notification so fast typing does not re-render parent on every keypress
+    debounceTimerRef.current = setTimeout(() => {
+      debounceTimerRef.current = null;
+      onChangeRef.current(content);
+    }, 200);
   };
 
   const insertHeading = (level: 1 | 2 | 3 | 4) => {
@@ -126,10 +256,10 @@ const RichTextEditor = ({ value, onChange, maxLength = 50000 }: RichTextEditorPr
     const linkText = selectedText || safeUrl;
     insertHTML(`<a href="${escapedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`);
   };
+
   const insertCodeBlock = () => {
     insertHTML('<pre class="code-block"><code>// Ваш код тут</code></pre><p></p>');
   };
-
 
   const insertTable = () => {
     const tableHTML = `
@@ -165,10 +295,9 @@ const RichTextEditor = ({ value, onChange, maxLength = 50000 }: RichTextEditorPr
     insertHTML(`<code>${selection.toString()}</code>`);
   };
 
-const applyPurpleAccent = () => {
+  const applyPurpleAccent = () => {
     const selection = window.getSelection();
     if (!selection || !selection.toString()) return;
-    // Замість style використовуємо class, який вже прописаний в index.css
     insertHTML(`<span class="text-purple-accent">${selection.toString()}</span>`);
   };
 
@@ -191,7 +320,6 @@ const applyPurpleAccent = () => {
     { icon: ListOrdered, action: () => execCommand('insertOrderedList'), title: 'Нумерований список' },
     { icon: LinkIcon, action: insertLink, title: 'Посилання' },
     { type: 'separator' },
-
     { icon: Quote, action: () => execCommand('formatBlock', 'blockquote'), title: 'Цитата' },
     { icon: Code, action: insertCodeBlock, title: 'Блок коду' },
     { icon: Terminal, action: insertInlineCode, title: 'Інлайновий код' },
@@ -217,7 +345,7 @@ const applyPurpleAccent = () => {
               size="sm"
               onClick={button.action}
               title={button.title}
-              className="h-8 w-8 p-0 hover:bg-primary/20 hover:text-primary"
+              className="h-8 w-8 p-0 hover:bg-primary/20 hover:text-primary cursor-pointer"
             >
               <Icon className="h-4 w-4" />
             </Button>
@@ -225,13 +353,13 @@ const applyPurpleAccent = () => {
         })}
       </div>
 
-      {/* Editor */}
+      {/* Editor - Content is managed directly on DOM ref to preserve cursor & selection */}
       <div
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(value || '', DOMPURIFY_CONFIG) }}
         onInput={handleInput}
+        onBlur={flushPending}
         dir="ltr"
         className="article-content min-h-[300px] p-4 bg-background focus:outline-none prose prose-sm dark:prose-invert max-w-none
           [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:mt-6
@@ -263,10 +391,13 @@ const applyPurpleAccent = () => {
 
       {/* Character count */}
       <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border bg-muted/30">
-        {value.length}/{maxLength}
+        {charCount}/{maxLength}
       </div>
     </div>
   );
 };
+
+const RichTextEditor = memo(RichTextEditorComponent);
+RichTextEditor.displayName = 'RichTextEditor';
 
 export default RichTextEditor;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useArticle, useCreateArticle, useUpdateArticle, useDeleteArticle } from '@/hooks/useArticles';
@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { articleSchema, sanitizeUrl, sanitizeHtml } from '@/lib/validation';
 import { getAdminRoute } from '@/lib/adminPath';
 import { useLocalStorageDraft } from '@/hooks/useLocalStorageDraft';
+import { getStoragePublicUrl } from '@/lib/storage';
 
 export interface ArticleDraftData {
   titleUk: string;
@@ -90,6 +91,14 @@ const ArticleEditor = () => {
   const selectedCategory = categories.find((c) => c.id === form.categoryId);
   const availableSubcategories = selectedCategory?.subcategories || [];
 
+  const handleContentUkChange = useCallback((val: string) => {
+    setField('contentUk', val);
+  }, [setField]);
+
+  const handleContentEnChange = useCallback((val: string) => {
+    setField('contentEn', val);
+  }, [setField]);
+
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
       navigate('/');
@@ -106,7 +115,7 @@ const ArticleEditor = () => {
         titleEn: existingArticle.title_en ?? '',
         descriptionEn: existingArticle.description_en ?? '',
         contentEn: existingArticle.content_en ?? '',
-        imageUrl: existingArticle.image_url || '',
+        imageUrl: getStoragePublicUrl(existingArticle.image_url) || existingArticle.image_url || '',
         categoryId: existingArticle.category_id || '',
         published: Boolean(existingArticle.published),
         showTestButton: Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton),
@@ -129,7 +138,7 @@ const ArticleEditor = () => {
         titleEn: existingArticle.title_en ?? '',
         descriptionEn: existingArticle.description_en ?? '',
         contentEn: existingArticle.content_en ?? '',
-        imageUrl: existingArticle.image_url || '',
+        imageUrl: getStoragePublicUrl(existingArticle.image_url) || existingArticle.image_url || '',
         categoryId: existingArticle.category_id || '',
         published: Boolean(existingArticle.published),
         showTestButton: Boolean((existingArticle as any)?.show_test_button ?? (existingArticle as any)?.showTestButton),
@@ -157,7 +166,8 @@ const ArticleEditor = () => {
   if (!isAdmin) return null;
 
   const validateForm = (): { isValid: boolean; firstError?: string } => {
-    const sanitizedImageUrl = sanitizeUrl(form.imageUrl);
+    const resolvedImageUrl = getStoragePublicUrl(form.imageUrl) || form.imageUrl;
+    const sanitizedImageUrl = sanitizeUrl(resolvedImageUrl);
     const sanitizedCanonicalUk = sanitizeUrl(form.canonicalUrlUk);
     const sanitizedCanonicalEn = sanitizeUrl(form.canonicalUrlEn);
 
@@ -201,7 +211,8 @@ const ArticleEditor = () => {
 
     setSaving(true);
     try {
-      const sanitizedImageUrl = sanitizeUrl(form.imageUrl);
+      const resolvedImageUrl = getStoragePublicUrl(form.imageUrl) || form.imageUrl;
+      const sanitizedImageUrl = sanitizeUrl(resolvedImageUrl);
 
       // Clean category_id to ensure only valid UUID strings or null are sent
       const cleanCategoryId = form.categoryId && form.categoryId.trim() && isValidUUID(form.categoryId.trim())
@@ -354,8 +365,9 @@ const ArticleEditor = () => {
               <div className="space-y-2">
                 <Label>Вміст статті (UA)</Label>
                 <RichTextEditor
+                  key="content-uk-editor"
                   value={form.contentUk}
-                  onChange={(val) => setField('contentUk', val)}
+                  onChange={handleContentUkChange}
                   maxLength={50000}
                 />
               </div>
@@ -398,8 +410,9 @@ const ArticleEditor = () => {
               <div className="space-y-2">
                 <Label>Article content (EN)</Label>
                 <RichTextEditor
+                  key="content-en-editor"
                   value={form.contentEn}
-                  onChange={(val) => setField('contentEn', val)}
+                  onChange={handleContentEnChange}
                   maxLength={50000}
                 />
                 <p className="text-xs text-muted-foreground">
