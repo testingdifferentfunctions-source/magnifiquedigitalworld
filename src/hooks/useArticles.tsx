@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { logAnalyticsEvent } from '@/lib/analytics';
+import { getStoragePublicUrl } from '@/lib/storage';
 
 export interface Article {
   id: string;
@@ -40,11 +41,13 @@ export const mapArticleRow = (row: any): Article => {
   const title = row.title_uk || row.title_en || row.title || '';
   const description = row.description_uk || row.description_en || row.description || '';
   const content = row.content_uk || row.content_en || row.content || '';
+  const image_url = getStoragePublicUrl(row.image_url) || row.image_url || '';
   return {
     ...row,
     title,
     description,
     content,
+    image_url,
     title_uk: row.title_uk ?? title,
     description_uk: row.description_uk ?? description,
     content_uk: row.content_uk ?? content,

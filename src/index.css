@@ -137,10 +137,21 @@
 
 /* Робимо відступи як для звичайних абзаців (p), так і для блоків (div), 
    які створює редактор при натисканні Enter */
+.article-content {
+  min-height: auto;
+}
+
 .article-content p,
 .article-content > div {
-  margin-bottom: 1.5rem !important; 
+  margin-bottom: 1.25rem !important; 
   line-height: 1.75 !important;
+}
+
+/* Ensure container hugs the content without trailing spacing */
+.article-content > :last-child,
+.article-content p:last-child,
+.article-content div:last-child {
+  margin-bottom: 0 !important;
 }
 
 /* Рятуємо порожні рядки (Enter), щоб браузер їх не приховував */

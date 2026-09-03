@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Article } from "@/data/articles";
 import { shareArticle } from "@/lib/share";
 import { useLanguage } from "@/hooks/useLanguage";
+import { getStoragePublicUrl } from "@/lib/storage";
 
 interface ArticleCardProps {
   article: Article;
@@ -23,10 +24,17 @@ const ArticleCard = ({ article, index = 0 }: ArticleCardProps) => {
         className="card-hover bg-card rounded-xl overflow-hidden cursor-pointer animate-fade-in h-full flex flex-col"
         style={{ animationDelay: `${index * 100}ms` }}
       >
-        <div className="aspect-video overflow-hidden shrink-0">
+        <div className="aspect-video overflow-hidden shrink-0 bg-muted">
           <img
-            src={article.image}
+            src={getStoragePublicUrl(article.image || (article as any).image_url) || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=350&fit=crop'}
             alt={article.title}
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.dataset.fallback) {
+                target.dataset.fallback = 'true';
+                target.src = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=350&fit=crop';
+              }
+            }}
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
           />
         </div>

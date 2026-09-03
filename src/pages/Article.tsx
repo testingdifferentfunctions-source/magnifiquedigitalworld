@@ -16,6 +16,7 @@ import { shareArticle } from "@/lib/share";
 import { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import { ItemTagsList } from "@/components/ItemTagBadge";
+import { getStoragePublicUrl, stripTrailingEmptyHtml } from "@/lib/storage";
 
 const Article = () => {
   const { id } = useParams<{ id: string }>();
@@ -60,36 +61,83 @@ const Article = () => {
   const [parsedContent, setParsedContent] = useState<string>('');
 
   useEffect(() => {
-    // displayContent - це твоя змінна з текстом статті (перевір, як вона точно називається у твоєму файлі)
-    if (!displayContent) return; 
+    if (!displayContent) {
+      setToc([]);
+      setParsedContent('');
+      return;
+    }
 
-    // Очищуємо HTML (щоб збереглися стилі та кольори, які ми налаштовували раніше)
-    const cleanHtml = DOMPurify.sanitize(displayContent, {
-      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'table', 'span', 'div'],
-      ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'title', 'target', 'rel', 'style'],
+    // 1. Strip trailing empty tags (<p><br></p>, <p>&nbsp;</p>, etc.) before parsing
+    const cleanedSource = stripTrailingEmptyHtml(displayContent);
+
+    // 2. Sanitize HTML
+    const cleanHtml = DOMPurify.sanitize(cleanedSource, {
+      ALLOWED_TAGS: [
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's',
+        'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'table', 'thead', 'tbody', 'tr', 'th',
+        'td', 'span', 'div', 'img', 'iframe', 'a', 'hr'
+      ],
+      ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'title', 'target', 'rel', 'style', 'loading', 'width', 'height'],
     });
 
-    // Створюємо віртуальний документ, щоб знайти заголовки
+    // 3. Create virtual DOM
     const parser = new DOMParser();
     const doc = parser.parseFromString(cleanHtml, 'text/html');
 
+    // 4. Ensure all <img> tags inside content use full public URLs from Supabase storage
+    const contentImages = doc.querySelectorAll('img');
+    contentImages.forEach((img) => {
+      const src = img.getAttribute('src');
+      if (src) {
+        const publicUrl = getStoragePublicUrl(src);
+        if (publicUrl) {
+          img.setAttribute('src', publicUrl);
+        }
+      }
+      img.setAttribute('loading', 'lazy');
+      img.classList.add('rounded-xl', 'my-4', 'max-w-full', 'h-auto');
+    });
+
+    // 5. Remove any trailing empty DOM nodes to prevent excessive bottom whitespace
+    while (doc.body.lastChild) {
+      const last = doc.body.lastChild;
+      if (last.nodeType === Node.TEXT_NODE) {
+        if (!last.textContent || !last.textContent.replace(/\u00a0/g, ' ').trim()) {
+          last.remove();
+          continue;
+        }
+        break;
+      }
+      if (last.nodeType === Node.ELEMENT_NODE) {
+        const el = last as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        const text = (el.textContent || '').replace(/\u00a0/g, ' ').trim();
+        const hasMedia = el.querySelector('img, iframe, video, audio, pre, code, table, hr');
+        if ((tag === 'p' || tag === 'div' || tag === 'span' || tag === 'br') && !text && !hasMedia) {
+          el.remove();
+          continue;
+        }
+      }
+      break;
+    }
+
+    // 6. Generate Table of Contents headings
     const headings = doc.querySelectorAll('h2, h3');
     const tocItems: TocItem[] = [];
 
     headings.forEach((heading, index) => {
-      // Додаємо кожному заголовку унікальний id (наприклад, heading-0, heading-1)
       const id = `heading-${index}`;
       heading.setAttribute('id', id);
 
       tocItems.push({
         id,
         text: heading.textContent || '',
-        level: heading.tagName === 'H2' ? 2 : 3, // Визначаємо рівень вкладеності
+        level: heading.tagName === 'H2' ? 2 : 3,
       });
     });
 
     setToc(tocItems);
-    setParsedContent(doc.body.innerHTML); // Зберігаємо оновлений HTML з ID
+    setParsedContent(doc.body.innerHTML);
   }, [displayContent]);
   // --- КІНЕЦЬ КОДУ ДЛЯ ЗМІСТУ ---
 
@@ -150,7 +198,7 @@ const Article = () => {
         title={`${displayTitle} — Magnifique numérique`}
         description={seoDescription}
         path={`/article/${article.id}`}
-        image={article.image_url}
+        image={getStoragePublicUrl(article.image_url) || article.image_url}
         type="article"
         canonicalUrl={canonicalUrl}
         jsonLd={{
@@ -158,7 +206,7 @@ const Article = () => {
           "@type": "Article",
           headline: displayTitle,
           description: seoDescription,
-          image: article.image_url,
+          image: getStoragePublicUrl(article.image_url) || article.image_url,
           datePublished: article.created_at,
           dateModified: article.updated_at,
           inLanguage: language === 'en' ? 'en' : 'uk',
@@ -208,11 +256,18 @@ const Article = () => {
           </div>
         </div>
 
-        <div className="aspect-video overflow-hidden rounded-xl mb-8">
+        <div className="aspect-video overflow-hidden rounded-xl mb-8 bg-muted">
           <img
-            src={article.image_url}
+            src={getStoragePublicUrl(article.image_url) || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1200&h=600&fit=crop'}
             alt={displayTitle}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.dataset.fallback) {
+                target.dataset.fallback = 'true';
+                target.src = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1200&h=600&fit=crop';
+              }
+            }}
           />
         </div>
 
@@ -247,14 +302,12 @@ const Article = () => {
           className="prose prose-lg dark:prose-invert max-w-none article-content
             [&_h4]:text-lg [&_h4]:font-semibold [&_h4]:mt-4 [&_h4]:mb-2
             [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:opacity-80"
-          // Зверни увагу: ми прибрали звідси DOMPurify, бо він вже відпрацював у useEffect
-          // і тепер ми просто виводимо готовий parsedContent з ID для скролу
           dangerouslySetInnerHTML={{ __html: parsedContent }}
         />
 
-        {/* --- НИЖНІ ДІЇ СТАТТІ (Bottom Actions: Like, Share & Conditional Test Button) --- */}
-        <div className="mt-12 pt-8 border-t border-border flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        {/* --- НИЖНІ ДІЇ СТАТТІ (Bottom Actions: Like, Share & Try Code) --- */}
+        <div className="mt-8 pt-6 border-t border-border flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <LikeButton
               articleId={article.id}
               likes={article.likes}
@@ -270,14 +323,27 @@ const Article = () => {
               <Share2 className="w-4 h-4" />
               <span>{t('detail.share')}</span>
             </Button>
+            <Button
+              id="article-bottom-try-code-btn"
+              variant="outline"
+              size="default"
+              onClick={() => {
+                setMode('tools');
+                navigate('/tools/code-editor');
+              }}
+              className="h-10 px-4 rounded-xl gap-2 border border-input bg-background hover:bg-primary hover:text-primary-foreground hover:border-primary text-foreground transition-colors duration-200 cursor-pointer"
+            >
+              <Code2 className="w-4 h-4" />
+              <span>{language === 'uk' ? 'Спробувати код' : t('detail.try_code')}</span>
+            </Button>
           </div>
 
           {(Boolean(article.show_test_button ?? article.showTestButton)) && (
             <Button
               id="article-bottom-test-btn"
               onClick={() => {
-                setMode('editor');
-                navigate('/editor');
+                setMode('tools');
+                navigate('/tools/code-editor');
               }}
               className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-md transition-all cursor-pointer"
             >
