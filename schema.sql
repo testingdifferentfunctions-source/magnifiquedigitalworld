@@ -73,3 +73,57 @@ GRANT ALL ON public.subcategories TO service_role;
 CREATE INDEX IF NOT EXISTS subcategories_category_id_idx ON public.subcategories (category_id);
 CREATE INDEX IF NOT EXISTS subcategories_mode_idx ON public.subcategories (mode);
 CREATE INDEX IF NOT EXISTS subcategories_slug_idx ON public.subcategories (slug);
+
+-- =============================================================================
+-- Supabase Storage: article-images Bucket & RLS Policies
+-- =============================================================================
+
+-- 6. Create or update the 'article-images' public bucket
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'article-images',
+  'article-images',
+  true,
+  52428800,
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 52428800,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif'];
+
+-- 7. Storage RLS Policies for 'article-images'
+DROP POLICY IF EXISTS "Public Read Access for article-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload article-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can update article-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can delete article-images" ON storage.objects;
+
+-- Public can view/read images
+CREATE POLICY "Public Read Access for article-images"
+  ON storage.objects
+  FOR SELECT
+  TO public
+  USING (bucket_id = 'article-images');
+
+-- Authenticated users (or admins) can upload new images
+CREATE POLICY "Authenticated users can upload article-images"
+  ON storage.objects
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'article-images');
+
+-- Authenticated users (or admins) can update existing images
+CREATE POLICY "Authenticated users can update article-images"
+  ON storage.objects
+  FOR UPDATE
+  TO authenticated
+  USING (bucket_id = 'article-images')
+  WITH CHECK (bucket_id = 'article-images');
+
+-- Authenticated users (or admins) can delete images
+CREATE POLICY "Authenticated users can delete article-images"
+  ON storage.objects
+  FOR DELETE
+  TO authenticated
+  USING (bucket_id = 'article-images');
+
