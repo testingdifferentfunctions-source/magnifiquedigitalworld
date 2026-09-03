@@ -4,9 +4,9 @@ import { logAnalyticsEvent } from '@/lib/analytics';
 
 export interface Article {
   id: string;
-  title: string;
-  description: string;
-  content: string;
+  title?: string;
+  description?: string;
+  content?: string;
   title_uk: string | null;
   title_en: string | null;
   description_uk: string | null;
@@ -30,6 +30,27 @@ export interface Article {
   updated_at: string;
 }
 
+/**
+ * Normalizes article row from Supabase so both localized fields
+ * (title_uk, description_uk, content_uk) and legacy accessor getters (title, description, content)
+ * are populated for frontend components without sending un-suffixed fields back to database.
+ */
+export const mapArticleRow = (row: any): Article => {
+  if (!row) return row;
+  const title = row.title_uk || row.title_en || row.title || '';
+  const description = row.description_uk || row.description_en || row.description || '';
+  const content = row.content_uk || row.content_en || row.content || '';
+  return {
+    ...row,
+    title,
+    description,
+    content,
+    title_uk: row.title_uk ?? title,
+    description_uk: row.description_uk ?? description,
+    content_uk: row.content_uk ?? content,
+  };
+};
+
 export const useArticles = (publishedOnly = true) => {
   return useQuery({
     queryKey: ['articles', publishedOnly],
@@ -40,7 +61,7 @@ export const useArticles = (publishedOnly = true) => {
       }
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
-      return data as Article[];
+      return (data || []).map(mapArticleRow);
     }
   });
 };
@@ -56,7 +77,7 @@ export const useTopArticlesByReads = (limit = 10) => {
         .order('reads', { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return data as Article[];
+      return (data || []).map(mapArticleRow);
     }
   });
 };
@@ -72,7 +93,7 @@ export const useTopArticlesByLikes = (limit = 10) => {
         .order('likes', { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return data as Article[];
+      return (data || []).map(mapArticleRow);
     }
   });
 };
@@ -87,7 +108,7 @@ export const useArticle = (id: string) => {
         .eq('id', id)
         .maybeSingle();
       if (error) throw error;
-      return data as Article | null;
+      return data ? mapArticleRow(data) : null;
     },
     enabled: !!id
   });
@@ -101,14 +122,12 @@ const isValidUUID = (str?: string | null): boolean => {
 
 /**
  * Ensures payload strictly adheres to PostgreSQL public.articles schema columns.
- * Filters out deprecated/non-existent frontend fields (canonical_url_uk/en, original_source_url, show_test_button)
- * and verifies all NOT NULL constraints and correct column types.
+ * The schema has been migrated to localized columns (title_uk, description_uk, content_uk).
+ * Any un-suffixed base keys ('title', 'description', 'content') MUST be mapped to '_uk'
+ * and explicitly DELETED or OMITTED so PostgREST schema cache does not throw PGRST204.
  */
 export const sanitizeArticlePayload = (article: Partial<Article>): Record<string, any> => {
   const allowedColumns = [
-    'title',
-    'description',
-    'content',
     'title_uk',
     'title_en',
     'description_uk',
@@ -133,26 +152,35 @@ export const sanitizeArticlePayload = (article: Partial<Article>): Record<string
     }
   }
 
-  // Ensure NOT NULL fields have valid values
-  const titleUk = typeof payload.title_uk === 'string' ? payload.title_uk.trim() : '';
-  const titleEn = typeof payload.title_en === 'string' ? payload.title_en.trim() : '';
-  const titleFallback = typeof payload.title === 'string' ? payload.title.trim() : '';
-  payload.title = titleUk || titleFallback || titleEn || 'Без назви';
+  // Extract values, falling back to legacy base keys if caller passed them
+  const rawArticle = article as any;
+  const titleUk = typeof payload.title_uk === 'string' && payload.title_uk.trim()
+    ? payload.title_uk.trim()
+    : (typeof rawArticle.title === 'string' ? rawArticle.title.trim() : '');
+  const titleEn = typeof payload.title_en === 'string' && payload.title_en.trim()
+    ? payload.title_en.trim()
+    : '';
 
-  const descUk = typeof payload.description_uk === 'string' ? payload.description_uk.trim() : '';
-  const descEn = typeof payload.description_en === 'string' ? payload.description_en.trim() : '';
-  const descFallback = typeof payload.description === 'string' ? payload.description.trim() : '';
-  payload.description = descUk || descFallback || descEn || '';
+  const descUk = typeof payload.description_uk === 'string' && payload.description_uk.trim()
+    ? payload.description_uk.trim()
+    : (typeof rawArticle.description === 'string' ? rawArticle.description.trim() : '');
+  const descEn = typeof payload.description_en === 'string' && payload.description_en.trim()
+    ? payload.description_en.trim()
+    : '';
 
-  const contentUk = typeof payload.content_uk === 'string' ? payload.content_uk : '';
-  const contentEn = typeof payload.content_en === 'string' ? payload.content_en : '';
-  const contentFallback = typeof payload.content === 'string' ? payload.content : '';
-  payload.content = contentUk || contentFallback || contentEn || '';
+  const contentUk = typeof payload.content_uk === 'string' && payload.content_uk.length > 0
+    ? payload.content_uk
+    : (typeof rawArticle.content === 'string' ? rawArticle.content : '');
+  const contentEn = typeof payload.content_en === 'string' && payload.content_en.length > 0
+    ? payload.content_en
+    : '';
 
-  // Per-language nullable fields
-  payload.title_uk = titleUk || payload.title;
-  payload.description_uk = descUk || payload.description;
-  payload.content_uk = contentUk || payload.content;
+  // Required NOT NULL columns in DB:
+  payload.title_uk = titleUk || titleEn || 'Без назви';
+  payload.description_uk = descUk || '';
+  payload.content_uk = contentUk || '';
+
+  // Optional English localization:
   payload.title_en = titleEn || null;
   payload.description_en = descEn || null;
   payload.content_en = contentEn || null;
@@ -175,6 +203,11 @@ export const sanitizeArticlePayload = (article: Partial<Article>): Record<string
   payload.published = Boolean(payload.published);
   payload.tags = Array.isArray(payload.tags) ? payload.tags.filter((t) => typeof t === 'string' && t.trim().length > 0) : [];
 
+  // CRITICAL: Explicitly remove/delete un-suffixed base keys so Supabase / PostgREST doesn't throw PGRST204
+  delete (payload as any).title;
+  delete (payload as any).description;
+  delete (payload as any).content;
+
   return payload;
 };
 
@@ -184,6 +217,9 @@ export const useCreateArticle = () => {
   return useMutation({
     mutationFn: async (article: Omit<Article, 'id' | 'created_at' | 'updated_at'>) => {
       const sanitized = sanitizeArticlePayload(article);
+      delete (sanitized as any).title;
+      delete (sanitized as any).description;
+      delete (sanitized as any).content;
       console.log('[useCreateArticle] Submitting payload to Supabase articles table:', sanitized);
 
       const { data, error } = await supabase
@@ -205,7 +241,7 @@ export const useCreateArticle = () => {
       }
 
       console.log('[useCreateArticle] Successfully created article:', data);
-      return data;
+      return mapArticleRow(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
@@ -219,6 +255,9 @@ export const useUpdateArticle = () => {
   return useMutation({
     mutationFn: async ({ id, ...article }: Partial<Article> & { id: string }) => {
       const sanitized = sanitizeArticlePayload(article);
+      delete (sanitized as any).title;
+      delete (sanitized as any).description;
+      delete (sanitized as any).content;
       console.log('[useUpdateArticle] Submitting payload to Supabase articles table for ID', id, ':', sanitized);
 
       const { data, error } = await supabase
@@ -241,7 +280,7 @@ export const useUpdateArticle = () => {
       }
 
       console.log('[useUpdateArticle] Successfully updated article:', data);
-      return data;
+      return mapArticleRow(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });

@@ -4,7 +4,7 @@ import { parseBlocks, type ContentBlock } from "@/lib/blocks";
 import type { Lang } from "@/lib/localize";
 import { getFallbackEntries, getFallbackEntryById } from "@/data/modeItems";
 import type { AppMode } from "@/hooks/useMode";
-import type { Article } from "@/hooks/useArticles";
+import { mapArticleRow, type Article } from "@/hooks/useArticles";
 import { generateEntryEmbedding } from "@/lib/semanticSearch";
 import { logAnalyticsEvent } from "@/lib/analytics";
 
@@ -168,7 +168,9 @@ const isValidUUID = (str?: string | null): boolean => {
 
 /**
  * Sanitizes mode entries payload ensuring it strictly matches PostgreSQL mode_entries columns.
- * Removes virtual fields like 'sources' that are not columns on public.mode_entries table.
+ * Maps legacy un-suffixed keys ('title', 'description', 'content', 'summary') to localized columns
+ * and explicitly DELETES/OMITS them to avoid PGRST204 schema cache errors.
+ * Also removes virtual fields like 'sources' that are not columns on public.mode_entries table.
  */
 export const sanitizeModeEntryPayload = (entry: Record<string, any>): Record<string, any> => {
   const allowedColumns = [
@@ -197,6 +199,14 @@ export const sanitizeModeEntryPayload = (entry: Record<string, any>): Record<str
     if (col in entry && entry[col] !== undefined) {
       payload[col] = entry[col];
     }
+  }
+
+  // Map legacy un-suffixed fields to _uk if not provided
+  if (!payload.title_uk && entry.title) {
+    payload.title_uk = typeof entry.title === 'string' ? entry.title.trim() : '';
+  }
+  if (!payload.description_uk && (entry.description || entry.summary)) {
+    payload.description_uk = typeof (entry.description || entry.summary) === 'string' ? (entry.description || entry.summary).trim() : '';
   }
 
   // Ensure title_uk & description_uk NOT NULL requirements
@@ -235,6 +245,13 @@ export const sanitizeModeEntryPayload = (entry: Record<string, any>): Record<str
     payload.blocks_en = Array.isArray(payload.blocks_en) ? payload.blocks_en : [];
   }
 
+  // CRITICAL: Explicitly remove un-suffixed base keys
+  delete payload.title;
+  delete payload.description;
+  delete payload.content;
+  delete payload.summary;
+  delete payload.sources;
+
   return payload;
 };
 
@@ -256,6 +273,13 @@ export const useCreateModeEntry = () => {
         ...entry,
         embedding,
       });
+
+      // Explicitly delete un-suffixed base keys right before calling insert
+      delete sanitized.title;
+      delete sanitized.description;
+      delete sanitized.content;
+      delete sanitized.summary;
+      delete sanitized.sources;
 
       console.log('[useCreateModeEntry] Submitting payload to Supabase mode_entries:', sanitized);
 
@@ -307,6 +331,13 @@ export const useUpdateModeEntry = () => {
           blocks_en: entry.blocks_en,
         });
       }
+
+      // Explicitly delete un-suffixed base keys right before calling update
+      delete sanitized.title;
+      delete sanitized.description;
+      delete sanitized.content;
+      delete sanitized.summary;
+      delete sanitized.sources;
 
       console.log('[useUpdateModeEntry] Submitting update to Supabase mode_entries for ID', id, ':', sanitized);
 
@@ -412,7 +443,7 @@ export const usePopularEntriesByMode = (mode: AppMode | string, limit = 10) => {
           console.warn("Failed to fetch popular articles:", error);
           return [];
         }
-        return (data || []) as Article[];
+        return (data || []).map(mapArticleRow);
       }
 
       let type: ModeEntryType = "news";
@@ -480,7 +511,7 @@ export const useLikedEntriesByMode = (mode: AppMode | string, limit = 10) => {
           console.warn("Failed to fetch liked articles:", error);
           return [];
         }
-        return (data || []) as Article[];
+        return (data || []).map(mapArticleRow);
       }
 
       let type: ModeEntryType = "news";

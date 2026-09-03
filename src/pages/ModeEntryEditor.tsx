@@ -368,6 +368,13 @@ const ModeEntryEditor = () => {
         blocks_en: (values.blocks_en as ContentBlock[]) || [],
       };
 
+      // Crucially remove legacy un-suffixed base keys to prevent PGRST204 column errors in Supabase
+      delete (payload as any).title;
+      delete (payload as any).description;
+      delete (payload as any).content;
+      delete (payload as any).summary;
+      delete (payload as any).sources;
+
       console.log('[ModeEntryEditor] Submitting payload:', payload);
 
       if (isEditing && id) {

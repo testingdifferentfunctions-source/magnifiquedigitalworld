@@ -117,11 +117,11 @@ export type Database = {
       articles: {
         Row: {
           category_id: string | null
-          content: string
+          content?: string | null
           content_en: string | null
           content_uk: string | null
           created_at: string
-          description: string
+          description?: string | null
           description_en: string | null
           description_uk: string | null
           id: string
@@ -135,18 +135,18 @@ export type Database = {
           show_test_button?: boolean | null
           showTestButton?: boolean | null
           tags: string[]
-          title: string
+          title?: string | null
           title_en: string | null
           title_uk: string | null
           updated_at: string
         }
         Insert: {
           category_id?: string | null
-          content?: string
+          content?: string | null
           content_en?: string | null
           content_uk?: string | null
           created_at?: string
-          description: string
+          description?: string | null
           description_en?: string | null
           description_uk?: string | null
           id?: string
@@ -160,18 +160,18 @@ export type Database = {
           show_test_button?: boolean | null
           showTestButton?: boolean | null
           tags?: string[]
-          title: string
+          title?: string | null
           title_en?: string | null
           title_uk?: string | null
           updated_at?: string
         }
         Update: {
           category_id?: string | null
-          content?: string
+          content?: string | null
           content_en?: string | null
           content_uk?: string | null
           created_at?: string
-          description?: string
+          description?: string | null
           description_en?: string | null
           description_uk?: string | null
           id?: string
@@ -185,7 +185,7 @@ export type Database = {
           show_test_button?: boolean | null
           showTestButton?: boolean | null
           tags?: string[]
-          title?: string
+          title?: string | null
           title_en?: string | null
           title_uk?: string | null
           updated_at?: string

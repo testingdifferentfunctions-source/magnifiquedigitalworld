@@ -209,10 +209,7 @@ const ArticleEditor = () => {
         : null;
 
       // Construct pure article payload conforming strictly to Supabase public.articles table
-      const articleData = {
-        title: form.titleUk.trim(),
-        description: form.descriptionUk.trim(),
-        content: sanitizeHtml(form.contentUk),
+      const articleData: Record<string, any> = {
         title_uk: form.titleUk.trim(),
         description_uk: form.descriptionUk.trim(),
         content_uk: sanitizeHtml(form.contentUk),
@@ -228,6 +225,11 @@ const ArticleEditor = () => {
         impressions: existingArticle?.impressions || 0,
         share_count: existingArticle?.share_count || 0,
       };
+
+      // Crucially remove legacy un-suffixed base keys to prevent PGRST204 column errors in Supabase
+      delete articleData.title;
+      delete articleData.description;
+      delete articleData.content;
 
       console.log('[ArticleEditor] Saving article data:', articleData);
 

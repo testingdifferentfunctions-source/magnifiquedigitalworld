@@ -621,7 +621,7 @@ const Index = () => {
 
         {/* Tier 2 Secondary Controls: CategoryPills with dynamic mode accent color (Hidden in Editor mode) */}
         {mode !== "editor" && (availablePills.length > 1 || (categoryId !== "all" && modeCategories.some((c) => c.id === categoryId))) && (
-          <div className="mt-4 pt-1 border-t border-border/40">
+          <div className="mt-3">
             <CategoryPills
               pills={availablePills}
               activePillId={activePill}
