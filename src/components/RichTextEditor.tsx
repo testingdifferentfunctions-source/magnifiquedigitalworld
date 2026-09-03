@@ -126,11 +126,11 @@ const RichTextEditorComponent = ({ value, onChange, maxLength = 50000 }: RichTex
     }
   }, []);
 
-  // Sync external value into the DOM ONLY when it truly differs from what the user typed/emitted
+  // Sync external value into the DOM ONLY when the editor is NOT focused and the value truly changed externally
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // Initial mount or first hydration
+    // 1. Initial mount or first hydration
     if (!isInitializedRef.current) {
       isInitializedRef.current = true;
       const clean = DOMPurify.sanitize(value || '', DOMPURIFY_CONFIG);
@@ -140,29 +140,29 @@ const RichTextEditorComponent = ({ value, onChange, maxLength = 50000 }: RichTex
       return;
     }
 
-    // If external value matches what we already emitted or what innerHTML contains, do NOT touch DOM
+    // 2. CRITICAL: If the user is currently focused in the editor, NEVER overwrite innerHTML!
+    // The live DOM in the browser is the active source of truth.
+    // Overwriting innerHTML while typing destroys the active selection and causes cursor jumping.
+    const isFocused =
+      typeof document !== 'undefined' &&
+      (document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement));
+    if (isFocused) {
+      return;
+    }
+
+    // 3. If external value matches what we already emitted or what innerHTML contains, do NOT touch DOM
     if (value === lastEmittedValueRef.current) return;
     if (editorRef.current.innerHTML === value) {
       lastEmittedValueRef.current = value;
       return;
     }
 
+    // 4. Editor is NOT focused and value changed externally (e.g. backend data loaded, draft discarded, clear button clicked)
     const clean = DOMPurify.sanitize(value || '', DOMPURIFY_CONFIG);
-    if (editorRef.current.innerHTML === clean) {
-      lastEmittedValueRef.current = value;
-      return;
-    }
-
-    // Genuine external update (hydration, draft discard, clear button, etc.)
-    const isFocused = document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement);
-    const savedSel = isFocused ? saveSelection(editorRef.current) : null;
-
-    editorRef.current.innerHTML = clean;
-    lastEmittedValueRef.current = value || '';
-    setCharCount((value || '').length);
-
-    if (isFocused && savedSel) {
-      restoreSelection(editorRef.current, savedSel);
+    if (editorRef.current.innerHTML !== clean) {
+      editorRef.current.innerHTML = clean;
+      lastEmittedValueRef.current = value || '';
+      setCharCount((value || '').length);
     }
   }, [value]);
 
@@ -343,6 +343,10 @@ const RichTextEditorComponent = ({ value, onChange, maxLength = 50000 }: RichTex
               type="button"
               variant="ghost"
               size="sm"
+              onMouseDown={(e) => {
+                // Prevent button click from stealing focus from contentEditable
+                e.preventDefault();
+              }}
               onClick={button.action}
               title={button.title}
               className="h-8 w-8 p-0 hover:bg-primary/20 hover:text-primary cursor-pointer"

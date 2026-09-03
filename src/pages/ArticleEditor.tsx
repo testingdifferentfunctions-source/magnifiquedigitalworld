@@ -227,7 +227,7 @@ const ArticleEditor = () => {
         title_en: form.titleEn.trim() || null,
         description_en: form.descriptionEn.trim() || null,
         content_en: form.contentEn.trim() ? sanitizeHtml(form.contentEn) : null,
-        image_url: sanitizedImageUrl || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop',
+        image_url: sanitizedImageUrl || '',
         category_id: cleanCategoryId,
         published: Boolean(form.published),
         tags: Array.isArray(form.tags) ? form.tags : [],

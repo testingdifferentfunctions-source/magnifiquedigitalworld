@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { getStoragePublicUrl } from '@/lib/storage';
+import { getStoragePublicUrl, getSignedStorageUrl } from '@/lib/storage';
 
 interface ImageDropzoneProps {
   value: string;
@@ -13,6 +13,8 @@ interface ImageDropzoneProps {
 const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [localBlobUrl, setLocalBlobUrl] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = useCallback(async (file: File) => {
@@ -32,7 +34,7 @@ const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
       const fileExt = file.name.split('.').pop() || 'jpg';
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
-      // Upload directly to 'article-images' bucket
+      // 1. Upload directly to 'article-images' Supabase bucket
       const { data, error: uploadError } = await supabase.storage
         .from('article-images')
         .upload(fileName, file);
@@ -41,18 +43,25 @@ const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
         throw uploadError;
       }
 
-      // Retrieve the full public URL using data.path
-      const imagePath = data?.path || fileName;
-      const { data: urlData } = supabase.storage
-        .from('article-images')
-        .getPublicUrl(imagePath);
+      if (!data?.path) {
+        throw new Error('Помилка отримання шляху завантаженого файлу');
+      }
 
-      const publicUrl = urlData?.publicUrl;
+      // 2. Retrieve the exact public URL using supabase.storage.from('article-images').getPublicUrl(path)
+      const { data: { publicUrl } } = supabase.storage
+        .from('article-images')
+        .getPublicUrl(data.path);
+
       if (!publicUrl) {
         throw new Error('Не вдалося отримати публічне посилання на зображення');
       }
 
-      // Save the full public URL to state
+      // 3. Set local blob preview for instant responsive visual feedback
+      const localUrl = URL.createObjectURL(file);
+      setLocalBlobUrl(localUrl);
+      setLoadFailed(false);
+
+      // 4. Explicitly update the form state ONLY with this exact generated public URL
       onChange(publicUrl);
       toast.success('Зображення успішно завантажено');
     } catch (error: any) {
@@ -88,6 +97,11 @@ const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (localBlobUrl) {
+      URL.revokeObjectURL(localBlobUrl);
+      setLocalBlobUrl('');
+    }
+    setLoadFailed(false);
     onChange('');
   };
 
@@ -98,23 +112,44 @@ const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
     }
   };
 
-  const resolvedSrc = getStoragePublicUrl(value) || value;
+  const resolvedSrc = localBlobUrl || getStoragePublicUrl(value) || value;
 
   if (value) {
     return (
       <div className="relative rounded-lg overflow-hidden border border-border bg-muted">
-        <img
-          src={resolvedSrc}
-          alt="Зображення статті"
-          className="w-full h-48 object-cover"
-          onError={(e) => {
-            const target = e.currentTarget;
-            if (!target.dataset.fallback) {
-              target.dataset.fallback = 'true';
-              target.src = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=400&fit=crop';
-            }
-          }}
-        />
+        {loadFailed ? (
+          <div className="w-full h-48 flex flex-col items-center justify-center p-4 bg-muted text-destructive text-center">
+            <AlertCircle className="h-8 w-8 mb-2" />
+            <p className="text-sm font-medium mb-2">Не вдалося завантажити прев'ю зображення</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRemove}
+              className="text-foreground"
+            >
+              Видалити та завантажити інше
+            </Button>
+          </div>
+        ) : (
+          <img
+            src={resolvedSrc}
+            alt="Зображення статті"
+            className="w-full h-48 object-cover"
+            onError={async (e) => {
+              const target = e.currentTarget;
+              if (!target.dataset.triedSigned && value) {
+                target.dataset.triedSigned = 'true';
+                const signed = await getSignedStorageUrl(value);
+                if (signed) {
+                  target.src = signed;
+                  return;
+                }
+              }
+              setLoadFailed(true);
+            }}
+          />
+        )}
         <Button
           type="button"
           variant="destructive"

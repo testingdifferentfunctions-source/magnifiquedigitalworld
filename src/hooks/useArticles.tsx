@@ -188,9 +188,11 @@ export const sanitizeArticlePayload = (article: Partial<Article>): Record<string
   payload.description_en = descEn || null;
   payload.content_en = contentEn || null;
 
-  // Image URL NOT NULL constraint
-  if (!payload.image_url || typeof payload.image_url !== 'string' || !payload.image_url.trim()) {
-    payload.image_url = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop';
+  // Image URL handling: preserve exact string or empty string (never inject hardcoded templates)
+  if (typeof payload.image_url === 'string') {
+    payload.image_url = payload.image_url.trim();
+  } else {
+    payload.image_url = '';
   }
 
   // Category ID must be valid UUID or null (never empty string)

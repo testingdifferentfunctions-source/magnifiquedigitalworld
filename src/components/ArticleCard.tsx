@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Article } from "@/data/articles";
 import { shareArticle } from "@/lib/share";
 import { useLanguage } from "@/hooks/useLanguage";
-import { getStoragePublicUrl } from "@/lib/storage";
+import { getStoragePublicUrl, getSignedStorageUrl } from "@/lib/storage";
 
 interface ArticleCardProps {
   article: Article;
@@ -18,26 +18,36 @@ const ArticleCard = ({ article, index = 0 }: ArticleCardProps) => {
     shareArticle(article.id, article.title);
   };
 
+  const rawImage = article.image || (article as any).image_url;
+  const imageSrc = getStoragePublicUrl(rawImage) || rawImage;
+
   return (
     <Link to={`/article/${article.id}`} className="h-full block">
       <article
         className="card-hover bg-card rounded-xl overflow-hidden cursor-pointer animate-fade-in h-full flex flex-col"
         style={{ animationDelay: `${index * 100}ms` }}
       >
-        <div className="aspect-video overflow-hidden shrink-0 bg-muted">
-          <img
-            src={getStoragePublicUrl(article.image || (article as any).image_url) || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=350&fit=crop'}
-            alt={article.title}
-            onError={(e) => {
-              const target = e.currentTarget;
-              if (!target.dataset.fallback) {
-                target.dataset.fallback = 'true';
-                target.src = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=350&fit=crop';
-              }
-            }}
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-          />
-        </div>
+        {imageSrc ? (
+          <div className="aspect-video overflow-hidden shrink-0 bg-muted">
+            <img
+              src={imageSrc}
+              alt={article.title}
+              onError={async (e) => {
+                const target = e.currentTarget;
+                if (!target.dataset.triedSigned && rawImage) {
+                  target.dataset.triedSigned = 'true';
+                  const signed = await getSignedStorageUrl(rawImage);
+                  if (signed) {
+                    target.src = signed;
+                    return;
+                  }
+                }
+                target.style.display = 'none';
+              }}
+              className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+            />
+          </div>
+        ) : null}
         <div className="p-5 flex flex-col flex-1">
           <div className="flex-1 flex flex-col">
             <h3 className="text-lg font-semibold mb-2 line-clamp-2">

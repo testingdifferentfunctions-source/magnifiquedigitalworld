@@ -16,7 +16,7 @@ import { shareArticle } from "@/lib/share";
 import { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import { ItemTagsList } from "@/components/ItemTagBadge";
-import { getStoragePublicUrl, stripTrailingEmptyHtml } from "@/lib/storage";
+import { getStoragePublicUrl, getSignedStorageUrl, stripTrailingEmptyHtml } from "@/lib/storage";
 
 const Article = () => {
   const { id } = useParams<{ id: string }>();
@@ -256,20 +256,27 @@ const Article = () => {
           </div>
         </div>
 
-        <div className="aspect-video overflow-hidden rounded-xl mb-8 bg-muted">
-          <img
-            src={getStoragePublicUrl(article.image_url) || 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1200&h=600&fit=crop'}
-            alt={displayTitle}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.currentTarget;
-              if (!target.dataset.fallback) {
-                target.dataset.fallback = 'true';
-                target.src = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1200&h=600&fit=crop';
-              }
-            }}
-          />
-        </div>
+        {article.image_url ? (
+          <div className="aspect-video overflow-hidden rounded-xl mb-8 bg-muted">
+            <img
+              src={getStoragePublicUrl(article.image_url) || article.image_url}
+              alt={displayTitle}
+              className="w-full h-full object-cover"
+              onError={async (e) => {
+                const target = e.currentTarget;
+                if (!target.dataset.triedSigned && article.image_url) {
+                  target.dataset.triedSigned = 'true';
+                  const signed = await getSignedStorageUrl(article.image_url);
+                  if (signed) {
+                    target.src = signed;
+                    return;
+                  }
+                }
+                target.style.display = 'none';
+              }}
+            />
+          </div>
+        ) : null}
 
         {/* --- БЛОК ЗМІСТУ (Table of Contents) --- */}
         {toc.length > 0 && (

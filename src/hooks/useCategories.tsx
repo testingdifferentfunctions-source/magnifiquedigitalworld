@@ -922,7 +922,7 @@ export async function resolveOrCreateParentCategory(
   const finalImageUrl =
     meta?.category_image_url ||
     seed?.image_url ||
-    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=200&h=200&fit=crop";
+    null;
   const seedSubTopics = seed?.subcategories || [];
 
   // Progressive insertion attempts to handle various DB schema states and ensure it exists in DB
@@ -1046,12 +1046,10 @@ export const useCreateCategory = () => {
       sort_order?: number;
     }) => {
       const normMode = normalizeCategoryMode(category.mode_slug || category.mode);
-      const defaultImg =
-        "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=200&h=200&fit=crop";
       const finalImage =
         category.image_url && category.image_url.trim()
           ? category.image_url.trim()
-          : defaultImg;
+          : null;
 
       const payloads = [
         {
